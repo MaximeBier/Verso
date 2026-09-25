@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fenêtre sombre en thème sombre : aucun flash clair au lancement. -->
+    <style name="Theme.Verso" parent="android:Theme.Material.NoActionBar" />
+</resources>
