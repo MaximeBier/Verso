@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Tests, lint et APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle (cache et validation du wrapper)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Tests du garde-fou manifeste
+        run: bash scripts/check-no-internet-test.sh
+
+      - name: Tests, lint et APK debug
+        run: >
+          ./gradlew --stacktrace
+          :core:test
+          :app:testDebugUnitTest -Proborazzi.test.record=true
+          :app:lintDebug
+          :app:assembleDebug
+
+      - name: Aucune permission dans le manifeste fusionné
+        run: bash scripts/check-no-internet.sh
+
+      - name: APK debug
+        uses: actions/upload-artifact@v7
+        with:
+          name: verso-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Captures Roborazzi
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: roborazzi-captures
+          path: app/build/outputs/roborazzi/
+          if-no-files-found: ignore
+
+      - name: Rapports de tests et de lint
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            core/build/reports/
+            app/build/reports/
+          if-no-files-found: ignore

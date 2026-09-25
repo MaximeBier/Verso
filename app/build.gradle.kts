@@ -113,3 +113,98 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
 }
+
+/**
+ * Génère com.maximebier.verso.ui.theme.VersoPalette.kt depuis docs/design/tokens.json :
+ * data class VersoColors (un champ par jeton, dans l'ordre du thème clair), les quatre thèmes et la palette des vignettes.
+ * Échoue si un thème n'a pas exactement les mêmes jetons que le thème clair ou si une couleur est mal formée.
+ */
+abstract class GenerateDesignTokensTask : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val tokensFile: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        @Suppress("UNCHECKED_CAST")
+        val root = groovy.json.JsonSlurper().parse(tokensFile.get().asFile, "UTF-8") as Map<String, Any?>
+        @Suppress("UNCHECKED_CAST")
+        val color = root["color"] as? Map<String, Any?> ?: throw GradleException("tokens.json : section « color » absente")
+        val themes = linkedMapOf("Light" to "light", "Dark" to "dark", "Sepia" to "sepia", "Black" to "black")
+        @Suppress("UNCHECKED_CAST")
+        val values = themes.mapValues { (_, key) ->
+            color[key] as? Map<String, Any?> ?: throw GradleException("tokens.json : thème « $key » absent")
+        }
+        val names = values.getValue("Light").keys.toList()
+        values.forEach { (theme, tokens) ->
+            val missing = names - tokens.keys
+            val extra = tokens.keys - names.toSet()
+            if (missing.isNotEmpty() || extra.isNotEmpty()) {
+                throw GradleException("tokens.json : le thème $theme diffère du thème clair (manquants : $missing, en trop : $extra)")
+            }
+        }
+        @Suppress("UNCHECKED_CAST")
+        val covers = root["coverPalette"] as? Map<String, Any?> ?: throw GradleException("tokens.json : coverPalette absent")
+
+        fun argb(value: Any?, where: String): String {
+            val raw = value as? String ?: throw GradleException("tokens.json : $where doit être une couleur, trouvé « $value »")
+            val digits = raw.removePrefix("#").uppercase()
+            if (!digits.all { it in '0'..'9' || it in 'A'..'F' }) throw GradleException("tokens.json : $where mal formé (« $raw »)")
+            return when (digits.length) {
+                6 -> "0xFF$digits"
+                8 -> "0x" + digits.substring(6, 8) + digits.substring(0, 6)
+                else -> throw GradleException("tokens.json : $where doit être #RRGGBB ou #RRGGBBAA (« $raw »)")
+            }
+        }
+
+        fun coverList(key: String): String {
+            val list = covers[key] as? List<*> ?: throw GradleException("tokens.json : coverPalette.$key absent")
+            return list.mapIndexed { index, value -> "Color(${argb(value, "coverPalette.$key[$index]")})" }.joinToString(", ")
+        }
+
+        val code = buildString {
+            appendLine("// Fichier généré par la tâche Gradle generateDesignTokens depuis docs/design/tokens.json. Ne pas modifier à la main.")
+            appendLine("package com.maximebier.verso.ui.theme")
+            appendLine()
+            appendLine("import androidx.compose.runtime.Immutable")
+            appendLine("import androidx.compose.ui.graphics.Color")
+            appendLine()
+            appendLine("/** Rôles de couleur d'un thème Verso (un champ par jeton de tokens.json). */")
+            appendLine("@Immutable")
+            appendLine("data class VersoColors(")
+            names.forEach { appendLine("    val $it: Color,") }
+            appendLine(")")
+            appendLine()
+            appendLine("/** Les quatre thèmes de tokens.json (V1 : Light et Dark) et la palette des vignettes générées. */")
+            appendLine("object VersoPalette {")
+            values.forEach { (theme, tokens) ->
+                appendLine("    val $theme: VersoColors = VersoColors(")
+                names.forEach { name -> appendLine("        $name = Color(${argb(tokens[name], "color.${themes.getValue(theme)}.$name")}),") }
+                appendLine("    )")
+            }
+            appendLine("    val CoverLight: List<Color> = listOf(${coverList("light")})")
+            appendLine("    val CoverDark: List<Color> = listOf(${coverList("dark")})")
+            appendLine("}")
+        }
+        val dir = outputDir.get().asFile.resolve("com/maximebier/verso/ui/theme")
+        dir.mkdirs()
+        dir.resolve("VersoPalette.kt").writeText(code, Charsets.UTF_8)
+    }
+}
+
+val generateDesignTokens = tasks.register<GenerateDesignTokensTask>("generateDesignTokens") {
+    group = "verso"
+    description = "Génère VersoPalette.kt depuis docs/design/tokens.json."
+    tokensFile.set(layout.projectDirectory.file("../docs/design/tokens.json"))
+    outputDir.set(layout.buildDirectory.dir("generated/tokens"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        // AGP enregistre le dossier comme source Kotlin générée et fait dépendre la compilation de la tâche.
+        variant.sources.kotlin?.addGeneratedSourceDirectory(generateDesignTokens, GenerateDesignTokensTask::outputDir)
+    }
+}
