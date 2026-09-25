@@ -161,6 +161,29 @@
     <string name="settings_clear_journal_dialog_cancel">Annuler</string>
     <string name="settings_clear_journal_dialog_confirm">Effacer</string>
 
+    <!-- ===================== Licences open source (non dessiné, v1-ui-reference §4.3) ===================== -->
+    <!-- PROPOSÉ : phrase d'introduction et intitulés TalkBack de la liste des licences -->
+    <string name="licenses_intro">Verso est construit avec ces logiciels et ces polices libres. Touchez une ligne pour lire sa licence.</string>
+    <string name="licenses_show_text">Afficher la licence</string>
+    <string name="licenses_hide_text">Masquer la licence</string>
+    <string name="license_name_apache_2">Licence Apache 2.0</string>
+    <string name="license_name_bsd_3">Licence BSD à 3 clauses</string>
+    <string name="license_name_ofl">SIL Open Font License 1.1</string>
+    <string name="license_name_isc">Licence ISC</string>
+    <string name="license_name_mit">Licence MIT</string>
+    <string name="license_name_gpl2_classpath">GPL 2.0 avec exception Classpath</string>
+    <string name="license_component_verso" translatable="false">Verso</string>
+    <string name="license_component_readium" translatable="false">Readium Kotlin Toolkit</string>
+    <string name="license_component_atkinson" translatable="false">Atkinson Hyperlegible Next</string>
+    <string name="license_component_lucide">Lucide (icônes)</string>
+    <string name="license_component_androidx">AndroidX (Compose, Navigation, Room, DataStore, Lifecycle, Fragment, Media3, WebKit)</string>
+    <string name="license_component_kotlin" translatable="false">Kotlin, kotlinx.coroutines, kotlinx.serialization, kotlinx.datetime</string>
+    <string name="license_component_coil">Coil, Timber, Koi</string>
+    <string name="license_component_jsoup" translatable="false">jsoup</string>
+    <string name="license_component_desugar">desugar_jdk_libs (bibliothèques Java d’OpenJDK)</string>
+    <string name="license_component_okio" translatable="false">Okio</string>
+    <string name="license_component_jspecify" translatable="false">JSpecify</string>
+
     <!-- ===================== Lecture (1.10 – 1.11) ===================== -->
     <string name="reader_back_to_library">Retour à la bibliothèque</string>
     <string name="reader_toc">Sommaire</string>

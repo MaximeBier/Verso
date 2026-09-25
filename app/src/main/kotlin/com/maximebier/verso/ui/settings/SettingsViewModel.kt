@@ -1,0 +1,62 @@
+package com.maximebier.verso.ui.settings
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.maximebier.verso.VersoApplication
+import com.maximebier.verso.data.SessionRepository
+import com.maximebier.verso.data.SettingsRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/** État de l'écran Paramètres (1.09). */
+data class SettingsUiState(
+    val reopenLastBook: Boolean = true,
+    val confirmingClearJournal: Boolean = false,
+)
+
+class SettingsViewModel(
+    private val settings: SettingsRepository,
+    private val sessions: SessionRepository,
+) : ViewModel() {
+
+    private val confirming = MutableStateFlow(false)
+
+    val state: StateFlow<SettingsUiState> =
+        combine(settings.reopenLastBook, confirming) { reopen, confirmingClear ->
+            SettingsUiState(reopenLastBook = reopen, confirmingClearJournal = confirmingClear)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    fun onReopenLastBookChange(value: Boolean) {
+        viewModelScope.launch { settings.setReopenLastBook(value) }
+    }
+
+    fun onClearJournalClick() {
+        confirming.value = true
+    }
+
+    fun onClearJournalDismiss() {
+        confirming.value = false
+    }
+
+    /** Efface toutes les sessions ; les positions de lecture (table books) ne sont pas touchées. */
+    fun onClearJournalConfirm() {
+        confirming.value = false
+        viewModelScope.launch { sessions.clearAll() }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as VersoApplication
+                SettingsViewModel(app.container.settings, app.container.sessions)
+            }
+        }
+    }
+}
