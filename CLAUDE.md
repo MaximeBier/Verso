@@ -12,7 +12,7 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 ## Projet
 
 - Kotlin, Jetpack Compose, Material 3, Readium Kotlin toolkit 3.4.0, Room, DataStore, Coil.
-- Package `com.maximebier.verso`. minSdk 26, targetSdk et compileSdk 36.
+- Package `com.maximebier.verso`. minSdk 26, targetSdk 36, compileSdk 37 (exigé par Readium 3.4.0).
 - Une activité, navigation Compose, MVVM.
 - Licence Apache 2.0.
 
@@ -24,7 +24,9 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 - **Accessibilité** : texte à au moins 7:1 de contraste, commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.
 - **Confidentialité** : aucune permission réseau, aucune analytics. Rien ne quitte le téléphone.
 - **Lecture** : alignement à gauche, sans justification ni césure, imposé par-dessus le CSS de l'éditeur.
-- Une étape de la spec = une branche = une pull request. Toute décision qui change la spec est reportée dans `SPEC.md` dans la même pull request.
+- Tout sur `master`, un commit par étape (`Étape N : …`), poussé et installé sur le téléphone à la fin de chaque étape. Pas de pull request. Toute décision qui change la spec est reportée dans `docs/SPEC.md` dans le même commit.
+- Plan d'implémentation V1 : `docs/superpowers/plans/2026-09-25-verso-v1.md`.
+- Téléphone branché en adb : installer, lancer, capturer l'écran uniquement ; ne jamais modifier ses réglages système.
 
 ## Vérifier un écran
 

@@ -36,7 +36,7 @@ Différenciation visée par rapport aux lecteurs existants (Apple Books, Google 
 | Plateforme | Android seul | Pas d'iPhone pour tester, pas de compte App Store |
 | Stack | Kotlin + Jetpack Compose + Readium + Room | Stack la mieux documentée d'Android, donc la plus fiable pour coder assisté par IA ; crédible en portfolio |
 | Identifiant de l'app | `com.maximebier.verso` | Fixé avant le premier commit. Il identifie l'app sur le téléphone et ne change plus ensuite |
-| Versions Android | minSdk 26, targetSdk et compileSdk 36 | À partir de 26 : polices variables et icône adaptative sans code de compatibilité (Readium demande 24). Cible 36 : niveau exigé par Google Play depuis le 31 août 2026, si l'app y est publiée un jour |
+| Versions Android | minSdk 26, targetSdk 36, **compileSdk 37** | À partir de 26 : polices variables et icône adaptative sans code de compatibilité (Readium demande 24). Cible 36 : niveau exigé par Google Play depuis le 31 août 2026, si l'app y est publiée un jour. compileSdk 37 : exigé par Readium 3.4.0 et Compose 1.12 ; il ne change pas le comportement de l'app (décidé le 2026-09-25) |
 | Licence du code | Apache 2.0 | Licence habituelle d'Android et de Kotlin, avec une clause sur les brevets. Compatible avec Readium (BSD-3) et les polices (OFL) |
 | Ouverture au lancement | Rouvre le dernier livre s'il a été lu il y a moins de 24 h, **activé par défaut** | Confirmé le 2026-09-25 : on retombe dans sa lecture. Réglable dans les Paramètres |
 | Logo | V formé de deux pages, variante Papier | Voir « Logo et icône » |
@@ -410,10 +410,10 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 | Import | Storage Access Framework + intent filters `application/epub+zip` | Sélecteur de fichiers et « Ouvrir avec » |
 | Images | Coil | Couvertures |
 | Architecture | MVVM, une activité, navigation Compose | Simple, standard, lisible pour un recruteur |
-| SDK | minSdk 26, targetSdk et compileSdk 36 | Voir « Décisions prises » |
+| SDK | minSdk 26, targetSdk 36, compileSdk 37 | Voir « Décisions prises » |
 | Textes | `res/values/strings.xml` en français, jamais de texte en dur | Libellés repris tels quels des maquettes, ponctuation française comprise |
 | Tests | JUnit pour la logique pure, tests Compose pour les écrans clés | La détection lecture/navigation et la carte de retour sont une machine à états sans dépendance Android, testée unitairement avec les seuils nommés |
-| CI | GitHub Actions : compilation, tests, lint, APK debug en artefact | Chaque commit sur `main` produit un APK installable |
+| CI | GitHub Actions : compilation, tests, lint, APK debug en artefact | Chaque commit sur `master` produit un APK installable |
 
 ### Modèle de données (première ébauche)
 
@@ -446,7 +446,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 
 Aucun de ces points ne bloque le démarrage.
 
-- Adresse du dépôt GitHub pour le lien des Paramètres. La maquette affiche `github.com/[votre-compte]/verso` ; à remplacer quand le dépôt existe.
+- ~~Adresse du dépôt GitHub~~ : `https://github.com/MaximeBier/Verso` (privé pour l'instant ; le lien des Paramètres fonctionnera quand il sera public).
 - Seuils de la détection lecture/navigation (vitesse de fling, 3 écrans en 5 secondes, confirmation après 25 secondes) : valeurs de départ à ajuster à l'usage.
 - Supprimer un livre supprime-t-il aussi ses sessions du journal ? Par défaut : **oui**. C'est le plus simple, et la V1 n'a pas de statistiques globales. À revoir avec les statistiques de la V2.
 
@@ -456,21 +456,22 @@ L'écran « Licences open source » liste Readium (BSD-3) et les deux polices (O
 
 ### Dépôt de départ
 
-Le kit livré avec cette spec est la racine du dépôt :
+Le kit livré avec cette spec est rangé ainsi dans le dépôt (décidé le 2026-09-25 : seul `CLAUDE.md` est à la racine) :
 
 ```
-verso/
-├── CLAUDE.md    consignes permanentes pour Claude Code
-├── SPEC.md      cette spec
-├── design/      maquettes exportées, jetons de design, logo et icône
-└── app/         projet Android, créé à l'étape 2
+Verso/
+├── CLAUDE.md         consignes permanentes pour Claude Code
+├── docs/SPEC.md      cette spec
+├── docs/design/      maquettes exportées, jetons de design, logo et icône
+├── core/             logique pure (Kotlin JVM), créé à l'étape 2
+└── app/              projet Android, créé à l'étape 2
 ```
 
 Avant la première session avec Claude Code : `git init`, ajouter une `LICENSE` Apache 2.0 et un `.gitignore` Android, puis un premier commit « Spec et maquettes ».
 
 ### Étapes
 
-Chaque étape se fait dans une branche et se termine par une pull request. Une étape n'est finie que lorsque tout ce qui est indiqué dans « Finie quand » est vrai sur le téléphone.
+Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et installé sur le téléphone à la fin de chaque étape pour suivre l'avancement en direct (décidé le 2026-09-25, remplace « une branche et une pull request par étape »). Seul le prototype de l'étape 1 vit sur sa branche, jamais fusionnée. Une étape n'est finie que lorsque tout ce qui est indiqué dans « Finie quand » est vrai sur le téléphone.
 
 | # | Étape | Écrans | Finie quand |
 | --- | --- | --- | --- |
@@ -488,10 +489,11 @@ Chaque étape se fait dans une branche et se termine par une pull request. Une �
 - Commencer chaque session par lire `CLAUDE.md` et la partie de la spec qui concerne l'étape.
 - Pour chaque écran, comparer le résultat à son PNG de `design/screens/`, en clair et en sombre.
 - Ne rien coder de la V2 à la V4 avant la fin de l'étape 7. Le modèle de données et les réglages de lecture doivent seulement ne pas l'empêcher.
-- Toute décision qui modifie la spec est reportée dans ce fichier dans la même pull request, avec une ligne dans « Historique ».
+- Toute décision qui modifie la spec est reportée dans ce fichier dans le même commit, avec une ligne dans « Historique ».
 
 ## Historique
 
 - 2026-09-20 : première version (V1 à V3).
 - 2026-09-24 : nom Verso ; police Atkinson en V1 et Literata par défaut en V2, appliquées à toute l'app ; position de lecture distincte, carte « Revenir » et journal des sessions à la place des 5 dernières positions ; affichage liste/grille et menu ⋮ ; Paramètres V1 ; V2 à V3 détaillées écran par écran ; V4 collections ; sections « Interface » et « Confort de lecture ».
 - 2026-09-25 : logo retenu (V de deux pages, variante Papier), avec l'icône adaptative, l'icône à thème et le logotype ; maquettes exportées dans `design/` avec `tokens.json` ; identifiant `com.maximebier.verso`, licence Apache 2.0, SDK 26 / 36, Readium 3.4.0 ; ouverture automatique confirmée ; sessions supprimées avec le livre par défaut ; section « Démarrer le développement ».
+- 2026-09-25 (plan) : dépôt GitHub privé `MaximeBier/Verso` ; `CLAUDE.md` à la racine, spec et maquettes dans `docs/` ; compileSdk 37 (Readium 3.4.0, Compose 1.12), targetSdk 36 inchangé ; tout sur `master`, un commit par étape, sans pull request ; plan V1 dans `docs/superpowers/plans/`.
