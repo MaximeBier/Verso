@@ -1,4 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Verso — libellés V1. Source : maquettes docs/design/html/1.*.html + SPEC.md.
+    = espace fine insécable (avant ; : ! ? % et ?)
+    = espace insécable (dans « … », durées, heures, unités)
+  Apostrophe typographique ’ : aucun échappement nécessaire.
+-->
 <resources>
+
+    <!-- ===================== Application ===================== -->
     <string name="app_name" translatable="false">Verso</string>
+
+    <!-- ===================== Commun ===================== -->
+    <!-- Actions -->
+    <string name="common_resume">Reprendre</string>
+    <string name="common_start">Commencer</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_delete">Supprimer</string>
+    <string name="common_close">Fermer</string>
+    <string name="common_back">Retour</string>
+
+    <!-- Progression : « 31 % lu », « 64 % » -->
+    <string name="common_percent_read">%1$d %% lu</string>
+    <string name="common_percent">%1$d %%</string>
+    <!-- « Environ 5 h 30 restantes » ; %1$s = durée formatée (common_duration_*) -->
+    <string name="common_time_remaining">Environ %1$s restantes</string>
+    <!-- PROPOSÉ : moins d’une minute restante -->
+    <string name="common_time_remaining_less_than_minute">Moins d’une minute restante</string>
+
+    <!-- Durées : « 5 h 30 », « 5 h », « 45 min » -->
+    <string name="common_duration_hours_minutes">%1$d h %2$02d</string>
+    <string name="common_duration_hours">%1$d h</string>
+    <string name="common_duration_minutes">%1$d min</string>
+    <!-- Heure d’horloge 24 h : « 22 h 10 », « 7 h 42 » (heure sans zéro initial, minutes sur 2 chiffres) -->
+    <string name="common_clock_time">%1$d h %2$02d</string>
+
+    <!-- Emplacement dans le livre -->
+    <!-- Forme longue : « Deuxième partie, chapitre I » (partie + titre de chapitre, initiale du chapitre en minuscule) -->
+    <string name="common_location_long">%1$s, %2$s</string>
+    <!-- Forme courte : « Partie II, chap. I » -->
+    <string name="common_location_short">Partie %1$s, chap. %2$s</string>
+    <!-- PROPOSÉ : forme courte sans partie (livre sans parties) : « Chap. IV » -->
+    <string name="common_location_short_no_part">Chap. %1$s</string>
+    <!-- « Partie II, chap. I · 31 % » -->
+    <string name="common_location_with_percent">%1$s · %2$d %%</string>
+
+    <!-- Extrait entre guillemets : « « Yonville-l’Abbaye… » » -->
+    <string name="common_quoted">« %1$s »</string>
+
+    <!-- Motifs de date (java.time, Locale.FRENCH) -->
+    <string name="common_date_pattern_full" translatable="false">d MMMM yyyy</string>
+
+    <!-- ===================== Bibliothèque (1.01 – 1.03) ===================== -->
+    <string name="library_settings">Paramètres</string>
+    <string name="library_import">Importer</string>
+    <string name="library_title">Bibliothèque</string>
+    <plurals name="library_book_count">
+        <item quantity="one">%1$d livre</item>
+        <item quantity="many">%1$d livres</item>
+        <item quantity="other">%1$d livres</item>
+    </plurals>
+
+    <!-- Bibliothèque vide (1.01) -->
+    <string name="library_empty_title">Votre bibliothèque est vide</string>
+    <string name="library_empty_body">Importez un livre au format EPUB depuis votre téléphone, Google Drive ou Nextcloud. Verso le garde et retient toujours votre page.</string>
+    <string name="library_empty_import">Importer un EPUB</string>
+    <string name="library_empty_open_with_hint">Depuis une autre application, vous pouvez aussi toucher un fichier EPUB et choisir « Ouvrir avec Verso ».</string>
+
+    <!-- Affichage liste / grille -->
+    <string name="library_view_mode_group">Affichage</string>
+    <string name="library_view_list">Liste</string>
+    <string name="library_view_grid">Grille</string>
+
+    <!-- Tri -->
+    <string name="library_sort_group">Trier par</string>
+    <string name="library_sort_recent">Récents</string>
+    <string name="library_sort_title">Titre</string>
+    <string name="library_sort_author">Auteur</string>
+
+    <!-- États d’un livre -->
+    <string name="library_state_finished">Terminé</string>
+    <!-- Spec : état « Nouveau » (absent des maquettes) -->
+    <string name="library_state_new">Nouveau</string>
+
+    <!-- Bouton ⋮ et son menu (1.02b) -->
+    <string name="library_book_options">Options pour « %1$s »</string>
+    <string name="library_menu_details">Détails du livre</string>
+    <string name="library_menu_delete">Supprimer</string>
+
+    <!-- Carte « Reprendre » -->
+    <string name="resume_card_label">Reprendre</string>
+    <string name="resume_card_button">Reprendre</string>
+    <!-- PROPOSÉ : intitulé TalkBack de la carte entière (un seul bouton) -->
+    <string name="resume_card_content_description">Reprendre « %1$s », %2$d %% lu</string>
+
+    <!-- ===================== Import (1.04 – 1.06) ===================== -->
+    <!-- Snackbar -->
+    <string name="import_success">« %1$s » a été ajouté.</string>
+    <string name="import_success_action">Commencer</string>
+
+    <!-- Doublon (1.05) : %1$s = nom du fichier, %2$s = titre du livre existant (gras), %3$s = date d’import -->
+    <string name="import_duplicate_title">Ce livre est déjà dans votre bibliothèque</string>
+    <string name="import_duplicate_body"><![CDATA[« %1$s » est identique à <b>%2$s</b>, importé le %3$s.]]></string>
+    <string name="import_duplicate_position_kept">Votre position de lecture est conservée dans les deux cas.</string>
+    <string name="import_duplicate_replace">Remplacer</string>
+    <string name="import_duplicate_ignore">Ignorer</string>
+
+    <!-- Fichier refusé (1.06) -->
+    <string name="import_error_title">Impossible d’importer ce fichier</string>
+    <string name="import_error_not_epub">« %1$s » n’est pas un livre EPUB. Verso ne lit que les fichiers EPUB pour l’instant.</string>
+    <!-- PROPOSÉ : variante DRM décrite par la spec (« protégé par un DRM Adobe ou LCP ») -->
+    <string name="import_error_drm">« %1$s » est protégé par un DRM (Adobe ou LCP). Verso ne lit que les livres sans DRM.</string>
+    <!-- PROPOSÉ : EPUB endommagé ou illisible (cas réel non couvert par la spec) -->
+    <string name="import_error_unreadable">« %1$s » est un EPUB endommagé ou illisible.</string>
+    <string name="import_error_nothing_added">Rien n’a été ajouté à votre bibliothèque.</string>
+    <string name="import_error_ok">Compris</string>
+
+    <!-- ===================== Détails du livre (1.07 – 1.08) ===================== -->
+    <string name="details_title">Détails du livre</string>
+    <string name="details_field_title">Titre</string>
+    <string name="details_field_author">Auteur</string>
+    <string name="details_autosave_hint">Les modifications sont enregistrées automatiquement.</string>
+    <string name="details_imported_on">Importé le</string>
+    <string name="details_size">Taille</string>
+    <string name="details_format">Format</string>
+    <string name="details_original_file">Fichier d’origine</string>
+    <string name="details_format_epub" translatable="false">EPUB</string>
+    <!-- « 1,2 Mo » ; %1$s = nombre formaté avec virgule décimale (NumberFormat Locale.FRENCH) -->
+    <string name="details_size_mb">%1$s Mo</string>
+    <string name="details_size_kb">%1$s ko</string>
+    <string name="details_delete_book">Supprimer le livre</string>
+
+    <!-- Confirmation de suppression (1.08) -->
+    <string name="details_delete_dialog_title">Supprimer « %1$s » ?</string>
+    <string name="details_delete_dialog_body">Le livre et votre position de lecture seront effacés de Verso. Le fichier d’origine, sur votre téléphone ou votre Drive, n’est pas touché.</string>
+    <string name="details_delete_dialog_cancel">Annuler</string>
+    <string name="details_delete_dialog_confirm">Supprimer</string>
+
+    <!-- ===================== Paramètres (1.09) ===================== -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_section_startup">Au démarrage</string>
+    <string name="settings_reopen_last_book">Rouvrir le dernier livre</string>
+    <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
+    <string name="settings_section_display">Affichage</string>
+    <string name="settings_display_body">Verso suit le thème clair ou sombre de votre téléphone et garde l’écran allumé pendant la lecture.</string>
+    <string name="settings_section_privacy">Confidentialité</string>
+    <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
+    <string name="settings_clear_journal">Effacer le journal de lecture</string>
+    <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
+    <string name="settings_section_about">À propos</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_source_code">Code source</string>
+    <!-- À remplacer quand le dépôt existe (spec, Questions ouvertes) -->
+    <string name="settings_source_code_url_label" translatable="false">github.com/MaximeBier/Verso</string>
+    <string name="settings_source_code_url" translatable="false">https://github.com/MaximeBier/Verso</string>
+    <string name="settings_licenses">Licences open source</string>
+
+    <!-- PROPOSÉ : confirmation « Effacer le journal de lecture » (spec : « avec confirmation », non dessinée) -->
+    <string name="settings_clear_journal_dialog_title">Effacer le journal de lecture ?</string>
+    <string name="settings_clear_journal_dialog_body">Toutes vos sessions de lecture seront effacées. Vos positions de lecture sont conservées.</string>
+    <string name="settings_clear_journal_dialog_cancel">Annuler</string>
+    <string name="settings_clear_journal_dialog_confirm">Effacer</string>
+
+    <!-- ===================== Lecture (1.10 – 1.11) ===================== -->
+    <string name="reader_back_to_library">Retour à la bibliothèque</string>
+    <string name="reader_toc">Sommaire</string>
+    <string name="reader_journal">Journal</string>
+
+    <!-- ===================== Sommaire (1.12) ===================== -->
+    <string name="toc_title">Sommaire</string>
+    <string name="toc_chapters_group">Chapitres</string>
+    <!-- « Madame Bovary · 3 parties, 35 chapitres » -->
+    <string name="toc_subtitle">%1$s · %2$s</string>
+    <string name="toc_subtitle_counts">%1$s, %2$s</string>
+    <plurals name="toc_part_count">
+        <item quantity="one">%1$d partie</item>
+        <item quantity="many">%1$d parties</item>
+        <item quantity="other">%1$d parties</item>
+    </plurals>
+    <plurals name="toc_chapter_count">
+        <item quantity="one">%1$d chapitre</item>
+        <item quantity="many">%1$d chapitres</item>
+        <item quantity="other">%1$d chapitres</item>
+    </plurals>
+    <string name="toc_chapter_read">Lu</string>
+    <!-- « En cours · 31 % » -->
+    <string name="toc_chapter_current">En cours · %1$d %%</string>
+
+    <!-- ===================== Journal de lecture (1.13) ===================== -->
+    <string name="journal_title">Journal de lecture</string>
+    <string name="journal_subtitle">Touchez une session pour reprendre là où elle s’est arrêtée.</string>
+    <string name="journal_today">Aujourd’hui</string>
+    <string name="journal_yesterday">Hier</string>
+    <!-- En-têtes de jour au-delà d’hier : « Lundi 21 septembre » (Locale.FRENCH, 1re lettre en capitale) -->
+    <string name="journal_day_pattern" translatable="false">EEEE d MMMM</string>
+    <!-- Jour d’une autre année : « Lundi 21 septembre 2025 » -->
+    <string name="journal_day_pattern_other_year" translatable="false">EEEE d MMMM yyyy</string>
+    <!-- « 21 h 05 – 21 h 36 » ; %1$s et %2$s = common_clock_time -->
+    <string name="journal_time_range">%1$s – %2$s</string>
+    <!-- Session en cours : « Depuis 22 h 10 » -->
+    <string name="journal_since">Depuis %1$s</string>
+    <!-- « Partie I, chap. VIII → Partie II, chap. I » ou « Partie I, chap. VI → VIII » -->
+    <string name="journal_passage">%1$s → %2$s</string>
+    <!-- « 18 → 25 % » -->
+    <string name="journal_percent_range">%1$d → %2$d %%</string>
+    <string name="journal_in_progress">En cours</string>
+    <string name="journal_resume_here">Reprendre ici</string>
+    <!-- PROPOSÉ : journal vide -->
+    <string name="journal_empty">Aucune session pour l’instant. Vos sessions apparaîtront ici dès que vous lirez.</string>
+
+    <!-- ===================== Carte de retour (1.14) ===================== -->
+    <string name="return_card_title">Vous avez quitté votre lecture</string>
+    <!-- « Votre lecture : Partie II, chap. I · 31 % » -->
+    <string name="return_card_position">Votre lecture : %1$s · %2$d %%</string>
+    <string name="return_card_stay">Rester ici</string>
+    <string name="return_card_go_back">Revenir</string>
+
 </resources>

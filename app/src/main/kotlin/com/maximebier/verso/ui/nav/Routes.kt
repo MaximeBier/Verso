@@ -1,0 +1,13 @@
+package com.maximebier.verso.ui.nav
+
+import kotlinx.serialization.Serializable
+
+@Serializable data object LibraryRoute
+
+@Serializable data class DetailsRoute(val bookId: Long)
+
+@Serializable data class ReaderRoute(val bookId: Long)
+
+@Serializable data object SettingsRoute
+
+@Serializable data object LicensesRoute
