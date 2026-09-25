@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Verso : premier plan de l’icône adaptative (pages Fond #F5F1E8, traits Séparateur #D3CABB). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F5F1E8"
+        android:fillType="evenOdd"
+        android:pathData="M78 32 L77.31 31.72 L76.62 31.48 L75.94 31.27 L75.25 31.10 L74.56 30.97 L73.88 30.88 L73.19 30.82 L72.50 30.80 L71.81 30.82 L71.12 30.88 L70.44 30.97 L69.75 31.10 L69.06 31.27 L68.38 31.48 L67.69 31.72 L67 32 L54.65 61.90 L60.63 76.39 Z" />
+    <path
+        android:fillColor="#D3CABB"
+        android:fillType="evenOdd"
+        android:pathData="M71.63 30.83 L71.12 30.88 L70.44 30.97 L70.15 31.02 L56.20 65.67 L56.91 67.38 Z M75.13 31.08 L74.56 30.97 L73.88 30.88 L73.81 30.87 L58.20 70.50 L58.91 72.23 Z" />
+    <path
+        android:fillColor="#F5F1E8"
+        android:fillType="evenOdd"
+        android:pathData="M30 32 L30.69 31.72 L31.38 31.48 L32.06 31.27 L32.75 31.10 L33.44 30.97 L34.12 30.88 L34.81 30.82 L35.50 30.80 L36.19 30.82 L36.88 30.88 L37.56 30.97 L38.25 31.10 L38.94 31.27 L39.62 31.48 L40.31 31.72 L41 32 L60 78 L48 78 Z" />
+    <path
+        android:fillColor="#D3CABB"
+        android:fillType="evenOdd"
+        android:pathData="M34.19 30.87 L34.12 30.88 L33.44 30.97 L32.87 31.08 L51.36 78 L52.76 78 Z M37.85 31.02 L37.56 30.97 L36.88 30.88 L36.37 30.83 L55.36 78 L56.76 78 Z" />
+</vector>

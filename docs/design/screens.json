@@ -1,0 +1,518 @@
+[
+  {
+    "id": "1.01",
+    "title": "1.01 Premier lancement",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.01-premier-lancement.png",
+    "html": "html/1.01-premier-lancement.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.02",
+    "title": "1.02 Bibliothèque — liste",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.02-bibliotheque-liste.png",
+    "html": "html/1.02-bibliotheque-liste.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.03",
+    "title": "1.03 Bibliothèque — grille",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.03-bibliotheque-grille.png",
+    "html": "html/1.03-bibliotheque-grille.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.04",
+    "title": "1.04 Import réussi",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.04-import-reussi.png",
+    "html": "html/1.04-import-reussi.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.05",
+    "title": "1.05 Livre déjà importé",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.05-livre-deja-importe.png",
+    "html": "html/1.05-livre-deja-importe.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.06",
+    "title": "1.06 Fichier refusé",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.06-fichier-refuse.png",
+    "html": "html/1.06-fichier-refuse.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.02b",
+    "title": "1.02b Menu d’un livre",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.02b-menu-dun-livre.png",
+    "html": "html/1.02b-menu-dun-livre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.07",
+    "title": "1.07 Détails du livre",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.07-details-du-livre.png",
+    "html": "html/1.07-details-du-livre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.08",
+    "title": "1.08 Supprimer un livre",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.08-supprimer-un-livre.png",
+    "html": "html/1.08-supprimer-un-livre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.09",
+    "title": "1.09 Paramètres",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.09-parametres.png",
+    "html": "html/1.09-parametres.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.10",
+    "title": "1.10 Lecture",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.10-lecture.png",
+    "html": "html/1.10-lecture.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.11",
+    "title": "1.11 Lecture, barre affichée",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.11-lecture-barre-affichee.png",
+    "html": "html/1.11-lecture-barre-affichee.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.12",
+    "title": "1.12 Sommaire",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.12-sommaire.png",
+    "html": "html/1.12-sommaire.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.13",
+    "title": "1.13 Journal de lecture",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.13-journal-de-lecture.png",
+    "html": "html/1.13-journal-de-lecture.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.14",
+    "title": "1.14 Retour à votre lecture",
+    "version": "V1",
+    "theme": "clair",
+    "png": "screens/1.14-retour-a-votre-lecture.png",
+    "html": "html/1.14-retour-a-votre-lecture.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.02",
+    "title": "1.02 Bibliothèque (sombre)",
+    "version": "V1",
+    "theme": "sombre",
+    "png": "screens/1.02-bibliotheque-sombre.png",
+    "html": "html/1.02-bibliotheque-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.10",
+    "title": "1.10 Lecture (sombre)",
+    "version": "V1",
+    "theme": "sombre",
+    "png": "screens/1.10-lecture-sombre.png",
+    "html": "html/1.10-lecture-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.11",
+    "title": "1.11 Barre affichée (sombre)",
+    "version": "V1",
+    "theme": "sombre",
+    "png": "screens/1.11-barre-affichee-sombre.png",
+    "html": "html/1.11-barre-affichee-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.12",
+    "title": "1.12 Sommaire (sombre)",
+    "version": "V1",
+    "theme": "sombre",
+    "png": "screens/1.12-sommaire-sombre.png",
+    "html": "html/1.12-sommaire-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "1.13",
+    "title": "1.13 Journal de lecture (sombre)",
+    "version": "V1",
+    "theme": "sombre",
+    "png": "screens/1.13-journal-de-lecture-sombre.png",
+    "html": "html/1.13-journal-de-lecture-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.01",
+    "title": "2.01 Barre de lecture",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.01-barre-de-lecture.png",
+    "html": "html/2.01-barre-de-lecture.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.02",
+    "title": "2.02 Réglages de lecture",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.02-reglages-de-lecture.png",
+    "html": "html/2.02-reglages-de-lecture.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.03",
+    "title": "2.03 Thème sépia",
+    "version": "V2",
+    "theme": "sépia",
+    "png": "screens/2.03-theme-sepia.png",
+    "html": "html/2.03-theme-sepia.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.04",
+    "title": "2.04 Thème noir",
+    "version": "V2",
+    "theme": "noir",
+    "png": "screens/2.04-theme-noir.png",
+    "html": "html/2.04-theme-noir.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.05",
+    "title": "2.05 Mode pages",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.05-mode-pages.png",
+    "html": "html/2.05-mode-pages.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.06",
+    "title": "2.06 Recherche dans le livre",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.06-recherche-dans-le-livre.png",
+    "html": "html/2.06-recherche-dans-le-livre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.07",
+    "title": "2.07 Bibliothèque avec états",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.07-bibliotheque-avec-etats.png",
+    "html": "html/2.07-bibliotheque-avec-etats.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.07b",
+    "title": "2.07b Trier et afficher",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.07b-trier-et-afficher.png",
+    "html": "html/2.07b-trier-et-afficher.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.08",
+    "title": "2.08 Détails du livre",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.08-details-du-livre.png",
+    "html": "html/2.08-details-du-livre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.09",
+    "title": "2.09 Paramètres",
+    "version": "V2",
+    "theme": "clair",
+    "png": "screens/2.09-parametres.png",
+    "html": "html/2.09-parametres.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "2.02",
+    "title": "2.02 Réglages de lecture (sombre)",
+    "version": "V2",
+    "theme": "sombre",
+    "png": "screens/2.02-reglages-de-lecture-sombre.png",
+    "html": "html/2.02-reglages-de-lecture-sombre.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.01",
+    "title": "3.01 PDF importé",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.01-pdf-importe.png",
+    "html": "html/3.01-pdf-importe.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.02",
+    "title": "3.02 Lecture d’un PDF converti",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.02-lecture-dun-pdf-converti.png",
+    "html": "html/3.02-lecture-dun-pdf-converti.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.03",
+    "title": "3.03 Pages fidèles",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.03-pages-fideles.png",
+    "html": "html/3.03-pages-fideles.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.04",
+    "title": "3.04 Texte sélectionné",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.04-texte-selectionne.png",
+    "html": "html/3.04-texte-selectionne.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.05",
+    "title": "3.05 Ajouter une note",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.05-ajouter-une-note.png",
+    "html": "html/3.05-ajouter-une-note.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.06",
+    "title": "3.06 Notes et surlignages",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.06-notes-et-surlignages.png",
+    "html": "html/3.06-notes-et-surlignages.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.07",
+    "title": "3.07 Sauvegarde",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.07-sauvegarde.png",
+    "html": "html/3.07-sauvegarde.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "4.01",
+    "title": "4.01 Collections",
+    "version": "V4",
+    "theme": "clair",
+    "png": "screens/4.01-collections.png",
+    "html": "html/4.01-collections.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "4.02",
+    "title": "4.02 Une collection",
+    "version": "V4",
+    "theme": "clair",
+    "png": "screens/4.02-une-collection.png",
+    "html": "html/4.02-une-collection.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "4.03",
+    "title": "4.03 Nouvelle collection",
+    "version": "V4",
+    "theme": "clair",
+    "png": "screens/4.03-nouvelle-collection.png",
+    "html": "html/4.03-nouvelle-collection.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "4.04",
+    "title": "4.04 Ajouter à une collection",
+    "version": "V4",
+    "theme": "clair",
+    "png": "screens/4.04-ajouter-a-une-collection.png",
+    "html": "html/4.04-ajouter-a-une-collection.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "logo",
+    "title": "Logo retenu",
+    "version": "Logo",
+    "theme": "clair",
+    "png": "screens/logo-retenu.png",
+    "html": "html/logo-retenu.html",
+    "size_dp": [
+      1280,
+      1030
+    ]
+  }
+]

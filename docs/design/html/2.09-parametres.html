@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<title>Verso — Paramètres V2</title>
+
+<style id="fonts">@font-face{font-family:'Atkinson Hyperlegible Next';font-style:normal;font-weight:200 800;font-display:block;src:url(../fonts/atkinson-next-normal.woff2) format('woff2')}
+@font-face{font-family:'Atkinson Hyperlegible Next';font-style:italic;font-weight:200 800;font-display:block;src:url(../fonts/atkinson-next-italic.woff2) format('woff2')}
+@font-face{font-family:'Literata';font-style:normal;font-weight:200 900;font-display:block;src:url(../fonts/literata-normal.woff2) format('woff2')}
+@font-face{font-family:'Literata';font-style:italic;font-weight:200 900;font-display:block;src:url(../fonts/literata-italic.woff2) format('woff2')}</style>
+
+
+<style>
+body{margin:0;font-family:'Literata', Georgia, serif;color:#1F1B16;background:#F5F1E8}
+button{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0;text-align:left;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+a{color:#7A3021}a:hover{color:#1F1B16}
+</style>
+</head>
+<body>
+
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #F5F1E8; color: #1F1B16; font-family: 'Literata', Georgia, serif;">
+<header style="display: flex; align-items: center; gap: 4px; height: 64px; flex-shrink: 0; box-sizing: border-box; padding: 0 8px 0 4px;">
+<button aria-label="Retour" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 24px; color: #1F1B16;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
+<div style="display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;">
+<h1 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25;">Paramètres</h1>
+
+</div>
+
+</header>
+<main style="display: flex; flex-direction: column;">
+<section style="display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid #D3CABB;">
+<h2 style="margin: 0; padding: 12px 24px 4px; font-size: 14px; font-weight: 700; color: #4A433B;">Lecture</h2>
+<p style="margin: 0; padding: 4px 24px 12px; font-size: 16px; line-height: 1.5; color: #4A433B;">Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.</p><fieldset style="border: 0; margin: 0; padding: 0;">
+<legend style="padding: 8px 24px 0; font-size: 16px; font-weight: 700;">Police</legend>
+<label style="display: flex; align-items: flex-start; gap: 16px; min-height: 56px; box-sizing: border-box; padding: 12px 24px; cursor: pointer;">
+<input type="radio" name="police" checked="" style="width: 22px; height: 22px; margin: 2px 0px 0px; accent-color: rgb(122, 48, 33); flex-shrink: 0;">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Literata</span>
+<span style="font-size: 14px; line-height: 1.4; color: #4A433B;">Par défaut · avec empattements, pensée pour la lecture longue</span>
+<span style="font-family: 'Literata', Georgia, serif; font-size: 18px; line-height: 1.45; margin-top: 4px;">Nous étions à l’Étude, quand le Proviseur entra</span>
+</span>
+</label>
+<label style="display: flex; align-items: flex-start; gap: 16px; min-height: 56px; box-sizing: border-box; padding: 12px 24px; cursor: pointer;">
+<input type="radio" name="police" style="width: 22px; height: 22px; margin: 2px 0px 0px; accent-color: rgb(122, 48, 33); flex-shrink: 0;">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Atkinson Hyperlegible Next</span>
+<span style="font-size: 14px; line-height: 1.4; color: #4A433B;">Sans empattements, lettres très distinctes</span>
+<span style="font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 18px; line-height: 1.45; margin-top: 4px;">Nous étions à l’Étude, quand le Proviseur entra</span>
+</span>
+</label>
+<label style="display: flex; align-items: flex-start; gap: 16px; min-height: 56px; box-sizing: border-box; padding: 12px 24px; cursor: pointer;">
+<input type="radio" name="police" style="width: 22px; height: 22px; margin: 2px 0px 0px; accent-color: rgb(122, 48, 33); flex-shrink: 0;">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Police du système</span>
+<span style="font-size: 14px; line-height: 1.4; color: #4A433B;">Celle de votre téléphone</span>
+<span style="font-family: system-ui, sans-serif; font-size: 18px; line-height: 1.45; margin-top: 4px;">Nous étions à l’Étude, quand le Proviseur entra</span>
+</span>
+</label>
+</fieldset><button style="display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; padding: 8px 12px 8px 24px; width: 100%;">
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Thème</span>
+
+</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 16px; color: #4A433B; flex-shrink: 0;"><span>Automatique</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span>
+</button><button style="display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; padding: 8px 12px 8px 24px; width: 100%;">
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Taille du texte</span>
+
+</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 16px; color: #4A433B; flex-shrink: 0;"><span>20</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span>
+</button><button style="display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; padding: 8px 12px 8px 24px; width: 100%;">
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Défilement</span>
+
+</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 16px; color: #4A433B; flex-shrink: 0;"><span>Continu</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg></span>
+</button>
+</section>
+<section style="display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid #D3CABB;">
+<h2 style="margin: 0; padding: 12px 24px 4px; font-size: 14px; font-weight: 700; color: #4A433B;">Au démarrage</h2>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; padding: 8px 12px 8px 24px;">
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Rouvrir le dernier livre</span>
+<span style="font-size: 14px; line-height: 1.4; color: #4A433B;">Si vous l’avez lu il y a moins de 24 heures</span>
+</span>
+<button role="switch" aria-checked="true" aria-label="Rouvrir le dernier livre" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 48px; flex-shrink: 0;"><span style="position: relative; display: block; width: 52px; height: 32px; border-radius: 16px; background: #7A3021;"><span style="position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; color: #7A3021; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></span></button>
+</div>
+</section>
+<section style="display: flex; flex-direction: column; padding: 8px 0;">
+<h2 style="margin: 0; padding: 12px 24px 4px; font-size: 14px; font-weight: 700; color: #4A433B;">Statistiques</h2>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; padding: 8px 12px 8px 24px;">
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+<span style="font-size: 16px; line-height: 1.35; font-weight: 600;">Afficher les statistiques</span>
+<span style="font-size: 14px; line-height: 1.4; color: #4A433B;">Temps et vitesse de lecture, calculés à partir du journal. Tout reste sur ce téléphone.</span>
+</span>
+<button role="switch" aria-checked="true" aria-label="Afficher les statistiques" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 48px; flex-shrink: 0;"><span style="position: relative; display: block; width: 52px; height: 32px; border-radius: 16px; background: #7A3021;"><span style="position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; color: #7A3021; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span></span></button>
+</div>
+</section>
+</main>
+</div>
+
+
+
+
+</body></html>

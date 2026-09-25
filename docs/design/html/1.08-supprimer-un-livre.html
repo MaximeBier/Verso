@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<title>Verso — Supprimer un livre</title>
+
+<style id="fonts">@font-face{font-family:'Atkinson Hyperlegible Next';font-style:normal;font-weight:200 800;font-display:block;src:url(../fonts/atkinson-next-normal.woff2) format('woff2')}
+@font-face{font-family:'Atkinson Hyperlegible Next';font-style:italic;font-weight:200 800;font-display:block;src:url(../fonts/atkinson-next-italic.woff2) format('woff2')}
+@font-face{font-family:'Literata';font-style:normal;font-weight:200 900;font-display:block;src:url(../fonts/literata-normal.woff2) format('woff2')}
+@font-face{font-family:'Literata';font-style:italic;font-weight:200 900;font-display:block;src:url(../fonts/literata-italic.woff2) format('woff2')}</style>
+
+
+<style>
+body{margin:0;font-family:'Atkinson Hyperlegible Next', system-ui, sans-serif;color:#1F1B16;background:#F5F1E8}
+button{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0;text-align:left;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+a{color:#7A3021}a:hover{color:#1F1B16}
+</style>
+</head>
+<body>
+
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: #F5F1E8; color: #1F1B16; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;">
+<header style="display: flex; align-items: center; gap: 4px; height: 64px; flex-shrink: 0; box-sizing: border-box; padding: 0 8px 0 4px;">
+<button aria-label="Retour" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 24px; color: #1F1B16;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
+<div style="display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;">
+<h1 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25;">Détails du livre</h1>
+
+</div>
+
+</header>
+<main style="display: flex; flex-direction: column; gap: 22px; padding: 8px 24px 24px;">
+<div style="display: flex; gap: 20px; align-items: flex-end;">
+<span style="flex-shrink: 0; width: 96px; height: 144px; border-radius: 4px; background: #6F434C; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; color: #F5F1E8;">MB</span>
+<div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+<span style="font-size: 16px; line-height: 1.45; color: #4A433B;">31 % lu<br>Environ 5&nbsp;h&nbsp;30 restantes</span>
+<button style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; box-sizing: border-box; padding: 0 22px 0 18px; border-radius: 24px; font-size: 16px; background: #7A3021; color: #FFFFFF; font-weight: 700;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 1 4 17z"></path><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg><span>Reprendre</span></button>
+</div>
+</div>
+
+
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<label for="titre" style="font-size: 14px; font-weight: 700; color: #4A433B;">Titre</label>
+<input id="titre" type="text" value="Madame Bovary" style="width: 100%; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgb(125, 115, 102); border-radius: 12px; background: rgb(245, 241, 232); color: rgb(31, 27, 22); font-size: 16px; line-height: 1.45; outline: none; height: 56px;">
+
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<label for="auteur" style="font-size: 14px; font-weight: 700; color: #4A433B;">Auteur</label>
+<input id="auteur" type="text" value="Gustave Flaubert" aria-describedby="auteur-help" style="width: 100%; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgb(125, 115, 102); border-radius: 12px; background: rgb(245, 241, 232); color: rgb(31, 27, 22); font-size: 16px; line-height: 1.45; outline: none; height: 56px;">
+<span id="auteur-help" style="font-size: 14px; line-height: 1.4; color: #4A433B;">Les modifications sont enregistrées automatiquement.</span>
+</div>
+
+<dl style="margin: 0; display: flex; flex-direction: column;">
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #D3CABB;"><dt style="font-size: 16px; color: #4A433B;">Importé le</dt><dd style="margin: 0; font-size: 16px; font-weight: 600; text-align: right;">12 septembre 2026</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #D3CABB;"><dt style="font-size: 16px; color: #4A433B;">Taille</dt><dd style="margin: 0; font-size: 16px; font-weight: 600; text-align: right;">1,2&nbsp;Mo</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #D3CABB;"><dt style="font-size: 16px; color: #4A433B;">Format</dt><dd style="margin: 0; font-size: 16px; font-weight: 600; text-align: right;">EPUB</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #D3CABB;"><dt style="font-size: 16px; color: #4A433B;">Fichier d’origine</dt><dd style="margin: 0; font-size: 16px; font-weight: 600; text-align: right;">madame-bovary.epub</dd></div>
+</dl>
+<button style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; box-sizing: border-box; padding: 0 22px 0 18px; border-radius: 24px; font-size: 16px; border: 1px solid #8A2318; color: #8A2318; font-weight: 600;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M18 7l-.9 13H6.9L6 7M10 11v6M14 11v6"></path></svg><span>Supprimer le livre</span></button>
+</main><div aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(31, 27, 22, 0.42);"></div>
+<div role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" style="position: absolute; left: 24px; right: 24px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 24px 24px 16px; background: #ECE5D9; border-radius: 28px; box-shadow: 0 8px 28px rgba(0,0,0,0.22);">
+
+<h2 id="dlg-title" style="margin: 0; font-size: 22px; line-height: 1.3; font-weight: 700; text-align: left;">Supprimer «&nbsp;Madame Bovary&nbsp;» ?</h2>
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.5; color: #4A433B;"><p style="margin: 0;">Le livre et votre position de lecture seront effacés de Verso. Le fichier d’origine, sur votre téléphone ou votre Drive, n’est pas touché.</p></div>
+<div style="display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 4px;"><button style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; box-sizing: border-box; padding: 0 14px; border-radius: 24px; font-size: 16px; color: #1F1B16; font-weight: 700;"><span>Annuler</span></button><button style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; box-sizing: border-box; padding: 0 24px; border-radius: 24px; font-size: 16px; background: #8A2318; color: #FFFFFF; font-weight: 700;"><span>Supprimer</span></button></div>
+</div>
+</div>
+
+
+
+
+</body></html>
