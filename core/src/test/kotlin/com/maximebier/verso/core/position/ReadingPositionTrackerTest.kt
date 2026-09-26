@@ -75,6 +75,22 @@ class ReadingPositionTrackerTest {
     }
 
     @Test
+    fun chapterTurnRightAfterAFlingStaysANavigation() {
+        val tracker = tracker()
+        // Fling accidentel jusqu’au bout du chapitre, puis glissé au bord : chapitre suivant, sans repos entre les deux.
+        val effects = tracker.feed(
+            GestureEnded(1_000, pos(10.3), isFling = true),
+            Displayed(1_100, pos(13.0)),
+            Displayed(1_300, pos(15.0)),
+            Displayed(1_450, pos(16.2)),
+            GestureEnded(1_700, pos(16.2), isFling = false, chapterTurn = true),
+            Tick(5_000),
+        )
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 16.2))
+        assertThat(effects.filterIsInstance<SaveReading>()).isEmpty()
+    }
+
+    @Test
     fun chapterTurnWhileAwayKeepsTheCardAndTheReading() {
         val tracker = awayAt15()
         val effects = tracker.feed(

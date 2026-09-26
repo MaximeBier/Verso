@@ -126,6 +126,10 @@ class ReadingPositionTracker(
     /** Navigation détectée, en attente du repos pour décider de la carte. */
     private var navigating = false
 
+    /** Début de la navigation en cours (null hors navigation) et dernière fin de geste reçue. */
+    private var navigationStartedAtMs: Long? = null
+    private var lastGestureEndedAtMs: Long = Long.MIN_VALUE
+
     /** Saut en cours (Jumped, GoBack) : Displayed ignorés jusqu'à l'arrivée près de cette cible. */
     private var jumpTarget: BookPosition? = null
 
@@ -220,6 +224,7 @@ class ReadingPositionTracker(
         isFling: Boolean,
         effects: MutableList<TrackerEffect>,
     ) {
+        lastGestureEndedAtMs = timeMs
         if (jumpTarget != null) {
             // L'utilisateur reprend la main pendant un saut : sa position devient la référence.
             if (jumpApproximate) arriveFromApproximateJump(timeMs, position) else arriveAt(timeMs, position)
@@ -240,9 +245,16 @@ class ReadingPositionTracker(
     /**
      * Changement de chapitre par un glissé au bord : l'affiché a bondi d'environ un écran en quelques millisecondes,
      * ce que la vitesse des `Displayed` prend pour une navigation. Elle est annulée : en suivi, la lecture passe à la
-     * nouvelle position ; en AWAY, la carte reste et le point d'arrivée suit.
+     * nouvelle position ; en AWAY, la carte reste et le point d'arrivée suit. Une navigation commencée avant ce glissé
+     * (fling accidentel jusqu’au bord) n’est pas annulée : le glissé est alors une fin de geste ordinaire.
      */
     private fun onChapterTurn(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {
+        val startedAt = navigationStartedAtMs
+        if (navigating && startedAt != null && startedAt <= lastGestureEndedAtMs) {
+            // Navigation déjà en cours avant ce glissé (fling accidentel jusqu’au bord) : elle continue.
+            onGestureEnded(timeMs, position, isFling = false, effects = effects)
+            return
+        }
         navigating = false
         resetWindow(timeMs, position)
         lastMotion = Stamped(timeMs, position)
@@ -383,6 +395,7 @@ class ReadingPositionTracker(
     }
 
     private fun startNavigation(timeMs: Long, windowStartMs: Long?, effects: MutableList<TrackerEffect>) {
+        if (!navigating) navigationStartedAtMs = timeMs
         navigating = true
         if (windowStartMs == null) return
         val restored = (history.lastOrNull { it.timeMs <= windowStartMs } ?: history.first()).position
