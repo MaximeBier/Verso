@@ -113,13 +113,16 @@ class EpubImporter(
     }
 
     suspend fun replace(duplicate: ImportResult.Duplicate): ImportResult.Added = withContext(Dispatchers.IO) {
+        val totalStart = System.nanoTime()
         mutex.withLock {
             val pending = duplicate.pending
             try {
                 val existing = books.book(duplicate.existing.id)
                 if (existing == null) {
                     // Le livre a été supprimé entre-temps : import normal du fichier en attente.
-                    val result = importTemp(pending.tempFile, pending.sha256, pending.originalFileName)
+                    // totalStart couvre tout replace() (y compris l'attente du mutex et la recherche
+                    // ci-dessus), pas seulement cet appel à importTemp.
+                    val result = importTemp(pending.tempFile, pending.sha256, pending.originalFileName, ImportTimings(), totalStart)
                     return@withLock result as? ImportResult.Added
                         ?: throw IOException("Remplacement impossible : $result")
                 }
