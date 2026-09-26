@@ -28,6 +28,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -56,6 +57,10 @@ class ReaderViewModelTest {
     private lateinit var db: VersoDatabase
     private lateinit var books: BookRepository
 
+    // Main = StandardTestDispatcher, jamais Unconfined : un dispatcher « unconfined » reprend load() sur le fil qui a
+    // terminé l’attente (Room, Readium), et la fin du chargement (startSessions…) courait alors en parallèle du test,
+    // comme jamais sur le vrai fil principal (flake configurationChangeKeepsTheSessionInProgress, aucune session en base).
+
     /** ViewModels créés par [factory] : leurs dernières écritures de session sont attendues avant de fermer la base. */
     private val viewModels = mutableListOf<ReaderViewModel>()
 
@@ -75,7 +80,7 @@ class ReaderViewModelTest {
 
     @Test
     fun restoresSavedLocatorAfterRecreation() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.40, total = 0.3000)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
 
@@ -116,7 +121,7 @@ class ReaderViewModelTest {
     @Test
     fun anchoredChaptersOfOneFileAreToldApartByTheReadingProgression() = runTest {
         // Défaut C : plusieurs chapitres ancrés dans un fichier, la barre affichait le premier du fichier.
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val context = ApplicationProvider.getApplicationContext<Context>()
         val file = EpubFixtures.anchoredEpub(context.filesDir.resolve("ancres.epub"))
         val reading = Locator(
@@ -161,7 +166,7 @@ class ReaderViewModelTest {
 
     @Test
     fun tocJumpToAnAnchorCalibratesItWithTheSettledEngineProgression() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()
         val (viewModel, fake) = openAnchoredBook(store)
         try {
@@ -183,7 +188,7 @@ class ReaderViewModelTest {
 
     @Test
     fun gestureBeforeTheEngineSettlesCancelsTheCalibration() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()
         val (viewModel, fake) = openAnchoredBook(store)
         try {
@@ -207,7 +212,7 @@ class ReaderViewModelTest {
 
     @Test
     fun missingBookFails() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()
         val viewModel = ViewModelProvider.create(store, factory(bookId = 999))[ReaderViewModel::class]
 
@@ -217,7 +222,7 @@ class ReaderViewModelTest {
 
     @Test
     fun tocAndBarsToggle() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
         val store = ViewModelStore()
         val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
@@ -249,7 +254,7 @@ class ReaderViewModelTest {
 
     @Test
     fun tocJumpShowsReturnCardAndGoBackReturnsToReading() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
         val store = ViewModelStore()
@@ -281,7 +286,7 @@ class ReaderViewModelTest {
 
     @Test
     fun journalShowsTheCurrentSessionAndResumeHereIsAJump() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
         val store = ViewModelStore()
@@ -308,11 +313,14 @@ class ReaderViewModelTest {
 
     @Test
     fun configurationChangeKeepsTheSessionInProgress() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
         val store = ViewModelStore()
-        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        // Horloge figée : pendant les attentes réelles (Room), runTest avance le temps virtuel au rythme du Tick du lecteur
+        // (plusieurs minutes observées), et le Tick réel du SessionCoordinator (Dispatchers.Default) y lirait une inactivité
+        // de plus de 5 min, qui ferme la session. Ce test porte sur le changement de configuration, pas sur le temps.
+        val viewModel = ViewModelProvider.create(store, factory(id, clock = { SESSION_TEST_TIME_MS }))[ReaderViewModel::class]
         // Clear en finally : un échec ne laisse pas tourner le Tick du coordinateur (runTest ne finirait pas).
         try {
             viewModel.uiState.first { !it.loading }
@@ -341,7 +349,7 @@ class ReaderViewModelTest {
 
     @Test
     fun internalLinkIsAnExplicitJump() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
         val store = ViewModelStore()
@@ -363,7 +371,7 @@ class ReaderViewModelTest {
 
     @Test
     fun jumpRequestedWithoutReaderIsAppliedToTheNextOne() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
         val store = ViewModelStore()
         val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
@@ -395,6 +403,7 @@ class ReaderViewModelTest {
     private fun TestScope.factory(
         bookId: Long,
         open: suspend (File) -> Result<Publication> = { Result.success(testPublication()) },
+        clock: () -> Long = { testScheduler.currentTime },
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -402,7 +411,7 @@ class ReaderViewModelTest {
                 books = books,
                 sessions = SessionRepository(db.sessionDao()),
                 openPublication = open,
-                clock = { testScheduler.currentTime },
+                clock = clock,
             ).also { viewModels += it }
         }
     }
@@ -421,6 +430,10 @@ class ReaderViewModelTest {
         progression = progression,
         totalWords = 100_000,
     )
+
+    private companion object {
+        const val SESSION_TEST_TIME_MS = 1_000_000L
+    }
 }
 
 /** Publication minimale en mémoire : deux chapitres, un sommaire plat. */

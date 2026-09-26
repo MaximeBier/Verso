@@ -8,7 +8,12 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.readium.ReadingOrderPositions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -298,5 +303,171 @@ class ReflowableReaderControllerTest {
         assertThat(go.cssSelector).isEqualTo(CssSelector("#p12"))
         assertThat(go.textAnchor).isNull()
         assertThat(go.htmlId).isNull()
+    }
+
+    // --- Anomalie F : saut vers un autre fichier, remise en page de la WebView ------------------------
+
+    private fun TestScope.engine(relayoutShift: Double): FakeReflowEngine {
+        val engine = FakeReflowEngine(backgroundScope, files = 4, relayoutShift = relayoutShift)
+        engine.controller = ReflowableReaderController(
+            scope = backgroundScope,
+            readChapterHtml = { null },
+            onCenterTap = {},
+            uptimeMs = { testScheduler.currentTime },
+            wallClockMs = { testScheduler.currentTime },
+        ).apply {
+            viewportHeightPx = 2_000
+            bind { engine.navigate(it) }
+        }
+        return engine
+    }
+
+    /** Positions publiées par le contrôleur à partir de maintenant (progression dans le fichier, par fichier). */
+    private fun TestScope.published(controller: ReflowableReaderController): List<Pair<String, Double?>> {
+        val seen = mutableListOf<Pair<String, Double?>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            controller.displayed.drop(1).filterNotNull().collect { seen += it.href.toString() to it.locations.progression }
+        }
+        return seen
+    }
+
+    @Test
+    fun jumpIntoAnotherFileIsRealignedOnceAfterRelayoutAndOnlyTheFinalPositionIsPublished() = runTest {
+        val e = engine(relayoutShift = 0.0201) // F1 : 2,75 écrans plus haut
+        e.open(file = 0, progression = 0.0162)
+        val seen = published(e.controller)
+
+        val job = launch { e.controller.go(e.at(3, 0.8759)) }
+        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS - 1)
+        runCurrent()
+        // Pendant la remise en page : rien n’est publié (ni le début du fichier, ni la position décalée).
+        assertThat(seen).isEmpty()
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+        job.join()
+
+        assertThat(e.navigated.map { it.progression?.value }).containsExactly(0.8759, 0.8759).inOrder()
+        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
+        assertThat(e.controller.displayed.value!!.locations.progression).isEqualTo(0.8759)
+    }
+
+    @Test
+    fun jumpIntoAnotherFileThatStaysPutIsNotRepeated() = runTest {
+        val e = engine(relayoutShift = 0.0)
+        e.open(file = 0, progression = 0.1)
+        val seen = published(e.controller)
+
+        e.controller.go(e.at(3, 0.8759))
+
+        assertThat(e.navigated).hasSize(1)
+        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
+    }
+
+    @Test
+    fun jumpWithinTheSameFileIsNeitherHeldNorRepeated() = runTest {
+        val e = engine(relayoutShift = 0.0)
+        e.open(file = 3, progression = 0.5)
+        val seen = published(e.controller)
+        val before = testScheduler.currentTime
+
+        e.controller.go(e.at(3, 0.8759))
+
+        assertThat(testScheduler.currentTime).isEqualTo(before)
+        assertThat(e.navigated).hasSize(1)
+        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
+    }
+
+    @Test
+    fun anchoredTargetIntoAnotherFileIsNeverHeldNorRealigned() = runTest {
+        val e = engine(relayoutShift = 0.0201)
+        e.open(file = 3, progression = 0.8759)
+        val seen = published(e.controller)
+        val anchored = Locator(
+            href = Url("f0.xhtml#id00012")!!,
+            mediaType = MediaType.XHTML,
+            locations = Locator.Locations(totalProgression = 0.003),
+        )
+
+        e.controller.go(anchored)
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+        runCurrent()
+
+        assertThat(e.navigated).hasSize(1)
+        assertThat(seen.first()).isEqualTo("f0.xhtml" to 0.0)
+    }
+
+    @Test
+    fun dragDuringTheHoldPublishesWhatIsShownAndCancelsTheRealignment() = runTest {
+        val e = engine(relayoutShift = 0.0201)
+        e.open(file = 0, progression = 0.0162)
+        val seen = published(e.controller)
+
+        val job = launch { e.controller.go(e.at(3, 0.8759)) }
+        advanceTimeBy(100) // remise en page faite, page pas encore déclarée stable
+        runCurrent()
+        e.controller.onPointerDown()
+        e.controller.onDragStarted()
+        runCurrent()
+
+        assertThat(seen.last().second!!).isWithin(1e-9).of(0.8759 - 0.0201)
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+        job.join()
+        assertThat(e.navigated).hasSize(1)
+    }
+
+    @Test
+    fun tapDuringTheHoldSuspendsItAndTheJumpIsStillRealignedExactly() = runTest {
+        val e = engine(relayoutShift = 0.0073) // F2 : un écran plus haut
+        e.open(file = 0, progression = 0.0162)
+        val seen = published(e.controller)
+
+        val job = launch { e.controller.go(e.at(3, 0.8759)) }
+        advanceTimeBy(100) // remise en page faite
+        runCurrent()
+        // Tap au centre (barre) : appui, puis lever 80 ms plus tard, sans glissé.
+        e.controller.onPointerDown()
+        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS) // doigt posé : la page n’est pas déclarée stable
+        runCurrent()
+        assertThat(seen).isEmpty()
+        assertThat(e.navigated).hasSize(1)
+        e.controller.onPointerUp()
+        e.controller.onTapLikeGesture(xFraction = 0.5f)
+        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS - 1) // compté depuis le lever
+        runCurrent()
+        assertThat(e.navigated).hasSize(1)
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+        job.join()
+
+        assertThat(e.navigated).hasSize(2)
+        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
+    }
+
+    @Test
+    fun holdEndsAtTheSettleCapEvenIfThePageNeverStopsMoving() = runTest {
+        val e = engine(relayoutShift = 0.0)
+        e.open(file = 0, progression = 0.1)
+        val seen = published(e.controller)
+        // Page qui bouge sans cesse (toutes les 100 ms, sous le délai de stabilité) après le saut.
+        val restless = launch {
+            var step = 0
+            while (true) {
+                delay(100)
+                e.controller.onDisplayed(e.at(3, 0.5 + ++step * 1e-3))
+            }
+        }
+
+        val job = launch { e.controller.go(e.at(3, 0.8759)) }
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS - 1)
+        runCurrent()
+        assertThat(seen).isEmpty()
+        assertThat(e.navigated).hasSize(1)
+        advanceTimeBy(2)
+        runCurrent()
+        // Plafond atteint : recalage (la page s’est écartée), puis second plafond au plus.
+        assertThat(e.navigated).hasSize(2)
+        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+        runCurrent()
+        assertThat(job.isCompleted).isTrue()
+        assertThat(seen).hasSize(1)
+        restless.cancel()
     }
 }
