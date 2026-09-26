@@ -87,6 +87,32 @@ class ReadingPositionCoordinatorTest {
     }
 
     @Test
+    fun noTickWhileStoppedAndTickingAgainOnStart() = runTest {
+        // Revue finale M5 : aucun battement d’une seconde tant que le lecteur est en arrière-plan. Chaque Tick lit l’horloge.
+        var clockReads = 0
+        val start = testLocator(total = 0.300)
+        val coordinator = ReadingPositionCoordinator(
+            initial = Locators.toPosition(start),
+            distance = ProgressionScreenDistance(bookScreens),
+            scope = backgroundScope,
+            clock = { clockReads++; testScheduler.currentTime },
+            onSave = { saved += it },
+        )
+        coordinator.attach(FakeReaderController(start))
+        advanceTimeBy(3_500); runCurrent()
+        assertThat(clockReads).isAtLeast(3)
+
+        coordinator.onStopped()
+        val stopped = clockReads
+        advanceTimeBy(60_000); runCurrent()
+        assertThat(clockReads).isEqualTo(stopped)
+
+        coordinator.onStarted()
+        advanceTimeBy(3_500); runCurrent()
+        assertThat(clockReads).isAtLeast(stopped + 3)
+    }
+
+    @Test
     fun tocJumpToBookStartShowsCardAndGoBackReturnsToChapter() = runTest {
         val start = testLocator(chapter = 9, total = 0.300)
         val fake = FakeReaderController(start)

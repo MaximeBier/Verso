@@ -315,6 +315,26 @@ class LibraryViewModelTest {
     }
 
     private companion object {
-        const val LOCATOR_JSON = """{"href":"OEBPS/partie2-chap1.xhtml","type":"application/xhtml+xml","title":"Deuxième partie, chapitre I","locations":{"progression":0.1,"totalProgression":0.31},"text":{"highlight":"Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins)"}}"""
+        const val LOCATOR_JSON = """{"href":"OEBPS/partie2-chap1.xhtml","type":"application/xhtml+xml","title":"Deuxième partie, chapitre I","locations":{"progression":0.1,"totalProgression":0.31},"text":{"after":"Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins)"}}"""
+    }
+
+    @Test
+    fun openFailureReportedByTheReaderIsShownOnce() = runTest(dispatcher) {
+        val failures = MutableStateFlow<List<String>>(emptyList())
+        val vm = LibraryViewModel(
+            books = books,
+            settings = settings,
+            importActions = fake.actions(),
+            openFailures = failures,
+            takeOpenFailure = { failures.getAndUpdate { it.drop(1) }.firstOrNull() },
+        )
+        vm.state.test {
+            awaitUntil { !it.loading }
+            failures.value = listOf("Album illustré")
+            assertThat(awaitUntil { it.openFailed != null }.openFailed).isEqualTo("Album illustré")
+            vm.onOpenFailedShown()
+            assertThat(awaitUntil { it.openFailed == null }.openFailed).isNull()
+        }
+        assertThat(failures.value).isEmpty()
     }
 }

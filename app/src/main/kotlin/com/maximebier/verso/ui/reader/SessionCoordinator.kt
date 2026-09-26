@@ -58,6 +58,7 @@ class SessionCoordinator(
     @Volatile private var lastPosition: BookPosition? = null
     @Volatile private var backgrounded = false
     private var ticker: Job? = null
+    private var tickerWanted = false
 
     /** Seul consommateur des événements ; se termine quand [close] a fermé la file et qu'elle est vidée. */
     private val consumer: Job = scope.launch {
@@ -97,9 +98,10 @@ class SessionCoordinator(
         send(event)
     }
 
-    /** onStop de l'écran de lecture. */
+    /** onStop de l'écran de lecture : plus de Tick jusqu'à [onStarted] (aucun réveil en arrière-plan). */
     fun onBackgrounded() {
         backgrounded = true
+        stopTicker()
         send(SessionEvent.Backgrounded(clock()))
     }
 
@@ -108,10 +110,16 @@ class SessionCoordinator(
         if (!backgrounded) return
         backgrounded = false
         lastPosition?.let { send(SessionEvent.Opened(clock(), it)) }
+        if (tickerWanted) startTicker()
     }
 
     /** Démarre le Tick (fin de session après 5 min sans interaction, temps actif à jour). */
     fun start() {
+        tickerWanted = true
+        if (!backgrounded) startTicker()
+    }
+
+    private fun startTicker() {
         if (ticker != null) return
         ticker = scope.launch {
             while (isActive) {
@@ -123,10 +131,15 @@ class SessionCoordinator(
 
     /** Sortie du lecteur : dernière écriture puis arrêt. Les appels suivants sont ignorés. */
     fun close() {
-        ticker?.cancel()
-        ticker = null
+        tickerWanted = false
+        stopTicker()
         send(SessionEvent.Closed(clock()))
         events.close()
+    }
+
+    private fun stopTicker() {
+        ticker?.cancel()
+        ticker = null
     }
 
     /** Attend la dernière écriture après [close] (tests : avant de fermer la base). */

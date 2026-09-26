@@ -140,3 +140,18 @@ private fun numberToken(token: String): String? = when {
 
 private fun normalizeWord(word: String): String =
     MARKS.replace(Normalizer.normalize(word.lowercase(Locale.ROOT), Normalizer.Form.NFD), "")
+
+/**
+ * Forme longue « Deuxième partie, chapitre I » (barre de lecture, carte « Reprendre ») ; chemin vide → null.
+ * [join] applique le gabarit `common_location_long`. L’initiale du chapitre passe en minuscule seulement si le
+ * titre commence par un mot (« Chapitre ») et non par un numéro (« IV »).
+ */
+fun longLocation(path: List<String>, join: (part: String, chapter: String) -> String): String? = when (path.size) {
+    0 -> null
+    1 -> path[0]
+    else -> {
+        val chapter = path[1]
+        val startsWithWord = chapter.length > 1 && chapter[1].isLowerCase()
+        join(path[0], if (startsWithWord) chapter.replaceFirstChar { it.lowercase(Locale.FRENCH) } else chapter)
+    }
+}

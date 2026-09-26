@@ -1,10 +1,12 @@
 package com.maximebier.verso.ui.reader
 
+import android.util.Log
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.readium.Locators
 import kotlin.math.abs
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -17,7 +19,8 @@ import org.readium.r2.shared.publication.Locator
 
 /**
  * Écrit la position de LECTURE en base : anti-rebond de 500 ms, écriture immédiate à la mise en
- * arrière-plan, locator enrichi du texte visible quand la lecture est à l’écran.
+ * arrière-plan, locator enrichi du texte visible quand la lecture est à l’écran. [chapterTitle] : titre de chapitre
+ * donné au locator écrit (carte « Reprendre »), null si la position est hors sommaire.
  * La position affichée n’est jamais écrite.
  */
 class PositionSaver(
@@ -25,6 +28,7 @@ class PositionSaver(
     private val save: suspend (bookId: Long, locatorJson: String, progression: Double) -> Unit,
     private val scope: CoroutineScope,
     private val debounceMs: Long = ReadingThresholds().saveDebounceMs,
+    private val chapterTitle: (Locator) -> String? = { null },
 ) {
     private var controller: ReaderController? = null
     private var pending: BookPosition? = null
@@ -60,12 +64,24 @@ class PositionSaver(
             pending = null
             val locator = Locators.fromJson(position.locatorJson)
             val json = if (locator != null) Locators.toJson(enrich(locator)) else position.locatorJson
-            save(bookId, json, position.totalProgression)
+            // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée,
+            // la position suivante sera réécrite par la prochaine sauvegarde.
+            try {
+                save(bookId, json, position.totalProgression)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Écriture de la position de lecture impossible", e)
+            }
         }
     }
 
-    /** Ajoute texte visible et sélecteur seulement si la position de lecture est celle à l’écran. */
-    private suspend fun enrich(target: Locator): Locator {
+    /**
+     * Titre du chapitre de la position de lecture ([chapterTitle], carte « Reprendre » ; Readium l’ignore à la
+     * restauration). Texte visible et sélecteur seulement si la position de lecture est celle à l’écran.
+     */
+    private suspend fun enrich(position: Locator): Locator {
+        val target = chapterTitle(position)?.let { position.copy(title = it) } ?: position
         val reader = controller ?: return target
         val shown = reader.displayed.value ?: return target
         if (!sameSpot(target, shown)) return target
@@ -86,5 +102,6 @@ class PositionSaver(
     companion object {
         /** Écart de progression dans le chapitre en dessous duquel lecture et affichage coïncident. */
         const val SAME_SPOT_TOLERANCE = 0.000_5
+        private const val TAG = "PositionSaver"
     }
 }

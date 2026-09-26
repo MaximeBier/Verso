@@ -4,6 +4,7 @@ package com.maximebier.verso.reader
 
 import android.app.Application
 import android.os.SystemClock
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -41,6 +42,7 @@ import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.VersoReadingPreferences
 import kotlin.math.abs
 import kotlin.math.max
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,10 +73,13 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.Url
 
+private const val LOG_TAG = "VersoReader"
+
 /**
  * Variante A : navigateur Compose de Readium, chapitres enchaînés par un `VerticalPager` de WebViews.
  * `initialLocator` n’est lu qu’à la création (clé : la publication). `onInternalLink` : lien interne
- * touché (ordre de lecture), appelé juste avant que Readium ne le suive.
+ * touché (ordre de lecture), appelé juste avant que Readium ne le suive. `onFailed` : le moteur refuse le livre
+ * (mise en page fixe, vide, protégé) ou ne peut pas créer sa rendition ; appelé une fois, la surface reste unie.
  */
 @Composable
 fun ReaderSurface(
@@ -85,12 +90,14 @@ fun ReaderSurface(
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
     onInternalLink: (Url) -> Unit = {},
+    onFailed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val fontScale = LocalDensity.current.fontScale
     val currentOnReady by rememberUpdatedState(onReady)
     val currentOnCenterTap by rememberUpdatedState(onCenterTap)
     val currentOnInternalLink by rememberUpdatedState(onInternalLink)
+    val currentOnFailed by rememberUpdatedState(onFailed)
     val background = Color(ReadingStyle.colors(dark).background)
 
     val factory = remember(publication) {
@@ -101,7 +108,11 @@ fun ReaderSurface(
         )
     }
     if (factory == null) {
-        // Livre à mise en page fixe, vide ou protégé : hors du périmètre V1.
+        // Livre à mise en page fixe, vide ou protégé : hors du périmètre V1. Jamais d’écran vide sans issue.
+        LaunchedEffect(publication) {
+            Log.w(LOG_TAG, "Livre refusé par le moteur (mise en page fixe, vide ou protégé)")
+            currentOnFailed()
+        }
         Box(modifier.fillMaxSize().background(background))
         return
     }
@@ -110,7 +121,10 @@ fun ReaderSurface(
         value = factory.createRenditionState(
             initialPreferences = VersoReadingPreferences.reflowableWeb(dark, fontScale),
             initialLocation = initialLocator?.let(::goLocationOf),
-        ).getOrNull()
+        ).onFailure { error ->
+            Log.w(LOG_TAG, "Rendition impossible : $error")
+            currentOnFailed()
+        }.getOrNull()
     }
     val state = renditionState
     if (state == null) {
@@ -302,6 +316,8 @@ internal class ReflowableReaderController(
     private val thresholds: ReadingThresholds = ReadingThresholds(),
     private val uptimeMs: () -> Long = SystemClock::uptimeMillis,
     private val wallClockMs: () -> Long = System::currentTimeMillis,
+    /** Extraction du texte brut d’un chapitre (regex sur tout le fichier) : jamais sur le fil principal. */
+    private val textDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ReaderController {
 
     private val displayedState = MutableStateFlow<Locator?>(null)
@@ -548,7 +564,9 @@ internal class ReflowableReaderController(
         val current = displayedState.value ?: return null
         val key = Locators.hrefKey(current)
         val text = chapterTexts[key]
-            ?: readChapterHtml(current.href.removeFragment())?.let(ChapterText::plainText)?.also { chapterTexts[key] = it }
+            ?: readChapterHtml(current.href.removeFragment())
+                ?.let { html -> withContext(textDispatcher) { ChapterText.plainText(html) } }
+                ?.also { chapterTexts[key] = it }
             ?: return current
         val excerpt = ChapterText.excerptAt(
             text = text,

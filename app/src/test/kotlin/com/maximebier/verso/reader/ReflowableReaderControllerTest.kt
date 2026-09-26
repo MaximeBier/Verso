@@ -7,11 +7,14 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.readium.ReadingOrderPositions
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -272,6 +275,36 @@ class ReflowableReaderControllerTest {
         assertThat(excerpt.text.after).startsWith("un deux trois")
         assertThat(excerpt.text.highlight).isNull()
         assertThat(excerpt.locations.progression).isEqualTo(0.0)
+    }
+
+    /** Répartiteur qui compte ce qu’on lui confie (revue finale M8). */
+    private class CountingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+        var dispatches = 0
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            dispatches++
+            delegate.dispatch(context, block)
+        }
+    }
+
+    @Test
+    fun chapterPlainTextIsComputedOnTheTextDispatcherNotTheCaller() = runTest {
+        // Revue finale M8 : 4 regex DOTALL sur tout un chapitre, jamais sur le fil principal.
+        val text = CountingDispatcher(StandardTestDispatcher(testScheduler))
+        val controller = ReflowableReaderController(
+            scope = backgroundScope,
+            readChapterHtml = { "<html><body><p>un deux trois quatre cinq</p></body></html>" },
+            onCenterTap = {},
+            uptimeMs = { testScheduler.currentTime },
+            wallClockMs = { testScheduler.currentTime },
+            textDispatcher = text,
+        )
+        controller.onDisplayed(at("ch1.xhtml", 0.0))
+
+        val excerpt = controller.excerptLocator()!!
+
+        assertThat(excerpt.text.after).startsWith("un deux trois")
+        assertThat(text.dispatches).isAtLeast(1)
     }
 
     @Test

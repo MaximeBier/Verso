@@ -55,7 +55,7 @@ class PositionSaverTest {
         val target = testLocator(progression = 0.42, total = 0.31)
         val fake = FakeReaderController(target)
         fake.excerpt = target.copy(
-            text = Locator.Text(highlight = "Emma descendit au jardin."),
+            text = Locator.Text(after = "Emma descendit au jardin."),
             locations = target.locations.copy(otherLocations = mapOf("cssSelector" to "#c7 > p:nth-child(12)")),
         )
         val saver = saver()
@@ -66,7 +66,7 @@ class PositionSaverTest {
         runCurrent()
 
         val stored = Locators.fromJson(saves.single().json)!!
-        assertThat(stored.text.highlight).isEqualTo("Emma descendit au jardin.")
+        assertThat(stored.text.after).isEqualTo("Emma descendit au jardin.")
         assertThat(stored.locations.cssSelector).isEqualTo("#c7 > p:nth-child(12)")
         assertThat(stored.locations.progression).isEqualTo(0.42)
         assertThat(saves.single().progression).isEqualTo(0.31)
@@ -77,7 +77,7 @@ class PositionSaverTest {
         val reading = testLocator(chapter = 2, progression = 0.42, total = 0.31)
         val elsewhere = testLocator(chapter = 9, progression = 0.80, total = 0.90)
         val fake = FakeReaderController(elsewhere)
-        fake.excerpt = elsewhere.copy(text = Locator.Text(highlight = "Texte d’un autre chapitre."))
+        fake.excerpt = elsewhere.copy(text = Locator.Text(after = "Texte d’un autre chapitre."))
         val saver = saver()
         saver.attach(fake)
 
@@ -88,7 +88,7 @@ class PositionSaverTest {
         val stored = Locators.fromJson(saves.single().json)!!
         assertThat(stored.href.toString()).isEqualTo("chapitre-2.xhtml")
         assertThat(stored.locations.progression).isEqualTo(0.42)
-        assertThat(stored.text.highlight).isNull()
+        assertThat(stored.text.after).isNull()
         assertThat(saves.single().progression).isEqualTo(0.31)
     }
 
@@ -127,7 +127,7 @@ class PositionSaverTest {
         val target = testLocator(progression = 0.42, total = 0.31)
         val fake = FakeReaderController(target)
         fake.excerpt = target.copy(
-            text = Locator.Text(highlight = "Emma descendit au jardin."),
+            text = Locator.Text(after = "Emma descendit au jardin."),
             locations = target.locations.copy(otherLocations = mapOf("cssSelector" to "#c7 > p:nth-child(12)")),
         )
         val saver = saver()
@@ -140,7 +140,54 @@ class PositionSaverTest {
 
         assertThat(restored.href).isEqualTo(target.href)
         assertThat(restored.locations.progression).isEqualTo(target.locations.progression)
-        assertThat(restored.text.highlight).isEqualTo("Emma descendit au jardin.")
+        assertThat(restored.text.after).isEqualTo("Emma descendit au jardin.")
         assertThat(restored.locations.otherLocations.keys).containsExactly("cssSelector")
+    }
+
+    @Test
+    fun savedLocatorCarriesTheChapterTitleOfTheReadingPosition() = runTest {
+        val reading = testLocator(chapter = 2, progression = 0.42, total = 0.31)
+        val elsewhere = testLocator(chapter = 9, progression = 0.80, total = 0.90)
+        val fake = FakeReaderController(elsewhere)
+        val saver = PositionSaver(
+            bookId = 7,
+            save = { id, json, progression -> saves += Saved(id, json, progression) },
+            scope = backgroundScope,
+            chapterTitle = { locator -> if (Locators.hrefKey(locator) == "chapitre-2.xhtml") "Deuxième partie, chapitre I" else null },
+        )
+        saver.attach(fake)
+
+        // Titre de la position de LECTURE, même quand l'écran montre un autre chapitre.
+        saver.requestSave(Locators.toPosition(reading))
+        advanceTimeBy(debounceMs + 1)
+        runCurrent()
+
+        assertThat(Locators.fromJson(saves.single().json)!!.title).isEqualTo("Deuxième partie, chapitre I")
+    }
+
+    @Test
+    fun failedWriteIsSwallowedAndLaterWritesStillHappen() = runTest {
+        var fail = true
+        val saver = PositionSaver(
+            bookId = 7,
+            save = { id, json, progression ->
+                if (fail) throw android.database.sqlite.SQLiteFullException("disque plein")
+                saves += Saved(id, json, progression)
+            },
+            scope = backgroundScope,
+        )
+
+        saver.requestSave(Locators.toPosition(testLocator(progression = 0.10, total = 0.10)))
+        advanceTimeBy(debounceMs + 1)
+        runCurrent()
+        saver.flush()
+        runCurrent()
+        assertThat(saves).isEmpty()
+
+        fail = false
+        saver.requestSave(Locators.toPosition(testLocator(progression = 0.20, total = 0.20)))
+        advanceTimeBy(debounceMs + 1)
+        runCurrent()
+        assertThat(saves.map { it.progression }).containsExactly(0.20)
     }
 }

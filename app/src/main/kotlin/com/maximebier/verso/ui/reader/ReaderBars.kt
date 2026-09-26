@@ -50,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.durationOfMinutes
+import com.maximebier.verso.core.text.longLocation
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
 import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.VersoIconButton
@@ -228,20 +229,11 @@ fun remainingTimeLabel(minutes: Int): String {
     return stringResource(R.string.common_time_remaining, duration)
 }
 
-/**
- * Forme longue « Deuxième partie, chapitre I ». L’initiale du chapitre passe en minuscule seulement
- * si le titre commence par un mot (« Chapitre ») et non par un numéro (« IV »).
- */
+/** Forme longue « Deuxième partie, chapitre I » ([longLocation], gabarit `common_location_long`). */
 @Composable
-fun chapterLongLabel(path: List<String>): String? = when (path.size) {
-    0 -> null
-    1 -> path[0]
-    else -> {
-        val chapter = path[1]
-        val startsWithWord = chapter.length > 1 && chapter[1].isLowerCase()
-        val shown = if (startsWithWord) chapter.replaceFirstChar { it.lowercase(Locale.FRENCH) } else chapter
-        stringResource(R.string.common_location_long, path[0], shown)
-    }
+fun chapterLongLabel(path: List<String>): String? {
+    val template = stringResource(R.string.common_location_long)
+    return longLocation(path) { part, chapter -> String.format(Locale.FRENCH, template, part, chapter) }
 }
 
 /** Mode immersif : barres système masquées pendant la lecture, rétablies avec la barre de lecture. */
