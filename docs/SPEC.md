@@ -28,7 +28,7 @@ Différenciation visée par rapport aux lecteurs existants (Apple Books, Google 
 | Police V1 | **Atkinson Hyperlegible Next partout** (interface et lecture) | Une seule police dans toute l'app. Lettres très distinctes, conçue pour la basse vision. Préférence de l'utilisateur |
 | Police V2 | **Literata par défaut partout**, sélecteur : Literata / Atkinson Hyperlegible Next / police du système | Aucune police n'est la meilleure pour tout le monde (voir « Confort de lecture »). La police choisie s'applique à toute l'app, pas seulement au texte |
 | Choix de police au premier lancement | Non | Onboarding sans décision ; le sélecteur est dans les Paramètres et dans les réglages de lecture |
-| Thème | Clair par défaut, sombre en suivant le système (V1) ; clair, sépia, sombre, noir et automatique au choix (V2) | Le texte foncé sur fond clair se lit mieux de jour ; le sombre réduit la lumière totale la nuit |
+| Thème | Automatique par défaut (suit le système), clair ou sombre au choix dans les Paramètres (V1) ; sépia et noir en plus (V2) | Le texte foncé sur fond clair se lit mieux de jour ; le sombre réduit la lumière totale la nuit |
 | Progression | **Position de lecture distincte de la position affichée** + carte « Revenir » + journal des sessions | Remplace « 5 dernières positions » et le bouton « Revenir » minuté. Voir « Marque-page » |
 | Import | Sélecteur de fichiers Android (Storage Access Framework) | Couvre Fichiers, Drive et Nextcloud sans coder de synchro |
 | Catalogue | Titre/auteur extraits de l'EPUB, corrigeables à la main, couverture, progression. Affichage liste ou grille | Les métadonnées EPUB sont fiables, contrairement au PDF |
@@ -98,7 +98,7 @@ La V1 est finie quand je peux importer un EPUB, le lire d'un bout à l'autre en 
   - En bas : « 31 % lu », temps restant estimé, barre de progression, boutons « Sommaire » et « Journal ».
 - Sommaire : feuille qui s'ouvre sur le chapitre en cours (surligné, « En cours · 31 % »). Les chapitres déjà lus portent « Lu » avec une coche. Tap sur un chapitre = saut direct.
 - Écran maintenu allumé pendant la lecture. L'app ne touche jamais à la luminosité.
-- Respect du thème système clair/sombre en V1 (les thèmes au choix attendent la V2).
+- Thème : automatique (suit le système) par défaut, ou clair ou sombre imposé dans les Paramètres (V1). Sépia et noir attendent la V2.
 - Temps restant : estimé avec une vitesse par défaut de 250 mots/min en V1, puis avec la vitesse mesurée en V2.
 - Livre impossible à ouvrir (EPUB à mise en page fixe que le moteur refuse, fichier devenu illisible) : retour à la bibliothèque avec le message « Impossible d’ouvrir « Titre ». », jamais un écran vide.
 
@@ -145,7 +145,7 @@ Règles :
 On y accède par la roue dentée dans l'en-tête de la bibliothèque.
 
 - **Au démarrage** : « Rouvrir le dernier livre », « Si vous l'avez lu il y a moins de 24 heures » (interrupteur, activé par défaut).
-- **Affichage** : phrase d'explication, sans ligne cliquable. « Verso suit le thème clair ou sombre de votre téléphone et garde l'écran allumé pendant la lecture. »
+- **Affichage** : « Thème », bouton segmenté Automatique / Clair / Sombre (Automatique par défaut), puis la phrase « En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture. » Le choix s’applique à toute l’app, lecture comprise.
 - **Confidentialité** :
   - phrase d'explication : « Verso n'utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone. » ;
   - action « Effacer le journal de lecture », « Vos positions de lecture sont conservées. », avec confirmation.
@@ -506,3 +506,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-26 (revue finale) : sauvegarde Android désactivée (`allowBackup="false"`, `dataExtractionRules` sans sauvegarde sur le compte Google ni transfert d'appareil à appareil), pour tenir « Rien ne quitte le téléphone ».
 - 2026-09-26 (revue finale) : un livre que le moteur refuse (mise en page fixe) ou un fichier illisible ramène à la bibliothèque avec « Impossible d’ouvrir « Titre ». » (nouveau message `library_open_failed`).
 - 2026-09-26 (revue finale) : écarts acceptés : la carte « Revenir » affiche le titre du livre quand la position est hors sommaire ; les titres de chapitre gardent le CSS de l'éditeur et ne sont pas centrés quand l'EPUB ne sépare pas partie et numéro. La carte « Reprendre » lit le chapitre et l'extrait enregistrés avec la position de lecture.
+- 2026-09-26 (retour utilisateur) : le choix du thème (Automatique / Clair / Sombre) passe de la V2 à la V1, dans Paramètres › Affichage ; sépia et noir restent en V2. Sur Android 12 et plus, le choix s’applique aussi à la fenêtre (`UiModeManager.setApplicationNightMode`), ce qui recrée l’activité au changement.

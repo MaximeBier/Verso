@@ -13,12 +13,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
-/** Thème Verso : clair ou sombre selon le système (V1). Couleurs générées depuis tokens.json. */
+/** Thème Verso : clair ou sombre (réglage Thème, le système par défaut). Couleurs générées depuis tokens.json. */
 @Composable
 fun VersoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val colors = if (darkTheme) VersoPalette.Dark else VersoPalette.Light
     val covers = if (darkTheme) VersoPalette.CoverDark else VersoPalette.CoverLight
-    CompositionLocalProvider(LocalVersoColors provides colors, LocalCoverPalette provides covers) {
+    CompositionLocalProvider(
+        LocalVersoColors provides colors,
+        LocalCoverPalette provides covers,
+        LocalVersoDarkTheme provides darkTheme,
+    ) {
         MaterialTheme(
             colorScheme = colorSchemeFor(colors, darkTheme),
             typography = VersoTypography.material,
@@ -45,6 +49,9 @@ object VersoTheme {
         @Composable @ReadOnlyComposable get() = LocalVersoColors.current
     val coverPalette: List<Color>
         @Composable @ReadOnlyComposable get() = LocalCoverPalette.current
+    /** Thème sombre affiché : à utiliser à la place de isSystemInDarkTheme(). */
+    val isDark: Boolean
+        @Composable @ReadOnlyComposable get() = LocalVersoDarkTheme.current
     val typography: VersoTypography
         get() = VersoTypography
 }

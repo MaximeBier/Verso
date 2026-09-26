@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
+import com.maximebier.verso.data.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 /** État de l'écran Paramètres (1.09). */
 data class SettingsUiState(
     val reopenLastBook: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.AUTO,
     val confirmingClearJournal: Boolean = false,
 )
 
@@ -29,12 +31,16 @@ class SettingsViewModel(
     private val confirming = MutableStateFlow(false)
 
     val state: StateFlow<SettingsUiState> =
-        combine(settings.reopenLastBook, confirming) { reopen, confirmingClear ->
-            SettingsUiState(reopenLastBook = reopen, confirmingClearJournal = confirmingClear)
+        combine(settings.reopenLastBook, settings.themeMode, confirming) { reopen, theme, confirmingClear ->
+            SettingsUiState(reopenLastBook = reopen, themeMode = theme, confirmingClearJournal = confirmingClear)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun onReopenLastBookChange(value: Boolean) {
         viewModelScope.launch { settings.setReopenLastBook(value) }
+    }
+
+    fun onThemeModeChange(value: ThemeMode) {
+        viewModelScope.launch { settings.setThemeMode(value) }
     }
 
     fun onClearJournalClick() {

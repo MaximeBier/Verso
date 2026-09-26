@@ -8,3 +8,6 @@ val LocalVersoColors = staticCompositionLocalOf { VersoPalette.Light }
 
 /** Palette des vignettes générées pour le thème courant. */
 val LocalCoverPalette = staticCompositionLocalOf<List<Color>> { VersoPalette.CoverLight }
+
+/** Thème sombre affiché (réglage Thème de Verso, ou celui du téléphone en automatique). */
+val LocalVersoDarkTheme = staticCompositionLocalOf { false }

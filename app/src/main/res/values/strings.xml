@@ -144,7 +144,11 @@
     <string name="settings_reopen_last_book">Rouvrir le dernier livre</string>
     <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
     <string name="settings_section_display">Affichage</string>
-    <string name="settings_display_body">Verso suit le thème clair ou sombre de votre téléphone et garde l’écran allumé pendant la lecture.</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_auto">Automatique</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_display_body">En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture.</string>
     <string name="settings_section_privacy">Confidentialité</string>
     <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>

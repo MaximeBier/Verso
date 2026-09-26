@@ -31,6 +31,11 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         prefs[LIBRARY_VIEW_MODE]?.let { stored -> LibraryViewMode.entries.firstOrNull { it.name == stored } } ?: LibraryViewMode.LIST
     }
 
+    /** Défaut : AUTO (suit le thème du téléphone). */
+    val themeMode: Flow<ThemeMode> = preferences.map { prefs ->
+        prefs[THEME_MODE]?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } } ?: ThemeMode.AUTO
+    }
+
     suspend fun setReopenLastBook(value: Boolean) {
         dataStore.edit { it[REOPEN_LAST_BOOK] = value }
     }
@@ -43,9 +48,14 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[LIBRARY_VIEW_MODE] = value.name }
     }
 
+    suspend fun setThemeMode(value: ThemeMode) {
+        dataStore.edit { it[THEME_MODE] = value.name }
+    }
+
     private companion object {
         val REOPEN_LAST_BOOK = booleanPreferencesKey("reopen_last_book")
         val LIBRARY_SORT = stringPreferencesKey("library_sort")
         val LIBRARY_VIEW_MODE = stringPreferencesKey("library_view_mode")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 }
