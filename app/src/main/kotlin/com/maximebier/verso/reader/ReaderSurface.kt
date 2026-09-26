@@ -366,7 +366,12 @@ internal class FragmentReaderController(
         pendingIsFling = isFling
         pendingChapterTurn = chapterTurn
         settleJob = scope.launch {
-            if (target != null) navigate?.invoke(target)
+            if (target != null) {
+                navigate?.invoke(target)
+                // Chapitre pas encore chargé : le signal attend qu’il soit affiché, sinon le tracker verrait son
+                // arrivée comme une navigation (bond d’un écran), après la fin du geste.
+                awaitDisplayedIn(target, releasedAt)
+            }
             awaitSettled(releasedAt)
             settleJob = null
             gestureFlow.emit(GestureSignal(timeMs = wallClockMs(), isFling = isFling, chapterTurn = chapterTurn))
@@ -380,6 +385,13 @@ internal class FragmentReaderController(
         gestureFlow.tryEmit(
             GestureSignal(timeMs = wallClockMs(), isFling = pendingIsFling, chapterTurn = pendingChapterTurn),
         )
+    }
+
+    private suspend fun awaitDisplayedIn(target: Locator, releasedAt: Long) {
+        while (displayedState.value?.let { sameResource(it.href, target.href) } != true) {
+            if (uptimeMs() - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
+            delay(ReaderGestures.SETTLE_POLL_MS)
+        }
     }
 
     private suspend fun awaitSettled(releasedAt: Long) {
