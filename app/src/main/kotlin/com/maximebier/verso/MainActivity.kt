@@ -23,6 +23,7 @@ import com.maximebier.verso.importer.IncomingIntent
 import com.maximebier.verso.ui.nav.LibraryRoute
 import com.maximebier.verso.ui.nav.VersoNavHost
 import com.maximebier.verso.ui.theme.VersoTheme
+import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -32,8 +33,12 @@ class MainActivity : FragmentActivity() {
         val settings = (application as VersoApplication).container.settings
         // Lu avant la première image : le thème choisi s'affiche d'emblée, sans passer par celui du téléphone.
         val initialThemeMode = runBlocking { settings.themeMode.first() }
+        // Le navigateur EPUB est un Fragment sans constructeur vide : restauré par le système (rotation, thème), il
+        // n’a pas sa fabrique. Il est recréé à vide puis retiré ; la surface de lecture en crée un vrai.
+        supportFragmentManager.fragmentFactory = EpubNavigatorFragment.createDummyFactory()
         enableEdgeToEdge(initialThemeMode.isDark(systemDark = isSystemNight()))
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) removeRestoredReaders()
         // Fichier reçu par « Ouvrir avec » / « Partager vers ». Après une recréation, l'intent a déjà été traité.
         // Appelé avant setContent : IncomingImports.hasPending() est donc connu dès la première composition.
         if (savedInstanceState == null) handleIncomingIntent(intent)
@@ -50,6 +55,12 @@ class MainActivity : FragmentActivity() {
                 ReturnToLibraryOnIncomingImport(navController)
             }
         }
+    }
+
+    private fun removeRestoredReaders() {
+        val restored = supportFragmentManager.fragments.filterIsInstance<EpubNavigatorFragment>()
+        if (restored.isEmpty()) return
+        supportFragmentManager.beginTransaction().apply { restored.forEach(::remove) }.commitNow()
     }
 
     override fun onNewIntent(intent: Intent) {

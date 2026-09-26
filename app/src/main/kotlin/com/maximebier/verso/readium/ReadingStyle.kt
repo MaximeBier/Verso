@@ -37,9 +37,6 @@ object ReadingStyle {
     /** `--RS__pageGutter` de Readium CSS 1 (navigateur Fragment) sous 35 em de large. */
     const val FRAGMENT_PAGE_GUTTER_PX = 20.0
 
-    /** `LayoutConstants.baseMinMargins` du navigateur Compose web. */
-    const val WEB_BASE_MIN_MARGINS_DP = 30.0
-
     const val NORMAL_FONT_WEIGHT = 400.0
     const val DARK_FONT_WEIGHT = 380.0
     const val DARK_LETTER_SPACING_EM = 0.01
@@ -61,10 +58,6 @@ object ReadingStyle {
 
     /** Navigateur Fragment : 24 dp / gouttière de 20 px = 1,2 (indépendant de la taille du texte). */
     fun fragmentPageMargins(): Double = SIDE_MARGIN_DP / FRAGMENT_PAGE_GUTTER_PX
-
-    /** Navigateur Compose : marge = 30 dp × facteur × fontScale ⇒ facteur = 24 / (30 × fontScale). */
-    fun webMinMargins(fontScale: Float): Double =
-        SIDE_MARGIN_DP / (WEB_BASE_MIN_MARGINS_DP * fontScale)
 
     fun colors(dark: Boolean): ReadingColors {
         val palette = if (dark) VersoPalette.Dark else VersoPalette.Light

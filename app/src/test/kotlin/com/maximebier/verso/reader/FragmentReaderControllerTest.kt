@@ -22,9 +22,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.readium.navigator.common.CssSelector
-import org.readium.navigator.common.HtmlId
-import org.readium.navigator.web.reflowable.ReflowableWebGoLocation
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
@@ -33,7 +30,7 @@ import org.readium.r2.shared.util.mediatype.MediaType
 // Robolectric : Locator et Url s’appuient sur org.json et android.net.Uri.
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class ReflowableReaderControllerTest {
+class FragmentReaderControllerTest {
 
     private val positions = ReadingOrderPositions.from(
         hrefs = listOf("ch1.xhtml", "ch2.xhtml"),
@@ -48,17 +45,21 @@ class ReflowableReaderControllerTest {
 
     private class Harness(scope: TestScope) {
         var centerTaps = 0
-        val navigated = mutableListOf<ReflowableWebGoLocation>()
-        val controller = ReflowableReaderController(
+        val navigated = mutableListOf<Locator>()
+        var edges: ChapterEdges? = null
+        var visible: String? = null
+        var adjacent: Locator? = null
+        val controller = FragmentReaderController(
             scope = scope.backgroundScope,
             readChapterHtml = { "<html><body><p>un deux trois quatre cinq six sept huit neuf dix</p></body></html>" },
             onCenterTap = { centerTaps++ },
+            adjacentChapter = { _, _ -> adjacent },
             thresholds = ReadingThresholds(flingScreensPerSecond = 1.0),
             uptimeMs = { scope.testScheduler.currentTime },
             wallClockMs = { scope.testScheduler.currentTime },
         ).apply {
             viewportHeightPx = 2_000
-            bind { navigated += it }
+            bind(navigate = { navigated += it }, probeEdges = { edges }, visibleText = { visible })
         }
     }
 
@@ -89,7 +90,7 @@ class ReflowableReaderControllerTest {
         val h = Harness(this)
         h.controller.gestures.test {
             h.controller.onPointerDown()
-            h.controller.onGestureReleased(velocityYPxPerSecond = -500f)
+            h.controller.onGestureReleased(velocityYPxPerSecond = -500f, dragDyPx = 0f)
             advanceTimeBy(100)
             h.controller.onDisplayed(at("ch1.xhtml", 0.1))
             advanceTimeBy(100)
@@ -110,12 +111,12 @@ class ReflowableReaderControllerTest {
         val h = Harness(this)
         h.controller.gestures.test {
             h.controller.onPointerDown()
-            h.controller.onGestureReleased(velocityYPxPerSecond = -2_500f) // 1,25 écran/s
+            h.controller.onGestureReleased(velocityYPxPerSecond = -2_500f, dragDyPx = 0f) // 1,25 écran/s
             advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
             assertThat(awaitItem().isFling).isTrue()
 
             h.controller.onPointerDown()
-            h.controller.onGestureReleased(velocityYPxPerSecond = 1_500f) // 0,75 écran/s
+            h.controller.onGestureReleased(velocityYPxPerSecond = 1_500f, dragDyPx = 0f) // 0,75 écran/s
             advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
             assertThat(awaitItem().isFling).isFalse()
         }
@@ -123,17 +124,18 @@ class ReflowableReaderControllerTest {
 
     @Test
     fun releaseAtOneAndAHalfScreensPerSecondIsAFlingWithDefaultThresholds() = runTest {
-        val controller = ReflowableReaderController(
+        val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { null },
             onCenterTap = {},
+            adjacentChapter = { _, _ -> null },
             thresholds = ReadingThresholds(), // flingScreensPerSecond = 1,0 (vitesse au relâchement)
             uptimeMs = { testScheduler.currentTime },
             wallClockMs = { testScheduler.currentTime },
         ).apply { viewportHeightPx = 2_000 }
         controller.gestures.test {
             controller.onPointerDown()
-            controller.onGestureReleased(velocityYPxPerSecond = -3_000f) // 1,5 écran/s
+            controller.onGestureReleased(velocityYPxPerSecond = -3_000f, dragDyPx = 0f) // 1,5 écran/s
             advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
             assertThat(awaitItem().isFling).isTrue()
         }
@@ -144,7 +146,7 @@ class ReflowableReaderControllerTest {
         val h = Harness(this)
         h.controller.gestures.test {
             h.controller.onPointerDown()
-            h.controller.onGestureReleased(velocityYPxPerSecond = -4_000f)
+            h.controller.onGestureReleased(velocityYPxPerSecond = -4_000f, dragDyPx = 0f)
             advanceTimeBy(50)
             h.controller.onDisplayed(at("ch1.xhtml", 0.3))
             h.controller.onPointerDown()
@@ -162,10 +164,10 @@ class ReflowableReaderControllerTest {
             h.controller.go(at("ch2.xhtml", 0.4))
             runCurrent()
             expectNoEvents()
-            assertThat(h.navigated.single().progression?.value).isEqualTo(0.4)
+            assertThat(h.navigated.single().locations.progression).isEqualTo(0.4)
 
             h.controller.onPointerDown()
-            h.controller.onGestureReleased(velocityYPxPerSecond = -300f)
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = 0f)
             h.controller.go(at("ch1.xhtml", 0.0))
             runCurrent()
             assertThat(awaitItem().isFling).isFalse()
@@ -291,10 +293,11 @@ class ReflowableReaderControllerTest {
     fun chapterPlainTextIsComputedOnTheTextDispatcherNotTheCaller() = runTest {
         // Revue finale M8 : 4 regex DOTALL sur tout un chapitre, jamais sur le fil principal.
         val text = CountingDispatcher(StandardTestDispatcher(testScheduler))
-        val controller = ReflowableReaderController(
+        val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { "<html><body><p>un deux trois quatre cinq</p></body></html>" },
             onCenterTap = {},
+            adjacentChapter = { _, _ -> null },
             uptimeMs = { testScheduler.currentTime },
             wallClockMs = { testScheduler.currentTime },
             textDispatcher = text,
@@ -307,200 +310,93 @@ class ReflowableReaderControllerTest {
         assertThat(text.dispatches).isAtLeast(1)
     }
 
-    @Test
-    fun goLocationDropsFragmentFromHrefAndKeepsItAsHtmlId() {
-        val fromToc = Locator(
-            href = Url("ch2.xhtml")!!,
-            mediaType = MediaType.XHTML,
-            locations = Locator.Locations(fragments = listOf("sec-3")),
-        )
-        val fromHref = fromToc.copy(href = Url("ch2.xhtml#note-1")!!, locations = Locator.Locations())
 
-        assertThat(goLocationOf(fromToc)).isEqualTo(
-            ReflowableWebGoLocation(href = Url("ch2.xhtml")!!, htmlId = HtmlId("sec-3")),
-        )
-        assertThat(goLocationOf(fromHref).href.toString()).isEqualTo("ch2.xhtml")
-        assertThat(goLocationOf(fromHref).htmlId).isEqualTo(HtmlId("note-1"))
-    }
+    // ---------- Changement de chapitre ----------
 
     @Test
-    fun goLocationKeepsProgressionAndSelectorButNeverAnchorsOnApproximateExcerpt() {
-        val saved = at("ch1.xhtml", 0.42).copy(
-            locations = Locator.Locations(progression = 0.42, otherLocations = mapOf("cssSelector" to "#p12")),
-            text = Locator.Text(after = "Charles entra"),
-        )
-
-        val go = goLocationOf(saved)
-
-        assertThat(go.progression?.value).isEqualTo(0.42)
-        assertThat(go.cssSelector).isEqualTo(CssSelector("#p12"))
-        assertThat(go.textAnchor).isNull()
-        assertThat(go.htmlId).isNull()
-    }
-
-    // --- Anomalie F : saut vers un autre fichier, remise en page de la WebView ------------------------
-
-    private fun TestScope.engine(relayoutShift: Double): FakeReflowEngine {
-        val engine = FakeReflowEngine(backgroundScope, files = 4, relayoutShift = relayoutShift)
-        engine.controller = ReflowableReaderController(
-            scope = backgroundScope,
-            readChapterHtml = { null },
-            onCenterTap = {},
-            uptimeMs = { testScheduler.currentTime },
-            wallClockMs = { testScheduler.currentTime },
-        ).apply {
-            viewportHeightPx = 2_000
-            bind { engine.navigate(it) }
+    fun dragStartedAtTheBottomEdgeOpensTheNextChapterAndSignalsAChapterTurn() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.97))
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -5_000f, dragDyPx = -h.controller.chainThresholdPx)
+            runCurrent()
+            assertThat(h.navigated.single().href.toString()).isEqualTo("ch2.xhtml")
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+            val signal = awaitItem()
+            assertThat(signal.chapterTurn).isTrue()
+            assertThat(signal.isFling).isFalse()
         }
-        return engine
     }
 
-    /** Positions publiées par le contrôleur à partir de maintenant (progression dans le fichier, par fichier). */
-    private fun TestScope.published(controller: ReflowableReaderController): List<Pair<String, Double?>> {
-        val seen = mutableListOf<Pair<String, Double?>>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            controller.displayed.drop(1).filterNotNull().collect { seen += it.href.toString() to it.locations.progression }
+    @Test
+    fun flingThatReachesTheEdgeWithoutStartingThereStaysInTheChapter() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = false)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.5))
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -8_000f, dragDyPx = -600f)
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+            val signal = awaitItem()
+            assertThat(signal.chapterTurn).isFalse()
+            assertThat(signal.isFling).isTrue()
+            assertThat(h.navigated).isEmpty()
         }
-        return seen
     }
 
     @Test
-    fun jumpIntoAnotherFileIsRealignedOnceAfterRelayoutAndOnlyTheFinalPositionIsPublished() = runTest {
-        val e = engine(relayoutShift = 0.0201) // F1 : 2,75 écrans plus haut
-        e.open(file = 0, progression = 0.0162)
-        val seen = published(e.controller)
-
-        val job = launch { e.controller.go(e.at(3, 0.8759)) }
-        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS - 1)
-        runCurrent()
-        // Pendant la remise en page : rien n’est publié (ni le début du fichier, ni la position décalée).
-        assertThat(seen).isEmpty()
-        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
-        job.join()
-
-        assertThat(e.navigated.map { it.progression?.value }).containsExactly(0.8759, 0.8759).inOrder()
-        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
-        assertThat(e.controller.displayed.value!!.locations.progression).isEqualTo(0.8759)
-    }
-
-    @Test
-    fun jumpIntoAnotherFileThatStaysPutIsNotRepeated() = runTest {
-        val e = engine(relayoutShift = 0.0)
-        e.open(file = 0, progression = 0.1)
-        val seen = published(e.controller)
-
-        e.controller.go(e.at(3, 0.8759))
-
-        assertThat(e.navigated).hasSize(1)
-        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
-    }
-
-    @Test
-    fun jumpWithinTheSameFileIsNeitherHeldNorRepeated() = runTest {
-        val e = engine(relayoutShift = 0.0)
-        e.open(file = 3, progression = 0.5)
-        val seen = published(e.controller)
-        val before = testScheduler.currentTime
-
-        e.controller.go(e.at(3, 0.8759))
-
-        assertThat(testScheduler.currentTime).isEqualTo(before)
-        assertThat(e.navigated).hasSize(1)
-        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
-    }
-
-    @Test
-    fun anchoredTargetIntoAnotherFileIsNeverHeldNorRealigned() = runTest {
-        val e = engine(relayoutShift = 0.0201)
-        e.open(file = 3, progression = 0.8759)
-        val seen = published(e.controller)
-        val anchored = Locator(
-            href = Url("f0.xhtml#id00012")!!,
-            mediaType = MediaType.XHTML,
-            locations = Locator.Locations(totalProgression = 0.003),
-        )
-
-        e.controller.go(anchored)
-        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
-        runCurrent()
-
-        assertThat(e.navigated).hasSize(1)
-        assertThat(seen.first()).isEqualTo("f0.xhtml" to 0.0)
-    }
-
-    @Test
-    fun dragDuringTheHoldPublishesWhatIsShownAndCancelsTheRealignment() = runTest {
-        val e = engine(relayoutShift = 0.0201)
-        e.open(file = 0, progression = 0.0162)
-        val seen = published(e.controller)
-
-        val job = launch { e.controller.go(e.at(3, 0.8759)) }
-        advanceTimeBy(100) // remise en page faite, page pas encore déclarée stable
-        runCurrent()
-        e.controller.onPointerDown()
-        e.controller.onDragStarted()
-        runCurrent()
-
-        assertThat(seen.last().second!!).isWithin(1e-9).of(0.8759 - 0.0201)
-        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
-        job.join()
-        assertThat(e.navigated).hasSize(1)
-    }
-
-    @Test
-    fun tapDuringTheHoldSuspendsItAndTheJumpIsStillRealignedExactly() = runTest {
-        val e = engine(relayoutShift = 0.0073) // F2 : un écran plus haut
-        e.open(file = 0, progression = 0.0162)
-        val seen = published(e.controller)
-
-        val job = launch { e.controller.go(e.at(3, 0.8759)) }
-        advanceTimeBy(100) // remise en page faite
-        runCurrent()
-        // Tap au centre (barre) : appui, puis lever 80 ms plus tard, sans glissé.
-        e.controller.onPointerDown()
-        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS) // doigt posé : la page n’est pas déclarée stable
-        runCurrent()
-        assertThat(seen).isEmpty()
-        assertThat(e.navigated).hasSize(1)
-        e.controller.onPointerUp()
-        e.controller.onTapLikeGesture(xFraction = 0.5f)
-        advanceTimeBy(ReaderGestures.JUMP_SETTLE_QUIET_MS - 1) // compté depuis le lever
-        runCurrent()
-        assertThat(e.navigated).hasSize(1)
-        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
-        job.join()
-
-        assertThat(e.navigated).hasSize(2)
-        assertThat(seen).containsExactly("f3.xhtml" to 0.8759)
-    }
-
-    @Test
-    fun holdEndsAtTheSettleCapEvenIfThePageNeverStopsMoving() = runTest {
-        val e = engine(relayoutShift = 0.0)
-        e.open(file = 0, progression = 0.1)
-        val seen = published(e.controller)
-        // Page qui bouge sans cesse (toutes les 100 ms, sous le délai de stabilité) après le saut.
-        val restless = launch {
-            var step = 0
-            while (true) {
-                delay(100)
-                e.controller.onDisplayed(e.at(3, 0.5 + ++step * 1e-3))
-            }
+    fun lastChapterEdgeDoesNothingAndSendsAnOrdinarySignal() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = null
+        h.controller.onDisplayed(at("ch2.xhtml", 0.97))
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -h.controller.chainThresholdPx * 2)
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+            assertThat(awaitItem().chapterTurn).isFalse()
+            assertThat(h.navigated).isEmpty()
         }
+    }
 
-        val job = launch { e.controller.go(e.at(3, 0.8759)) }
-        advanceTimeBy(ReaderGestures.SETTLE_MAX_MS - 1)
+    @Test
+    fun touchThatStopsAScrollNeverTurnsTheChapter() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.97))
+        advanceTimeBy(50) // défilement encore en cours à l’appui
+        h.controller.onPointerDown()
         runCurrent()
-        assertThat(seen).isEmpty()
-        assertThat(e.navigated).hasSize(1)
-        advanceTimeBy(2)
-        runCurrent()
-        // Plafond atteint : recalage (la page s’est écartée), puis second plafond au plus.
-        assertThat(e.navigated).hasSize(2)
+        h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -h.controller.chainThresholdPx * 2)
         advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
-        runCurrent()
-        assertThat(job.isCompleted).isTrue()
-        assertThat(seen).hasSize(1)
-        restless.cancel()
+        assertThat(h.navigated).isEmpty()
+    }
+
+    @Test
+    fun visibleTextIsTheExcerptWhenTheNavigatorGivesIt() = runTest {
+        val h = Harness(this)
+        h.visible = "  Le texte   visible\nen haut  "
+        h.controller.onDisplayed(at("ch1.xhtml", 0.4))
+
+        assertThat(h.controller.excerptLocator()!!.text.after).isEqualTo("Le texte visible en haut")
+    }
+
+    @Test
+    fun edgesAreParsedFromTheWebViewAnswer() {
+        assertThat(edgesOf("[true,false]")).isEqualTo(ChapterEdges(atTop = true, atBottom = false))
+        assertThat(edgesOf("\"[false, true]\"")).isEqualTo(ChapterEdges(atTop = false, atBottom = true))
+        assertThat(edgesOf(null)).isNull()
+        assertThat(edgesOf("null")).isNull()
     }
 }

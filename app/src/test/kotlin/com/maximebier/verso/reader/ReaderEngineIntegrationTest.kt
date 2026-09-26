@@ -17,15 +17,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
-import org.readium.navigator.web.reflowable.ReflowableWebRenditionFactory
+import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Publication
 
 /**
  * Moteur de lecture sur un vrai EPUB Gutenberg (Alice). Robolectric n’exécute pas le JavaScript des
- * WebView : la mise en page, `controller.goTo` et `controller.viewport` ne sont pas exercés ici, seulement
- * ce qui les précède (fabrique, état, cibles de saut, positions, extrait).
+ * WebView : la mise en page et les sauts ne sont pas exercés ici, seulement ce qui les précède
+ * (fabrique, cibles du sommaire, chapitres voisins, positions, extrait).
  */
 @RunWith(AndroidJUnit4::class)
 class ReaderEngineIntegrationTest {
@@ -45,40 +45,47 @@ class ReaderEngineIntegrationTest {
     }
 
     @Test
-    fun gutenbergBookIsAcceptedByTheComposeNavigator() = runTest {
+    fun gutenbergBookIsAcceptedByTheFragmentNavigator() = runTest {
         withAlice { publication ->
-            val factory = ReflowableWebRenditionFactory(
-                application = application,
-                publication = publication,
-                configuration = VersoReadingPreferences.reflowableWebConfiguration(),
+            val factory = EpubNavigatorFactory(publication).createFragmentFactory(
+                initialLocator = publication.locatorFromLink(publication.readingOrder[1])!!.copyWithLocations(progression = 0.5),
+                initialPreferences = VersoReadingPreferences.epub(dark = false),
             )
             assertThat(factory).isNotNull()
-
-            val second = publication.locatorFromLink(publication.readingOrder[1])!!
-            val state = factory!!.createRenditionState(
-                initialPreferences = VersoReadingPreferences.reflowableWeb(dark = false),
-                initialLocation = goLocationOf(second.copyWithLocations(progression = 0.5)),
-            ).getOrNull()
-
-            assertThat(state).isNotNull()
-            // Contrôleur créé seulement après la première mise en page des WebView (hors Robolectric).
-            assertThat(state!!.controller).isNull()
         }
     }
 
     @Test
-    fun everyTocEntryTargetsAReadingOrderHrefReadiumCanFind() = runTest {
+    fun everyTocEntryTargetsAReadingOrderHref() = runTest {
         withAlice { publication ->
-            val readingOrderHrefs = publication.readingOrder.map { it.url() }.toSet()
+            val readingOrderHrefs = publication.readingOrder.map { it.url().toString() }.toSet()
             val entries = publication.tableOfContents.flatten()
             assertThat(entries).isNotEmpty()
 
             entries.forEach { link ->
-                val target = goLocationOf(publication.locatorFromLink(link)!!)
-                assertThat(readingOrderHrefs).contains(target.href)
-                assertThat(target.href.fragment).isNull()
-                if (link.url().fragment != null) assertThat(target.htmlId?.value).isEqualTo(link.url().fragment)
+                val target = publication.locatorFromLink(link)!!
+                assertThat(readingOrderHrefs).contains(target.href.removeFragment().toString())
             }
+        }
+    }
+
+    @Test
+    fun adjacentChaptersFollowTheReadingOrderAndStopAtTheEnds() = runTest {
+        withAlice { publication ->
+            val order = publication.readingOrder
+            val middle = publication.locatorFromLink(order[1])!!.copyWithLocations(progression = 0.9)
+
+            val next = adjacentChapter(publication, middle, next = true)!!
+            val previous = adjacentChapter(publication, middle, next = false)!!
+            assertThat(next.href.toString()).isEqualTo(order[2].url().toString())
+            assertThat(next.locations.progression).isEqualTo(0.0)
+            assertThat(previous.href.toString()).isEqualTo(order[0].url().toString())
+            assertThat(previous.locations.progression).isEqualTo(1.0)
+
+            val first = publication.locatorFromLink(order.first())!!
+            val last = publication.locatorFromLink(order.last())!!
+            assertThat(adjacentChapter(publication, first, next = false)).isNull()
+            assertThat(adjacentChapter(publication, last, next = true)).isNull()
         }
     }
 
@@ -100,10 +107,11 @@ class ReaderEngineIntegrationTest {
     @Test
     fun excerptComesFromTheDisplayedChapterText() = runTest {
         withAlice { publication ->
-            val controller = ReflowableReaderController(
+            val controller = FragmentReaderController(
                 scope = backgroundScope,
                 readChapterHtml = { href -> readChapterHtml(publication, href) },
                 onCenterTap = {},
+                adjacentChapter = { _, _ -> null },
             )
             val chapter = publication.readingOrder[publication.readingOrder.size / 2]
             controller.onDisplayed(publication.locatorFromLink(chapter)!!.copyWithLocations(progression = 0.5))

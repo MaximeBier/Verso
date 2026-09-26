@@ -27,18 +27,4 @@ object ReaderGestures {
      * (prototype : le premier tap après une restauration peut être absorbé par un pré-défilement interne).
      */
     const val TAP_FALLBACK_DELAY_MS = 400L
-
-    /**
-     * Saut vers un autre fichier : la WebView cible est stabilisée après ce délai sans nouvelle position.
-     * Mesuré sur le téléphone (anomalie F) : la WebView fraîchement chargée se remet en page une trentaine
-     * de millisecondes après la fin du saut et décale le haut de l’écran d’un à plusieurs écrans.
-     */
-    const val JUMP_SETTLE_QUIET_MS = 300L
-
-    /**
-     * Écart de progression (dans le fichier) au-delà duquel un saut vers un autre fichier est recalé une fois,
-     * une fois la page stabilisée. Mesuré : Readium atterrit à 3e-6 près quand la page est déjà en page ; la remise
-     * en page décale de 0,007 à 0,02. 1e-5 vaut environ 3 px dans le fichier mesuré (Madame Bovary, 137 écrans).
-     */
-    const val JUMP_REALIGN_TOLERANCE = 1e-5
 }

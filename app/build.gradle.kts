@@ -99,7 +99,6 @@ dependencies {
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.readium.navigator)
-    implementation(libs.readium.navigator.web.reflowable)
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)

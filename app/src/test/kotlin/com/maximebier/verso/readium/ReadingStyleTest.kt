@@ -30,8 +30,6 @@ class ReadingStyleTest {
     @Test
     fun marginsStayAtTwentyFourDp() {
         assertThat(ReadingStyle.fragmentPageMargins()).isWithin(1e-9).of(1.2)
-        assertThat(ReadingStyle.webMinMargins(fontScale = 1f)).isWithin(1e-9).of(0.8)
-        assertThat(ReadingStyle.webMinMargins(fontScale = 2f)).isWithin(1e-9).of(0.4)
     }
 
     @Test
