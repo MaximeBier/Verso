@@ -15,7 +15,7 @@ Contrepartie acceptée : le défilement n'est plus continu entre chapitres. On c
 - Défilement continu **dans** un chapitre, fling natif de la WebView.
 - **Chapitre suivant** : un glissé vers le haut **commencé au bord bas** du chapitre et plus long que `ReaderGestures.CHAPTER_CHAIN_DRAG_DP` ouvre le début du chapitre suivant (titre en haut de l'écran). **Chapitre précédent** : glissé vers le bas commencé au bord haut, ouvre la fin du chapitre précédent. L'élan d'un fling qui atteint le bord ne change jamais de chapitre. Premier et dernier fichiers : rien ne se passe.
 - Aucune indication affichée en fin de chapitre. L'effet d'étirement de fin de défilement n'est pas désactivé.
-- Pour la machine à états, un changement de chapitre est de la **lecture**, pas un saut : la fin d'un chapitre et le début du suivant sont voisins en progression totale (environ un écran). Pas de carte « Revenir », la progression suit.
+- Pour la machine à états, un changement de chapitre est de la **lecture**, pas un saut. Il déplace l’affiché d’environ un écran en quelques millisecondes, ce qui ressemblerait à une navigation (seuil de la carte : 1 écran) : il est donc signalé explicitement (`GestureSignal.chapterTurn` → `GestureEnded.chapterTurn`). En suivi, la lecture passe à la nouvelle position, sans carte ; en AWAY, la carte reste et le point d’arrivée suit.
 - Sommaire, journal, « Revenir » et liens internes restent des sauts explicites, inchangés. Le sommaire vise l'ancre exacte (le navigateur classique suit les fragments).
 - Extrait de la carte « Reprendre » : texte réellement visible (`firstVisibleElementLocator`), à la place de l'estimation par progression.
 - Réglages imposés inchangés : Atkinson, 19 sp, interligne 1,6, alignement à gauche sans césure, CSS de l'éditeur écarté, couleurs des thèmes clair et sombre, graisse allégée en sombre, marges.
@@ -23,7 +23,7 @@ Contrepartie acceptée : le défilement n'est plus continu entre chapitres. On c
 
 ## Architecture
 
-- `ReaderController` (interface vue par le reste de l'app) **ne change pas**. Machine à états, `ReadingPositionCoordinator`, `PositionSaver`, `SessionCoordinator`, barres, sommaire, journal et carte « Revenir » ne changent pas.
+- `ReaderController` (interface vue par le reste de l’app) ne change que par le champ `chapterTurn` de `GestureSignal`. Machine à états, `ReadingPositionCoordinator`, `PositionSaver`, `SessionCoordinator`, barres, sommaire, journal et carte « Revenir » ne changent pas.
 - `ReaderSurface.kt` : le navigateur Compose est remplacé par `EpubNavigatorFragment` dans un `AndroidFragment`. La fabrique du fragment est posée avant sa création ; recréation de l'activité (thème, rotation) vérifiée sur le téléphone.
 - Nouveau contrôleur `FragmentReaderController` (remplace `ReflowableReaderController`) :
   - `displayed` : `currentLocator` du navigateur, avec la progression totale fine (`ReadingOrderPositions`) ;
