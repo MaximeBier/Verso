@@ -6,7 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.data.db.BookEntity
-import com.maximebier.verso.reader.ReflowableReaderController
+import com.maximebier.verso.reader.FragmentReaderController
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.ui.reader.PositionSaver
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +23,7 @@ import org.readium.r2.shared.util.mediatype.MediaType
 
 /**
  * Contrat de bout en bout de la carte « Reprendre » (revue finale, I1) : le locator enrichi par le vrai
- * moteur ([ReflowableReaderController.excerptLocator]), écrit par [PositionSaver], doit donner à la
+ * moteur ([FragmentReaderController.excerptLocator]), écrit par [PositionSaver], doit donner à la
  * bibliothèque un chapitre et un extrait.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,17 +32,18 @@ class ResumeCardContractTest {
 
     @Test
     fun locatorSavedFromTheEngineGivesChapterAndExcerpt() = runTest {
-        val controller = ReflowableReaderController(
+        val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { "<html><body><h1>I</h1><p>Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins)</p></body></html>" },
             onCenterTap = {},
+            adjacentChapter = { _, _ -> null },
             thresholds = ReadingThresholds(),
             uptimeMs = { testScheduler.currentTime },
             wallClockMs = { testScheduler.currentTime },
             textDispatcher = StandardTestDispatcher(testScheduler),
         ).apply {
             viewportHeightPx = 2_000
-            bind { }
+            bind(navigate = {}, probeEdges = { null }, visibleText = { null })
         }
         val reading = Locator(
             href = Url("OEBPS/partie2-chap1.xhtml")!!,

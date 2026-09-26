@@ -2,67 +2,56 @@
 
 package com.maximebier.verso.readium
 
-import kotlinx.collections.immutable.persistentListOf
-import org.readium.navigator.web.common.FontFamilyDeclarations
-import org.readium.navigator.web.common.FontStyle
-import org.readium.navigator.web.reflowable.ReflowableWebConfiguration
-import org.readium.navigator.web.reflowable.preferences.ReflowableWebPreferences
+import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
+import org.readium.r2.navigator.preferences.Theme
 import org.readium.r2.shared.ExperimentalReadiumApi
 
-/** Réglages V1 imposés au navigateur Compose web (équivalent de `epub(dark)` du contrat). */
+/** Réglages V1 imposés au navigateur EPUB classique de Readium (Fragment). */
 object VersoReadingPreferences {
 
     val ATKINSON: FontFamily = FontFamily(ReadingStyle.FONT_FAMILY_NAME)
 
-    /**
-     * @param fontScale échelle de police système. La WebView agrandit déjà le texte ; elle ne sert
-     *   ici qu’à garder la marge latérale à 24 dp.
-     * @param fontSizeSp taille de lecture ; paramètre pour la simulation « taille changée » (V2).
-     */
-    fun reflowableWeb(
-        dark: Boolean,
-        fontScale: Float = 1f,
-        fontSizeSp: Double = ReadingStyle.READING_FONT_SIZE_SP,
-    ): ReflowableWebPreferences {
+    /** @param fontSizeSp taille de lecture ; paramètre pour la simulation « taille changée » (V2). */
+    fun epub(dark: Boolean, fontSizeSp: Double = ReadingStyle.READING_FONT_SIZE_SP): EpubPreferences {
         val colors = ReadingStyle.colors(dark)
-        return ReflowableWebPreferences(
+        return EpubPreferences(
             backgroundColor = Color(colors.background),
+            textColor = Color(colors.text),
             fontFamily = ATKINSON,
             fontSize = ReadingStyle.fontSizeFactor(fontSizeSp),
             fontWeight = ReadingStyle.fontWeightFactor(dark),
             hyphens = false,
             letterSpacing = ReadingStyle.readiumLetterSpacing(dark),
             lineHeight = ReadingStyle.LINE_HEIGHT,
-            linkColor = Color(colors.link),
-            minMargins = ReadingStyle.webMinMargins(fontScale),
-            overridePublisherColors = true,
+            pageMargins = ReadingStyle.fragmentPageMargins(),
             paragraphSpacing = ReadingStyle.paragraphSpacingRem(),
+            publisherStyles = false,
             scroll = true,
             textAlign = TextAlign.START,
-            textColor = Color(colors.text),
-            visitedColor = Color(colors.link),
+            theme = if (dark) Theme.DARK else Theme.LIGHT,
         )
     }
 
-    fun reflowableWebConfiguration(): ReflowableWebConfiguration =
-        ReflowableWebConfiguration(
-            servedAssets = persistentListOf(ReadingStyle.SERVED_ASSETS_PATTERN),
-            fontFamilyDeclarations = FontFamilyDeclarations {
-                addFontFamilyDeclaration(ATKINSON) {
-                    addFontFace {
-                        addSource(ReadingStyle.FONT_ASSET_REGULAR, preload = true)
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(ReadingStyle.FONT_WEIGHT_AXIS)
-                    }
-                    addFontFace {
-                        addSource(ReadingStyle.FONT_ASSET_ITALIC)
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(ReadingStyle.FONT_WEIGHT_AXIS)
-                    }
-                }
-            },
-        )
+    /** Atkinson servie depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne lui-même). */
+    fun EpubNavigatorFragment.Configuration.applyVerso() {
+        servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)
+        disablePageTurnsWhileScrolling = true
+        addFontFamilyDeclaration(ATKINSON) {
+            addFontFace {
+                addSource(ReadingStyle.FONT_ASSET_REGULAR, preload = true)
+                setFontStyle(FontStyle.NORMAL)
+                setFontWeight(ReadingStyle.FONT_WEIGHT_AXIS)
+            }
+            addFontFace {
+                addSource(ReadingStyle.FONT_ASSET_ITALIC)
+                setFontStyle(FontStyle.ITALIC)
+                setFontWeight(ReadingStyle.FONT_WEIGHT_AXIS)
+            }
+        }
+    }
 }
