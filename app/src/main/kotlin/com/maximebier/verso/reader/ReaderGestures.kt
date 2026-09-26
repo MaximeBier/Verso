@@ -13,6 +13,9 @@ object ReaderGestures {
 
     const val SETTLE_POLL_MS = 40L
 
+    /** Glissé minimal, commencé au bord d’un chapitre, qui ouvre le chapitre voisin (dp). */
+    const val CHAPTER_CHAIN_DRAG_DP = 40f
+
     /** Longueur maximale de l’extrait enregistré avec la position. */
     const val EXCERPT_MAX_CHARS = 200
 
