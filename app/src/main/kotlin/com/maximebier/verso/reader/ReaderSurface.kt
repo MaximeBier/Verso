@@ -121,8 +121,7 @@ fun ReaderSurface(
     }
     controller.chainThresholdPx = ReaderGestures.CHAPTER_CHAIN_DRAG_DP * density
 
-    // La fabrique doit être posée avant que AndroidFragment instancie le fragment.
-    remember(publication) {
+    val fragmentFactory = remember(publication) {
         val listener = object : EpubNavigatorFragment.Listener {
             override fun shouldFollowInternalLink(link: Link, context: HyperlinkNavigator.LinkContext?): Boolean {
                 controller.onLinkActivated()
@@ -137,13 +136,15 @@ fun ReaderSurface(
                 controller.onLinkActivated()
             }
         }
-        activity.supportFragmentManager.fragmentFactory = EpubNavigatorFactory(publication).createFragmentFactory(
+        EpubNavigatorFactory(publication).createFragmentFactory(
             initialLocator = initialLocator,
             listener = listener,
             initialPreferences = VersoReadingPreferences.epub(dark),
             configuration = EpubNavigatorFragment.Configuration { applyVerso() },
         )
     }
+    // Posée à chaque composition, donc avant que AndroidFragment instancie le fragment.
+    activity.supportFragmentManager.fragmentFactory = fragmentFactory
     LaunchedEffect(controller) {
         controller.setPositions(ReadingOrderPositions.load(publication))
     }
