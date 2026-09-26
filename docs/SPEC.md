@@ -154,23 +154,23 @@ On y accède par la roue dentée dans l'en-tête de la bibliothèque.
 Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domaine public (par exemple un roman de Gutenberg ou Wikisource).
 
 - [ ] Au premier lancement, la bibliothèque vide propose un seul bouton « Importer un EPUB » et aucun choix de réglage.
-- [ ] J'importe un EPUB depuis le sélecteur Android et il apparaît dans le catalogue avec titre, auteur et couverture en moins de 5 secondes.
+- [x] J'importe un EPUB depuis le sélecteur Android et il apparaît dans le catalogue avec titre, auteur et couverture en moins de 5 secondes.
 - [ ] J'ouvre un EPUB depuis Drive via « Ouvrir avec » et il est importé sans étape supplémentaire.
-- [ ] Je lis un chapitre entier en scroll continu sans saccade visible ni saut de mise en page.
-- [ ] Je ferme l'app brutalement (swipe depuis les récents) au milieu d'un paragraphe ; à la réouverture, le même paragraphe est à l'écran.
+- [x] Je lis un chapitre entier en scroll continu sans saccade visible ni saut de mise en page.
+- [x] Je ferme l'app brutalement (swipe depuis les récents) au milieu d'un paragraphe ; à la réouverture, le même paragraphe est à l'écran.
 - [ ] Je redémarre le téléphone ; la position est intacte.
 - [ ] Je scrolle violemment par erreur de 30 pages : la progression ne bouge pas, et la carte « Revenir » me ramène à ma lecture en un tap.
-- [ ] Je fais le même scroll accidentel, puis je ferme l'app sans toucher la carte ; à la réouverture, je suis à ma position de lecture.
+- [x] Je fais le même scroll accidentel, puis je ferme l'app sans toucher la carte ; à la réouverture, je suis à ma position de lecture.
 - [ ] Je saute au début du livre par le sommaire ; la carte « Revenir » apparaît et me ramène au chapitre d'où je venais.
-- [ ] Après 25 secondes de lecture réelle à un nouvel endroit, la carte disparaît et la progression suit.
-- [ ] Après deux sessions de lecture, le journal les montre avec leur heure, leur durée et leur passage, et « Reprendre ici » mène à la fin de chacune.
-- [ ] Je change la taille de police via la valeur par défaut du code (simulation V2) ; la position restaurée reste le même paragraphe.
+- [x] Après 25 secondes de lecture réelle à un nouvel endroit, la carte disparaît et la progression suit.
+- [x] Après deux sessions de lecture, le journal les montre avec leur heure, leur durée et leur passage, et « Reprendre ici » mène à la fin de chacune.
+- [x] Je change la taille de police via la valeur par défaut du code (simulation V2) ; la position restaurée reste le même paragraphe.
 - [ ] Je corrige le titre d'un livre ; la correction survit à un redémarrage.
-- [ ] Un fichier non-EPUB refusé affiche un message et ne laisse aucune trace dans le catalogue.
-- [ ] Le thème sombre du système est respecté sans zone blanche éblouissante.
+- [x] Un fichier non-EPUB refusé affiche un message et ne laisse aucune trace dans le catalogue.
+- [x] Le thème sombre du système est respecté sans zone blanche éblouissante.
 - [ ] Avec la taille de texte Android à 200 %, aucun texte n'est coupé et aucune ligne ne demande de scroll horizontal.
 - [ ] Toutes les commandes font au moins 48 dp et tous les boutons à icône seule ont un intitulé lu par TalkBack.
-- [ ] Aucune permission demandée hormis l'accès aux fichiers via le sélecteur (pas de réseau, pas de contacts, rien).
+- [x] Aucune permission demandée hormis l'accès aux fichiers via le sélecteur (pas de réseau, pas de contacts, rien).
 
 ## V2, V3 et V4
 
