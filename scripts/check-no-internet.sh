@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Garde-fou « Rien ne quitte le téléphone » : le manifeste fusionné de :app ne doit déclarer aucune permission,
-# hormis la permission interne DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION qu'AndroidX Core ajoute à toute application.
+# Garde-fou « Rien ne quitte le téléphone » : le manifeste fusionné de :app ne doit déclarer aucune permission
+# hormis la permission interne DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION qu'AndroidX Core ajoute à toute application,
+# et doit désactiver la sauvegarde Android (allowBackup="false" et dataExtractionRules).
 # Usage : scripts/check-no-internet.sh [chemin/vers/AndroidManifest.xml]
-# Codes : 0 = conforme, 1 = permission interdite, 2 = manifeste introuvable.
+# Codes : 0 = conforme, 1 = permission interdite ou sauvegarde active, 2 = manifeste introuvable.
 set -euo pipefail
 
 manifest="${1:-}"
@@ -42,4 +43,20 @@ if [[ -n "$forbidden" ]]; then
   exit 1
 fi
 
-echo "OK : aucune permission demandée ($manifest)."
+# Sauvegarde Android : sinon le système enverrait livres, base et réglages sur le compte Google (ou vers un autre
+# appareil), sans que l'app ait besoin d'aucune permission.
+application="$(tr '\n' ' ' < "$manifest" | grep -oE '<application[^>]*>' | head -n 1 || true)"
+backup_errors=""
+if [[ ! "$application" =~ android:allowBackup=\"false\" ]]; then
+  backup_errors+="android:allowBackup=\"false\" manquant"$'\n'
+fi
+if [[ ! "$application" =~ android:dataExtractionRules=\"@xml/data_extraction_rules\" ]]; then
+  backup_errors+="android:dataExtractionRules=\"@xml/data_extraction_rules\" manquant"$'\n'
+fi
+if [[ -n "$backup_errors" ]]; then
+  echo "ERREUR : sauvegarde Android non désactivée dans $manifest :" >&2
+  printf '%s' "$backup_errors" | sed 's/^/  - /' >&2
+  exit 1
+fi
+
+echo "OK : aucune permission demandée, sauvegarde Android désactivée ($manifest)."

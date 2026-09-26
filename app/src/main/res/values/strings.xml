@@ -114,6 +114,8 @@
     <string name="import_error_unreadable">« %1$s » est un EPUB endommagé ou illisible.</string>
     <string name="import_error_nothing_added">Rien n’a été ajouté à votre bibliothèque.</string>
     <string name="import_error_ok">Compris</string>
+    <!-- Revue finale I3 : livre que le moteur refuse (mise en page fixe) ou fichier devenu illisible. -->
+    <string name="library_open_failed">Impossible d’ouvrir « %1$s ».</string>
 
     <!-- ===================== Détails du livre (1.07 – 1.08) ===================== -->
     <string name="details_title">Détails du livre</string>

@@ -249,4 +249,13 @@ class LabelsTest {
         assertThat(passageLabel(emptyList(), listOf("Chapitre II"))).isEqualTo("Chap. II")
         assertThat(passageLabel(listOf("Chapitre II"), emptyList())).isEqualTo("Chap. II")
     }
+
+    @Test
+    fun longLocationLowercasesAWordChapterAndKeepsANumber() {
+        val join = { part: String, chapter: String -> "$part, $chapter" }
+        assertThat(longLocation(listOf("Deuxième partie", "Chapitre I"), join)).isEqualTo("Deuxième partie, chapitre I")
+        assertThat(longLocation(listOf("Deuxième partie", "IV"), join)).isEqualTo("Deuxième partie, IV")
+        assertThat(longLocation(listOf("Préface"), join)).isEqualTo("Préface")
+        assertThat(longLocation(emptyList(), join)).isNull()
+    }
 }

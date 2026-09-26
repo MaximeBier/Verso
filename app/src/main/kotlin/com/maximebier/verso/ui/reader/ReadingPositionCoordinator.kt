@@ -55,6 +55,8 @@ class ReadingPositionCoordinator(
 
     private var controller: ReaderController? = null
     private var jobs: List<Job> = emptyList()
+    private var ticker: Job? = null
+    private var stopped = false
     private var lastDisplayed: BookPosition = initial
 
     /** Branche la surface de lecture (et le battement d’horloge) ; remplace la précédente. */
@@ -75,13 +77,35 @@ class ReadingPositionCoordinator(
                     dispatch(ReaderEvent.GestureEnded(signal.timeMs, lastDisplayed, signal.isFling))
                 }
             },
-            scope.launch {
-                while (isActive) {
-                    delay(TICK_INTERVAL_MS)
-                    dispatch(ReaderEvent.Tick(clock()))
-                }
-            },
         )
+        if (!stopped) startTicker()
+    }
+
+    /** Lecteur en arrière-plan (`ON_STOP`) : plus de battement d’horloge jusqu’à [onStarted]. */
+    fun onStopped() {
+        stopped = true
+        stopTicker()
+    }
+
+    /** Lecteur au premier plan (`ON_START`) : le battement reprend si une surface est branchée. */
+    fun onStarted() {
+        stopped = false
+        if (controller != null) startTicker()
+    }
+
+    private fun startTicker() {
+        if (ticker != null) return
+        ticker = scope.launch {
+            while (isActive) {
+                delay(TICK_INTERVAL_MS)
+                dispatch(ReaderEvent.Tick(clock()))
+            }
+        }
+    }
+
+    private fun stopTicker() {
+        ticker?.cancel()
+        ticker = null
     }
 
     /**
@@ -91,6 +115,7 @@ class ReadingPositionCoordinator(
     fun detach() {
         jobs.forEach { it.cancel() }
         jobs = emptyList()
+        stopTicker()
         controller = null
     }
 

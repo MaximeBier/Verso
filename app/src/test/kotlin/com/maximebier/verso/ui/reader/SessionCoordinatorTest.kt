@@ -113,6 +113,31 @@ class SessionCoordinatorTest {
     }
 
     @Test
+    fun noTickWhileBackgroundedAndTickingAgainAfterStart() = runTest {
+        // Revue finale M5 : aucun battement d'une seconde en arrière-plan. Chaque Tick lit l'horloge.
+        var clockReads = 0
+        val c = coordinator { clockReads++; testScheduler.currentTime }
+        c.start()
+        try {
+            c.onOpened(position(0.20))
+            advanceTimeBy(3_500); runCurrent()
+            assertThat(clockReads).isAtLeast(4)
+
+            c.onBackgrounded(); runCurrent()
+            val stopped = clockReads
+            advanceTimeBy(60_000); runCurrent()
+            assertThat(clockReads).isEqualTo(stopped)
+
+            c.onStarted()
+            advanceTimeBy(3_500); runCurrent()
+            assertThat(clockReads).isAtLeast(stopped + 1 + 3)
+        } finally {
+            c.close() // sinon le battement tourne sans fin en temps virtuel si une assertion échoue
+            advanceUntilIdle()
+        }
+    }
+
+    @Test
     fun wordsCountOnlyForwardReadingMoves() = runTest {
         var now = 0L
         val c = coordinator { now }

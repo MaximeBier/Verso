@@ -107,6 +107,7 @@ fun LibraryScreen(
             onRejectedDismiss = viewModel::onRejectedDismiss,
             onSnackbarAction = onOpenReader,
             onSnackbarShown = viewModel::onSnackbarShown,
+            onOpenFailedShown = viewModel::onOpenFailedShown,
         ),
     )
 }
@@ -127,6 +128,7 @@ data class LibraryActions(
     val onRejectedDismiss: () -> Unit = {},
     val onSnackbarAction: (Long) -> Unit = {},
     val onSnackbarShown: () -> Unit = {},
+    val onOpenFailedShown: () -> Unit = {},
 )
 
 /** Écrans 1.01 à 1.06 (et 1.08 depuis le menu ⋮), sans ViewModel. */
@@ -146,6 +148,14 @@ fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Mod
             )
             if (result == SnackbarResult.ActionPerformed) actions.onSnackbarAction(snackbar.bookId)
             actions.onSnackbarShown()
+        }
+    }
+    val openFailed = state.openFailed
+    if (openFailed != null) {
+        val message = stringResource(R.string.library_open_failed, openFailed)
+        LaunchedEffect(openFailed) {
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+            actions.onOpenFailedShown()
         }
     }
 

@@ -69,6 +69,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,
+                onFailed = viewModel::onEngineFailed,
             )
             // Surface quittée (rotation, thème) : plus de sauts vers l’ancienne rendition jusqu’au prochain onReady.
             DisposableEffect(publication) {

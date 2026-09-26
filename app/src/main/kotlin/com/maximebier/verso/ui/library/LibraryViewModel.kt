@@ -18,6 +18,7 @@ import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.importer.ImportResult
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.importer.RejectReason
+import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.ui.common.percentOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,6 +67,8 @@ data class LibraryUiState(
     val dialog: ImportDialog? = null,
     val snackbar: ImportSnackbar? = null,
     val pendingDelete: LibraryBook? = null,
+    /** Titre du livre que le lecteur n’a pas pu ouvrir (message), null sinon. */
+    val openFailed: String? = null,
 )
 
 /** Opérations d'import, injectées pour tester sans Readium (EpubImporter au cycle 5). */
@@ -95,6 +98,8 @@ class LibraryViewModel(
     private val importActions: ImportActions,
     incomingPending: StateFlow<List<Uri>> = MutableStateFlow(emptyList()),
     private val takeIncoming: () -> Uri? = { null },
+    openFailures: StateFlow<List<String>> = MutableStateFlow(emptyList()),
+    private val takeOpenFailure: () -> String? = { null },
 ) : ViewModel() {
 
     private data class Transient(
@@ -102,6 +107,7 @@ class LibraryViewModel(
         val dialog: ImportDialog? = null,
         val snackbar: ImportSnackbar? = null,
         val pendingDelete: LibraryBook? = null,
+        val openFailed: String? = null,
     )
 
     private val transient = MutableStateFlow(Transient())
@@ -121,15 +127,25 @@ class LibraryViewModel(
             books = list.map(::toLibraryBook),
             sort = sort,
             viewMode = viewMode,
-            resume = lastOpened?.let(::toResume),
+            resume = lastOpened?.let(::resumeInfoOf),
             importing = t.importing,
             dialog = t.dialog,
             snackbar = t.snackbar,
             pendingDelete = t.pendingDelete,
+            openFailed = t.openFailed,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), LibraryUiState())
 
     init {
+        viewModelScope.launch {
+            openFailures.collect { pending ->
+                // Un message à la fois : les suivants attendent onOpenFailedShown.
+                if (pending.isNotEmpty() && transient.value.openFailed == null) {
+                    val title = takeOpenFailure() ?: return@collect
+                    transient.update { it.copy(openFailed = title) }
+                }
+            }
+        }
         viewModelScope.launch {
             incomingPending.collect { pending ->
                 if (pending.isNotEmpty()) {
@@ -178,6 +194,12 @@ class LibraryViewModel(
         viewModelScope.launch { settings.setLibraryViewMode(mode) }
     }
 
+    /** Message « Impossible d’ouvrir » affiché : le suivant (s’il y en a un) prend sa place. */
+    fun onOpenFailedShown() {
+        val next = takeOpenFailure()
+        transient.update { it.copy(openFailed = next) }
+    }
+
     fun onSnackbarShown() {
         transient.update { it.copy(snackbar = null) }
     }
@@ -222,33 +244,6 @@ class LibraryViewModel(
         transient.update { it.copy(pendingDelete = null) }
     }
 
-    private fun toLibraryBook(entity: BookEntity) = LibraryBook(
-        id = entity.id,
-        title = entity.title,
-        author = entity.author,
-        coverPath = entity.coverPath,
-        colorSeed = entity.sha256,
-        status = LibraryRules.status(hasReadingLocator = entity.readingLocatorJson != null, progression = entity.progression),
-        progression = entity.progression,
-        percent = percentOf(entity.progression),
-    )
-
-    private fun toResume(entity: BookEntity): ResumeInfo {
-        val locator = entity.readingLocatorJson?.let { json ->
-            try {
-                Locator.fromJSON(JSONObject(json))
-            } catch (e: Exception) {
-                null
-            }
-        }
-        return ResumeInfo(
-            book = toLibraryBook(entity),
-            chapter = locator?.title?.trim()?.takeIf { it.isNotEmpty() },
-            excerpt = locator?.text?.highlight?.let(::excerptOf)?.takeIf { it.isNotEmpty() },
-            remainingMinutes = remainingMinutes(entity.totalWords, entity.progression),
-        )
-    }
-
     companion object {
         private const val STOP_TIMEOUT_MS = 5_000L
 
@@ -267,8 +262,42 @@ class LibraryViewModel(
                     ),
                     incomingPending = IncomingImports.pending,
                     takeIncoming = IncomingImports::take,
+                    openFailures = OpenFailures.pending,
+                    takeOpenFailure = OpenFailures::take,
                 )
             }
         }
     }
+}
+
+private fun toLibraryBook(entity: BookEntity) = LibraryBook(
+    id = entity.id,
+    title = entity.title,
+    author = entity.author,
+    coverPath = entity.coverPath,
+    colorSeed = entity.sha256,
+    status = LibraryRules.status(hasReadingLocator = entity.readingLocatorJson != null, progression = entity.progression),
+    progression = entity.progression,
+    percent = percentOf(entity.progression),
+)
+
+/**
+ * Carte « Reprendre » d'un livre. Le chapitre est le `title` que `PositionSaver` donne au locator ; l'extrait
+ * est le texte visible enregistré avec la position (`Locators.excerptOf` : `highlight`, sinon `after`, là où le
+ * moteur le range).
+ */
+internal fun resumeInfoOf(entity: BookEntity): ResumeInfo {
+    val locator = entity.readingLocatorJson?.let { json ->
+        try {
+            Locator.fromJSON(JSONObject(json))
+        } catch (e: Exception) {
+            null
+        }
+    }
+    return ResumeInfo(
+        book = toLibraryBook(entity),
+        chapter = locator?.title?.trim()?.takeIf { it.isNotEmpty() },
+        excerpt = locator?.let(Locators::excerptOf)?.let(::excerptOf)?.takeIf { it.isNotEmpty() },
+        remainingMinutes = remainingMinutes(entity.totalWords, entity.progression),
+    )
 }

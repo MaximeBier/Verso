@@ -2,7 +2,6 @@ package com.maximebier.verso.readium
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
 import android.util.Size
 import com.maximebier.verso.core.text.countWordsInHtml
 import java.io.File
@@ -29,9 +28,7 @@ const val PHASE_OPEN = "ouverture"
 const val PHASE_COVER = "couverture"
 const val PHASE_WORDS = "mots"
 
-/** Même tag que [EpubImporter] : les deux journalisent la durée des imports. */
-private const val IMPORT_LOG_TAG = "VersoImport"
-
+/** Durée d’une phase d’import (onPhase), en millisecondes. */
 private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
 
 /** Ouvre les EPUB avec Readium, hors ligne, et classe les refus (pas un EPUB, DRM, illisible). */
@@ -170,23 +167,13 @@ class ReadiumOpener(context: Context) {
         }
     }
 
-    /** Détail par ressource et par sous-étape (lecture Readium, décodage puis comptage), utile pour
-     * localiser un point chaud (voir le tag [IMPORT_LOG_TAG] dans logcat). */
+    /** Mots de toutes les ressources HTML de l’ordre de lecture (la synthèse par import est journalisée sous `VersoImport`). */
     private suspend fun countWords(publication: Publication): Long =
         publication.readingOrder
             .filter { it.mediaType?.isHtml == true }
             .sumOf { link ->
-                val readStart = System.nanoTime()
                 val bytes = publication.get(link)?.useResource { resource -> resource.read().getOrNull() }
-                val readMs = elapsedMs(readStart)
-                val countStart = System.nanoTime()
-                val words = if (bytes == null) 0L else countWordsInHtml(bytes.decodeToString())
-                val countMs = elapsedMs(countStart)
-                Log.d(
-                    IMPORT_LOG_TAG,
-                    "  ressource href=${link.href} octets=${bytes?.size ?: 0} lecture=${readMs}ms comptage=${countMs}ms mots=$words",
-                )
-                words
+                if (bytes == null) 0L else countWordsInHtml(bytes.decodeToString())
             }
 
     private companion object {

@@ -90,7 +90,7 @@ La V1 est finie quand je peux importer un EPUB, le lire d'un bout à l'autre en 
 | Espace entre paragraphes | 0,5 × interligne | Soit 1,5 × l'interligne d'un paragraphe à l'autre (WCAG 1.4.8) |
 | Marges latérales | 24 dp | |
 | Alignement | À gauche, **pas de justification, pas de césure** | Imposé par-dessus le CSS de l'éditeur (réglages utilisateur Readium) |
-| Titres de chapitre | Centrés : partie en 14 sp, numéro en 28 sp | |
+| Titres de chapitre | Centrés : partie en 14 sp, numéro en 28 sp | Rendu tel que l'EPUB le permet : le CSS de l'éditeur est gardé pour les titres, et quand le livre ne sépare pas partie et numéro (Gutenberg), ils restent alignés à gauche comme le texte |
 
 - Thème sombre : le texte est allégé (graisse 380 au lieu de 400, espacement des lettres +0,01 em), parce qu'un texte clair sur fond sombre paraît plus gras.
 - Tap au centre : affiche ou masque la barre de lecture.
@@ -100,6 +100,7 @@ La V1 est finie quand je peux importer un EPUB, le lire d'un bout à l'autre en 
 - Écran maintenu allumé pendant la lecture. L'app ne touche jamais à la luminosité.
 - Respect du thème système clair/sombre en V1 (les thèmes au choix attendent la V2).
 - Temps restant : estimé avec une vitesse par défaut de 250 mots/min en V1, puis avec la vitesse mesurée en V2.
+- Livre impossible à ouvrir (EPUB à mise en page fixe que le moteur refuse, fichier devenu illisible) : retour à la bibliothèque avec le message « Impossible d’ouvrir « Titre ». », jamais un écran vide.
 
 ### Marque-page et progression
 
@@ -115,6 +116,7 @@ Règles :
 - Un mouvement est de la **navigation** si c'est un geste lancé (fling), si plus de 3 écrans défilent en moins de 5 secondes, ou si c'est un saut explicite (sommaire, recherche, journal). La navigation ne touche pas la position de lecture.
 - Après une navigation, si la position affichée est à plus d'un écran de la position de lecture, une **carte de retour** apparaît en bas :
   - texte : « Vous avez quitté votre lecture » et « Votre lecture : Partie II, chap. I · 31 % » ;
+  - hors sommaire (page de titre, couverture), le titre du livre remplace le chapitre : « Votre lecture : Madame Bovary · 0 % » ;
   - boutons : « Rester ici » (la position affichée devient la position de lecture) et « Revenir » (retour à la position de lecture, bouton principal) ;
   - **pas de minuterie** : la carte reste tant que l'utilisateur n'a pas choisi.
 - La carte disparaît aussi si l'on se met à lire à la nouvelle place : après environ 25 secondes de mouvement de lecture à moins d'un écran de ce point, la position de lecture y passe automatiquement. Les 25 secondes courent depuis le premier glissé de lecture au nouvel endroit, pas depuis l'arrivée : la carte laissée affichée, un tap ou le début d'un fling ne comptent pas, et une pause de plus de 15 secondes entre deux glissés les remet à zéro.
@@ -438,7 +440,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 - La graisse allégée du thème sombre suppose des polices variables (axe `wght`) ou une graisse intermédiaire embarquée.
 - Tailles et interlignes en sp, tester avec le texte Android à 200 %. Gérer les insets de la barre d'état et de la barre de gestes, en particulier quand la barre de lecture s'affiche en mode immersif. Les barres (lecture et système) sont une surcouche : le texte reçoit des insets constants (barres système même masquées, découpe de l'écran), si bien que les afficher ou les masquer ne change jamais sa mise en page ni la position de lecture.
 - Tester avec des EPUB réels et imparfaits (Gutenberg en génère de très variés), pas seulement un fichier propre.
-- Le manifeste ne déclare pas `INTERNET`. Vérifier dans le manifeste fusionné qu'aucune dépendance ne l'ajoute, et la retirer avec `tools:node="remove"` si besoin.
+- Le manifeste ne déclare pas `INTERNET`. Vérifier dans le manifeste fusionné qu'aucune dépendance ne l'ajoute, et la retirer avec `tools:node="remove"` si besoin. La sauvegarde Android est désactivée (`allowBackup="false"`, `dataExtractionRules` qui exclut la sauvegarde sur le compte Google et le transfert d'appareil à appareil, `fullBackupContent` qui exclut tout avant Android 12) : sinon le système enverrait livres, base et réglages hors du téléphone sans aucune permission. Le garde-fou `scripts/check-no-internet.sh` vérifie les deux.
 
 ## Questions ouvertes
 
@@ -501,3 +503,6 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-26 (étape 5) : deux seuils de vitesse distincts : fling au relâchement du doigt (1,0 écran/s) et navigation entre deux positions affichées consécutives (4,0 écrans/s) ; un lien interne suivi dans le livre est un saut explicite.
 - 2026-09-26 (correctif A) : la confirmation « 25 secondes de lecture » compte la lecture effective (glissés sans fling près du point d'arrivée), depuis le premier glissé et non depuis l'arrivée ; une pause de plus de 15 secondes entre deux glissés (`confirmMaxIdleGapMs`) remet la fenêtre à zéro.
 - 2026-09-26 (correctif G) : insets constants pour la lecture (barres système même masquées, découpe de l'écran) ; la barre de lecture et les barres système se superposent au texte, les afficher ou les masquer ne change ni sa mise en page ni la position de lecture.
+- 2026-09-26 (revue finale) : sauvegarde Android désactivée (`allowBackup="false"`, `dataExtractionRules` sans sauvegarde sur le compte Google ni transfert d'appareil à appareil), pour tenir « Rien ne quitte le téléphone ».
+- 2026-09-26 (revue finale) : un livre que le moteur refuse (mise en page fixe) ou un fichier illisible ramène à la bibliothèque avec « Impossible d’ouvrir « Titre ». » (nouveau message `library_open_failed`).
+- 2026-09-26 (revue finale) : écarts acceptés : la carte « Revenir » affiche le titre du livre quand la position est hors sommaire ; les titres de chapitre gardent le CSS de l'éditeur et ne sont pas centrés quand l'EPUB ne sépare pas partie et numéro. La carte « Reprendre » lit le chapitre et l'extrait enregistrés avec la position de lecture.

@@ -146,4 +146,16 @@ class LibraryScreenTest {
         assertThat(opened).isEqualTo(6L)
         assertThat(shown).isTrue()
     }
+
+    @Test
+    fun openFailureIsAnnouncedBySnackbar() {
+        // Revue finale I3 : livre refusé par le moteur (ou fichier illisible), retour à la bibliothèque avec un message.
+        var shown = false
+        compose.mainClock.autoAdvance = false
+        show(LibrarySamples.list.copy(openFailed = "Album illustré"), LibraryActions(onOpenFailedShown = { shown = true }))
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithText(text(R.string.library_open_failed, "Album illustré")).assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(15_000)
+        assertThat(shown).isTrue()
+    }
 }

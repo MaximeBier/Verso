@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.reader
 
+import com.maximebier.verso.R
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -36,7 +37,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -63,6 +66,9 @@ class ReaderViewModelTest {
 
     /** ViewModels créés par [factory] : leurs dernières écritures de session sont attendues avant de fermer la base. */
     private val viewModels = mutableListOf<ReaderViewModel>()
+
+    /** Titres signalés par `reportOpenFailure` (message de la bibliothèque). */
+    private val openFailures = mutableListOf<String>()
 
     @Before
     fun setUp() {
@@ -142,18 +148,43 @@ class ReaderViewModelTest {
         store.clear()
     }
 
+    @Test
+    fun savedReadingPositionCarriesTheLongChapterLabelOfTheReadingBar() = runTest {
+        // Revue finale I1 : la carte « Reprendre » lit le titre du locator écrit en base.
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val store = ViewModelStore()
+        val (viewModel, fake, id) = openAnchoredBook(store, startProgression = 0.50)
+        advanceTimeBy(2_000)
+        fake.displayed.value = anchoredLocator(0.501)
+        runCurrent()
+        fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false))
+        advanceTimeBy(1_000)
+        runCurrent()
+        viewModel.onStop()
+        runCurrent()
+
+        // Attente en temps réel (Room écrit sur son propre fil) : le battement de 1 s ne laisse jamais le planificateur au repos.
+        val stored = withContext(Dispatchers.Default) {
+            withTimeoutOrNull(10_000) {
+                books.observeBook(id).first { entity -> entity?.readingLocatorJson?.let(Locators::fromJson)?.title != null }
+            }
+        }
+        store.clear() // avant l’assertion : sinon le battement tourne sans fin en temps virtuel si elle échoue
+        assertThat(stored?.readingLocatorJson?.let(Locators::fromJson)?.title).isEqualTo("Première partie, II")
+    }
+
     /** Ouvre l'EPUB ancré (position : début de `p1.xhtml`) avec une surface factice ; préordre 3 = « III ». */
-    private suspend fun TestScope.openAnchoredBook(store: ViewModelStore): Pair<ReaderViewModel, FakeReaderController> {
+    private suspend fun TestScope.openAnchoredBook(store: ViewModelStore, startProgression: Double = 0.0): Triple<ReaderViewModel, FakeReaderController, Long> {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val file = EpubFixtures.anchoredEpub(context.filesDir.resolve("ancres.epub"))
-        val start = anchoredLocator(0.0)
+        val start = anchoredLocator(startProgression)
         val id = books.insert(testBook(Locators.toJson(start), 0.0).copy(filePath = file.path))
         val viewModel = ViewModelProvider.create(store, factory(id, open = ReadiumOpener(context)::open))[ReaderViewModel::class]
         viewModel.uiState.first { !it.loading }
         val fake = FakeReaderController(start)
         viewModel.onReaderReady(fake)
         runCurrent()
-        return viewModel to fake
+        return Triple(viewModel, fake, id)
     }
 
     private fun anchoredLocator(progression: Double) = Locator(
@@ -217,6 +248,37 @@ class ReaderViewModelTest {
         val viewModel = ViewModelProvider.create(store, factory(bookId = 999))[ReaderViewModel::class]
 
         assertThat(viewModel.uiState.first { !it.loading }.failed).isTrue()
+        store.clear()
+    }
+
+    @Test
+    fun unreadableFileFailsAndReportsTheBook() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(
+            store,
+            factory(id, open = { Result.failure(IllegalStateException("illisible")) }),
+        )[ReaderViewModel::class]
+
+        assertThat(viewModel.uiState.first { !it.loading }.failed).isTrue()
+        assertThat(openFailures).containsExactly("Madame Bovary")
+        store.clear()
+    }
+
+    @Test
+    fun engineRefusingTheBookFailsAndReportsIt() = runTest {
+        // Revue finale I3 : EPUB à mise en page fixe, rendition impossible : retour à la bibliothèque avec un message.
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        assertThat(viewModel.uiState.first { !it.loading }.failed).isFalse()
+
+        viewModel.onEngineFailed()
+
+        assertThat(viewModel.uiState.value.failed).isTrue()
+        assertThat(openFailures).containsExactly("Madame Bovary")
         store.clear()
     }
 
@@ -412,6 +474,8 @@ class ReaderViewModelTest {
                 sessions = SessionRepository(db.sessionDao()),
                 openPublication = open,
                 clock = clock,
+                joinLocation = { part, chapter -> ApplicationProvider.getApplicationContext<Context>().getString(R.string.common_location_long, part, chapter) },
+                reportOpenFailure = { title -> openFailures += title },
             ).also { viewModels += it }
         }
     }

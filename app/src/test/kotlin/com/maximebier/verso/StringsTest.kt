@@ -49,4 +49,10 @@ class StringsTest {
         assertThat(context.getString(R.string.library_empty_title)).isEqualTo("Votre bibliothèque est vide")
         assertThat(context.getString(R.string.library_empty_import)).isEqualTo("Importer un EPUB")
     }
+
+    @Test
+    fun openFailureMessageUsesTypographicApostropheAndGuillemets() {
+        assertThat(context.getString(R.string.library_open_failed, "Album"))
+            .isEqualTo("Impossible d’ouvrir « Album ».")
+    }
 }

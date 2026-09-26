@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.maximebier.verso.R
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
@@ -14,6 +15,7 @@ import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.calibrateAnchor
 import com.maximebier.verso.core.text.chapterPathAt
+import com.maximebier.verso.core.text.longLocation
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.BookRepository
@@ -22,6 +24,7 @@ import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.TocAnchors
+import com.maximebier.verso.ui.library.OpenFailures
 import java.io.File
 import java.time.ZoneId
 import kotlin.math.floor
@@ -91,6 +94,10 @@ class ReaderViewModel(
     private val sessions: SessionRepository,
     private val openPublication: suspend (File) -> Result<Publication>,
     private val clock: () -> Long,
+    /** Gabarit `common_location_long` (« Deuxième partie, chapitre I »), lu dans les ressources. */
+    private val joinLocation: (part: String, chapter: String) -> String,
+    /** Livre impossible à ouvrir (fichier illisible, moteur qui le refuse) : titre signalé à la bibliothèque. */
+    private val reportOpenFailure: (title: String) -> Unit = {},
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -109,11 +116,15 @@ class ReaderViewModel(
         bookId = bookId,
         save = books::saveReadingPosition,
         scope = viewModelScope,
+        chapterTitle = ::chapterTitleOf,
     )
     private var coordinator: ReadingPositionCoordinator? = null
     private var controller: ReaderController? = null
     private var controllerJob: Job? = null
     private var calibrationJob: Job? = null
+
+    /** Entre `ON_STOP` et `ON_START` : aucun battement d’horloge (coordinateur de position). */
+    private var stopped = false
 
     /** Saut demandé sans surface prête (activité recréée) : appliqué au prochain [onReaderReady]. */
     private var pendingJump: PendingJump? = null
@@ -154,7 +165,7 @@ class ReaderViewModel(
             return
         }
         val publication = openPublication(File(book.filePath)).getOrElse {
-            _uiState.update { it.copy(loading = false, failed = true) }
+            fail(book.title)
             return
         }
         books.markOpened(bookId, clock())
@@ -169,7 +180,7 @@ class ReaderViewModel(
             else -> null
         }
         if (initialPosition == null) {
-            _uiState.update { it.copy(loading = false, failed = true) }
+            fail(book.title)
             return
         }
         val created = ReadingPositionCoordinator(
@@ -180,6 +191,7 @@ class ReaderViewModel(
             onSave = positionSaver::requestSave,
         )
         coordinator = created
+        if (stopped) created.onStopped()
         _uiState.update {
             it.copy(
                 publication = publication,
@@ -293,6 +305,22 @@ class ReaderViewModel(
         }
     }
 
+    /** Titre de chapitre d’une position, même règle que la barre de lecture ([chapterPathAt], ancres comprises). */
+    private fun chapterTitleOf(locator: Locator): String? =
+        longLocation(chapterPathAt(_uiState.value.toc, Locators.hrefKey(locator), locator.locations.progression), joinLocation)
+
+    /** Le moteur refuse le livre (mise en page fixe…) : retour à la bibliothèque, avec un message. */
+    fun onEngineFailed() {
+        if (_uiState.value.failed) return
+        fail(_uiState.value.bookTitle)
+    }
+
+    /** Retour à la bibliothèque (ReaderScreen suit `failed`) ; la bibliothèque affiche `library_open_failed`. */
+    private fun fail(title: String) {
+        reportOpenFailure(title)
+        _uiState.update { it.copy(loading = false, failed = true) }
+    }
+
     fun toggleBars() {
         sessionCoordinator?.onInteraction()
         _uiState.update { it.copy(barsVisible = !it.barsVisible) }
@@ -321,6 +349,8 @@ class ReaderViewModel(
 
     /** Premier plan (`ON_START`) : après une mise en arrière-plan, une nouvelle session commence. */
     fun onStart() {
+        stopped = false
+        coordinator?.onStarted()
         sessionCoordinator?.onStarted()
     }
 
@@ -425,6 +455,9 @@ class ReaderViewModel(
      */
     fun onStop(changingConfigurations: Boolean = false) {
         positionSaver.flush()
+        // Aucun battement d’horloge en arrière-plan (revue finale M5) ; il reprend à onStart.
+        stopped = true
+        coordinator?.onStopped()
         if (!changingConfigurations) sessionCoordinator?.onBackgrounded()
     }
 
@@ -443,13 +476,16 @@ class ReaderViewModel(
     companion object {
         fun factory(bookId: Long): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val container = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as VersoApplication).container
+                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as VersoApplication
+                val container = app.container
                 ReaderViewModel(
                     bookId = bookId,
                     books = container.books,
                     sessions = container.sessions,
                     openPublication = container.readiumOpener::open,
                     clock = container.clock,
+                    joinLocation = { part, chapter -> app.getString(R.string.common_location_long, part, chapter) },
+                    reportOpenFailure = OpenFailures::report,
                 )
             }
         }
