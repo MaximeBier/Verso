@@ -111,8 +111,8 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
     }
 
     if (state.tocVisible) {
-        val rows = remember(state.toc, state.readingOrderHrefs, state.currentHref) {
-            buildTocRows(state.toc, state.readingOrderHrefs, state.currentHref)
+        val rows = remember(state.toc, state.readingOrderHrefs, state.currentHref, state.currentProgression) {
+            buildTocRows(state.toc, state.readingOrderHrefs, state.currentHref, state.currentProgression)
         }
         val summary = remember(state.toc) { tocSummary(state.toc) }
         TocSheet(

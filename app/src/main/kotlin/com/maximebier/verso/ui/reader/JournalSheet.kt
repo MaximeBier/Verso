@@ -81,7 +81,8 @@ data class JournalUiState(val days: List<JournalDay> = emptyList()) {
 /**
  * Construit l'état du journal : sessions enregistrées (plus récentes d'abord ou non, l'ordre est refait ici)
  * + session en cours du SessionTracker, qui remplace sa ligne éventuellement périmée en base.
- * [hrefOf] extrait le href (sans fragment) d'un locator JSON ; en production : [hrefOfLocatorJson].
+ * [positionOf] extrait d'un locator JSON le fichier (sans fragment) et la progression dans ce fichier ;
+ * en production : [positionOfLocatorJson].
  */
 fun journalUiState(
     sessions: List<SessionEntity>,
@@ -89,7 +90,7 @@ fun journalUiState(
     toc: List<TocNode>,
     now: Long,
     zone: ZoneId,
-    hrefOf: (String) -> String?,
+    positionOf: (String) -> ResourcePosition?,
 ): JournalUiState {
     val currentId = current?.id?.takeIf { it != 0L }
     val rows = buildList {
@@ -116,15 +117,18 @@ fun journalUiState(
         JournalDay(
             group = group,
             showYear = group is DayGroup.Date && group.date.year != currentYear,
-            sessions = dayRows.map { it.toItem(toc, zone, hrefOf) },
+            sessions = dayRows.map { it.toItem(toc, zone, positionOf) },
         )
     }
     return JournalUiState(days)
 }
 
-/** href du locator Readium sérialisé, sans fragment ; null si le JSON est illisible. */
-fun hrefOfLocatorJson(json: String): String? =
-    Locators.fromJson(json)?.href?.toString()?.substringBefore('#')
+/** Fichier d'une position (href sans fragment) et progression dans ce fichier (null si inconnue). */
+data class ResourcePosition(val href: String, val progression: Double?)
+
+/** Position du locator Readium sérialisé : href sans fragment et progression dans le fichier ; null si illisible. */
+fun positionOfLocatorJson(json: String): ResourcePosition? =
+    Locators.fromJson(json)?.let { ResourcePosition(Locators.hrefKey(it), it.locations.progression) }
 
 private data class JournalRow(
     val id: Long,
@@ -136,9 +140,9 @@ private data class JournalRow(
     val inProgress: Boolean,
 )
 
-private fun JournalRow.toItem(toc: List<TocNode>, zone: ZoneId, hrefOf: (String) -> String?): JournalSessionItem {
-    val startPath = hrefOf(start.locatorJson)?.let { chapterPathAt(toc, it) }.orEmpty()
-    val endPath = hrefOf(end.locatorJson)?.let { chapterPathAt(toc, it) }.orEmpty()
+private fun JournalRow.toItem(toc: List<TocNode>, zone: ZoneId, positionOf: (String) -> ResourcePosition?): JournalSessionItem {
+    val startPath = positionOf(start.locatorJson)?.let { chapterPathAt(toc, it.href, it.progression) }.orEmpty()
+    val endPath = positionOf(end.locatorJson)?.let { chapterPathAt(toc, it.href, it.progression) }.orEmpty()
     return JournalSessionItem(
         sessionId = id,
         start = clockTimeOf(startedAt, zone),

@@ -1,6 +1,5 @@
 package com.maximebier.verso.ui.reader
 
-import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -51,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.durationOfMinutes
+import com.maximebier.verso.ui.a11y.rememberReducedMotion
 import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
@@ -81,23 +81,23 @@ fun ReaderBars(
     modifier: Modifier = Modifier,
     onBottomBarHeightChanged: (Int) -> Unit = {},
 ) {
-    val animate = rememberAnimationsEnabled()
+    val reduced = rememberReducedMotion()
     LaunchedEffect(visible) { if (!visible) onBottomBarHeightChanged(0) }
     // La Box n’a aucun modificateur de pointeur : les taps hors des barres atteignent le texte dessous.
     Box(modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = visible,
             modifier = Modifier.align(Alignment.TopCenter),
-            enter = if (animate) fadeIn(tween(BAR_ANIMATION_MS)) + slideInVertically(tween(BAR_ANIMATION_MS)) { -it } else EnterTransition.None,
-            exit = if (animate) fadeOut(tween(BAR_ANIMATION_MS)) + slideOutVertically(tween(BAR_ANIMATION_MS)) { -it } else ExitTransition.None,
+            enter = if (reduced) EnterTransition.None else fadeIn(tween(BAR_ANIMATION_MS)) + slideInVertically(tween(BAR_ANIMATION_MS)) { -it },
+            exit = if (reduced) ExitTransition.None else fadeOut(tween(BAR_ANIMATION_MS)) + slideOutVertically(tween(BAR_ANIMATION_MS)) { -it },
         ) {
             ReaderTopBar(title = state.bookTitle, chapter = chapterLongLabel(state.chapterPath), onBack = onBack)
         }
         AnimatedVisibility(
             visible = visible,
             modifier = Modifier.align(Alignment.BottomCenter),
-            enter = if (animate) fadeIn(tween(BAR_ANIMATION_MS)) + slideInVertically(tween(BAR_ANIMATION_MS)) { it } else EnterTransition.None,
-            exit = if (animate) fadeOut(tween(BAR_ANIMATION_MS)) + slideOutVertically(tween(BAR_ANIMATION_MS)) { it } else ExitTransition.None,
+            enter = if (reduced) EnterTransition.None else fadeIn(tween(BAR_ANIMATION_MS)) + slideInVertically(tween(BAR_ANIMATION_MS)) { it },
+            exit = if (reduced) ExitTransition.None else fadeOut(tween(BAR_ANIMATION_MS)) + slideOutVertically(tween(BAR_ANIMATION_MS)) { it },
         ) {
             ReaderBottomBar(
                 state = state,
@@ -120,7 +120,8 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
                 .heightIn(min = VersoDimens.topBarReader)
-                .padding(start = 4.dp, end = 8.dp),
+                // Marge verticale sans effet à 100 % (hauteur minimale) ; elle décolle le texte des bords à 200 %.
+                .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -188,7 +189,13 @@ private fun ReaderBottomBar(
             }
             // Barre du livre en cours (§3.7) : 6 dp, accent ; elle occupe toute la largeur.
             VersoProgressBar(fraction = state.progression, current = true)
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Côte à côte et de même largeur ; l’un sous l’autre quand le texte système grossit, au lieu de couper
+            // « Sommaire » au milieu du mot.
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 // Boutons contour de la référence §3.8 (48 dp, pilule, bordure outline, 16 sp 600, icône 20).
                 OutlinedPillButton(
                     text = stringResource(R.string.reader_toc),
@@ -234,15 +241,6 @@ fun chapterLongLabel(path: List<String>): String? = when (path.size) {
         val startsWithWord = chapter.length > 1 && chapter[1].isLowerCase()
         val shown = if (startsWithWord) chapter.replaceFirstChar { it.lowercase(Locale.FRENCH) } else chapter
         stringResource(R.string.common_location_long, path[0], shown)
-    }
-}
-
-/** Faux si le réglage Android « Supprimer les animations » est actif. */
-@Composable
-fun rememberAnimationsEnabled(): Boolean {
-    val context = LocalContext.current
-    return remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
     }
 }
 

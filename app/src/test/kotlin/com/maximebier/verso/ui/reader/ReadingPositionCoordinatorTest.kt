@@ -119,9 +119,10 @@ class ReadingPositionCoordinatorTest {
         runCurrent()
         assertThat(coordinator.state.value.showReturnCard).isTrue()
 
-        // Lecture réelle : petits scrolls lents, moins d’un écran au total, pendant 26 s.
+        // Lecture réelle : petits scrolls lents toutes les 2 s, moins d’un écran au total. La fenêtre de
+        // confirmation s’ouvre au premier (2 s après le saut) : 14 scrolls couvrent 26 s de lecture.
         var total = 0.500
-        repeat(13) {
+        repeat(14) {
             advanceTimeBy(2_000)
             total += 0.000_05
             fake.displayed.value = testLocator(total = total)

@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.TocNode
+import com.maximebier.verso.core.text.currentInFile
 import com.maximebier.verso.ui.components.VersoBottomSheet
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoShapes
@@ -66,17 +67,26 @@ private fun flatten(toc: List<TocNode>): List<FlatNode> {
 }
 
 /**
- * Lignes du sommaire. Chapitre en cours = dernier chapitre (feuille) dont le fichier est à ou avant
- * le fichier affiché dans l’ordre de lecture ; les chapitres qui le précèdent sont « Lu ».
+ * Lignes du sommaire. Chapitre en cours : parmi les chapitres (feuilles) du fichier de la position, celui que
+ * choisit `currentInFile` à `currentProgression` (progression dans ce fichier ; même règle que la barre du haut,
+ * `chapterPathAt`) ; à défaut, le dernier chapitre d’un fichier antérieur dans l’ordre de lecture. Ceux qui le
+ * précèdent sont « Lu ».
  */
-fun buildTocRows(toc: List<TocNode>, readingOrderHrefs: List<String>, currentHref: String?): List<TocRow> {
+fun buildTocRows(
+    toc: List<TocNode>,
+    readingOrderHrefs: List<String>,
+    currentHref: String?,
+    currentProgression: Double? = null,
+): List<TocRow> {
     val flat = flatten(toc)
     val currentReadingIndex = currentHref?.let { readingOrderHrefs.indexOf(it) } ?: -1
     val leaves = flat.filter { it.node.children.isEmpty() }
     val current = if (currentReadingIndex < 0) {
         null
     } else {
-        leaves.lastOrNull { readingOrderHrefs.indexOf(it.node.href) in 0..currentReadingIndex }
+        val inFile = leaves.filter { readingOrderHrefs.indexOf(it.node.href) == currentReadingIndex }
+        currentInFile(inFile, currentProgression) { it.node }
+            ?: leaves.lastOrNull { readingOrderHrefs.indexOf(it.node.href) in 0 until currentReadingIndex }
     }
     var passedCurrent = current == null
     return flat.map { item ->

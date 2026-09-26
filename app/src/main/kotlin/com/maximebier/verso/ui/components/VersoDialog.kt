@@ -3,7 +3,7 @@
 package com.maximebier.verso.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,7 +72,8 @@ fun VersoDialog(
                 Modifier
                     .fillMaxSize()
                     .background(colors.scrim)
-                    .clickable(interactionSource = null, indication = null, onClick = onDismissRequest),
+                    // Toucher sans sémantique : TalkBack n'y voit pas de bouton sans intitulé (retour ferme le dialogue).
+                    .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } },
             )
             Box(
                 modifier = Modifier

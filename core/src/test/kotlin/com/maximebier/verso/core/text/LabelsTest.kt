@@ -76,6 +76,106 @@ class LabelsTest {
         assertThat(chapterPathAt(toc, "c5.xhtml")).containsExactly("Chapitre V")
     }
 
+    // ---------- chapterPathAt : plusieurs entrées ancrées dans un même fichier ----------
+
+    /**
+     * Façon Gutenberg : les entrées pointent vers des ancres (`book.xhtml#id`), plusieurs par fichier. Le texte
+     * avant la première ancre de `p2.xhtml` est la fin du chapitre II de la première partie (découpage par taille).
+     */
+    private val anchored = listOf(
+        TocNode(
+            "Première partie", "p1.xhtml", progression = 0.10,
+            children = listOf(
+                TocNode("I", "p1.xhtml", progression = 0.10),
+                TocNode("II", "p1.xhtml", progression = 0.50),
+            ),
+        ),
+        TocNode(
+            "Deuxième partie", "p2.xhtml", progression = 0.40,
+            children = listOf(
+                TocNode("I", "p2.xhtml", progression = 0.40),
+                TocNode("II", "p2.xhtml", progression = 0.70),
+            ),
+        ),
+    )
+
+    @Test
+    fun anchoredEntriesAreChosenByTheProgressionInsideTheFile() {
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = 0.10)).containsExactly("Première partie", "I").inOrder()
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = 0.30)).containsExactly("Première partie", "I").inOrder()
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = 0.50)).containsExactly("Première partie", "II").inOrder()
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = 1.0)).containsExactly("Première partie", "II").inOrder()
+        assertThat(chapterPathAt(anchored, "p2.xhtml", progression = 0.69)).containsExactly("Deuxième partie", "I").inOrder()
+        assertThat(chapterPathAt(anchored, "p2.xhtml", progression = 0.95)).containsExactly("Deuxième partie", "II").inOrder()
+    }
+
+    @Test
+    fun longFileEngineOneScreenBeforeTheEstimatedAnchorIsAlreadyInTheChapter() {
+        // Ancre estimée sur le texte, moteur sur la mise en page : après un saut, le haut de l'écran peut être
+        // un écran (≈ 1 200 caractères) avant l'estimation. Fichier long : 200 000 caractères.
+        val chars = 200_000
+        val toc = listOf(
+            TocNode("XII", "p2.xhtml", progression = 0.0, fileChars = chars),
+            TocNode("XIII", "p2.xhtml", progression = 0.50, fileChars = chars),
+        )
+        val oneScreen = 1_200.0 / chars
+        assertThat(chapterPathAt(toc, "p2.xhtml", progression = 0.50 - oneScreen)).containsExactly("XIII")
+        assertThat(chapterPathAt(toc, "p2.xhtml", progression = 0.50 - 3 * oneScreen)).containsExactly("XII")
+    }
+
+    @Test
+    fun shortFileToleranceIsTheSameNumberOfCharactersNotTheSameFraction() {
+        // 5 000 caractères : un écran de texte est un quart du fichier, pas 0,5 %.
+        val toc = listOf(
+            TocNode("I", "c.xhtml", progression = 0.0, fileChars = 5_000),
+            TocNode("II", "c.xhtml", progression = 0.60, fileChars = 5_000),
+        )
+        assertThat(chapterPathAt(toc, "c.xhtml", progression = 0.60 - 1_000.0 / 5_000)).containsExactly("II")
+        assertThat(chapterPathAt(toc, "c.xhtml", progression = 0.20)).containsExactly("I")
+    }
+
+    @Test
+    fun anchorAfterAShortTextStartsTheFile() {
+        // Ancre après 50 caractères (un titre courant, un filet) : ramenée au début du fichier.
+        val start = anchorProgression(charsBefore = 50, fileChars = 5_000)
+        assertThat(start).isEqualTo(0.0)
+        val toc = listOf(
+            TocNode("I", "c1.xhtml"),
+            TocNode("II", "c2.xhtml", progression = start, fileChars = 5_000),
+        )
+        assertThat(chapterPathAt(toc, "c2.xhtml", progression = 0.0)).containsExactly("II")
+    }
+
+    @Test
+    fun anchorProgressionIsTheShareOfTextBeforeIt() {
+        assertThat(anchorProgression(charsBefore = 50_000, fileChars = 200_000)).isEqualTo(0.25)
+        assertThat(anchorProgression(charsBefore = 0, fileChars = 0)).isEqualTo(0.0)
+    }
+
+    @Test
+    fun beforeTheFirstAnchorOfAFileTheEntryBeforeItInTheTocStillApplies() {
+        assertThat(chapterPathAt(anchored, "p2.xhtml", progression = 0.20)).containsExactly("Première partie", "II").inOrder()
+    }
+
+    @Test
+    fun beforeTheFirstAnchorOfTheBookThereIsNoChapter() {
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = 0.0)).isEmpty()
+        assertThat(chapterPathAt(anchored, "p1.xhtml", progression = null)).isEmpty()
+    }
+
+    @Test
+    fun entryWithoutAnchorStartsAtTheBeginningOfItsFile() {
+        val toc = listOf(TocNode("Préface", "book.xhtml"), TocNode("Chapitre I", "book.xhtml", progression = 0.30))
+        assertThat(chapterPathAt(toc, "book.xhtml", progression = 0.0)).containsExactly("Préface")
+        assertThat(chapterPathAt(toc, "book.xhtml", progression = 0.60)).containsExactly("Chapitre I")
+    }
+
+    @Test
+    fun shortLocationOfAnchoredChapterFollowsTheProgression() {
+        // Défaut C : en lisant le chapitre II, la barre affichait le premier chapitre du fichier.
+        assertThat(shortLocation(chapterPathAt(anchored, "p1.xhtml", progression = 0.80))).isEqualTo("Partie I, chap. II")
+    }
+
     // ---------- shortLocation ----------
 
     @Test

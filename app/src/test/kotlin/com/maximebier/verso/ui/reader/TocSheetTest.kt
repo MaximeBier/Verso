@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.TocNode
+import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -64,6 +65,58 @@ class TocSheetTest {
         assertThat(rows.filterIsInstance<TocRow.Chapter>().map { it.status })
             .containsExactly(ChapterStatus.READ, ChapterStatus.CURRENT, ChapterStatus.UNREAD, ChapterStatus.UNREAD)
             .inOrder()
+    }
+
+    /** Façon Gutenberg (Madame Bovary) : sommaire plat, chapitres ancrés, plusieurs par fichier. */
+    private val anchored = listOf(
+        TocNode("I", "a.xhtml", progression = 0.10),
+        TocNode("II", "a.xhtml", progression = 0.50),
+        TocNode("III", "b.xhtml", progression = 0.30),
+        TocNode("IV", "b.xhtml", progression = 0.80),
+    )
+
+    private fun statusesAt(href: String?, progression: Double?) =
+        buildTocRows(anchored, listOf("a.xhtml", "b.xhtml"), href, progression)
+            .map { (it as TocRow.Chapter).status }
+
+    @Test
+    fun anchoredChaptersFollowTheProgressionInsideTheFile() {
+        // Défaut C : à 0 %, le sommaire surlignait la dernière entrée du fichier et marquait les autres « Lu ».
+        assertThat(statusesAt("a.xhtml", 0.20))
+            .containsExactly(ChapterStatus.CURRENT, ChapterStatus.UNREAD, ChapterStatus.UNREAD, ChapterStatus.UNREAD).inOrder()
+        assertThat(statusesAt("a.xhtml", 0.60))
+            .containsExactly(ChapterStatus.READ, ChapterStatus.CURRENT, ChapterStatus.UNREAD, ChapterStatus.UNREAD).inOrder()
+        assertThat(statusesAt("b.xhtml", 0.50))
+            .containsExactly(ChapterStatus.READ, ChapterStatus.READ, ChapterStatus.CURRENT, ChapterStatus.UNREAD).inOrder()
+        assertThat(statusesAt("b.xhtml", 0.90))
+            .containsExactly(ChapterStatus.READ, ChapterStatus.READ, ChapterStatus.READ, ChapterStatus.CURRENT).inOrder()
+    }
+
+    @Test
+    fun beforeTheFirstAnchorOfAFileThePreviousChapterIsCurrent() {
+        assertThat(statusesAt("b.xhtml", 0.10))
+            .containsExactly(ChapterStatus.READ, ChapterStatus.CURRENT, ChapterStatus.UNREAD, ChapterStatus.UNREAD).inOrder()
+    }
+
+    @Test
+    fun anchorNotFoundIsChosenLikeTheTopBarDoes() {
+        // « II » : ancre introuvable dans le fichier (progression null = début du fichier).
+        val toc = listOf(
+            TocNode("I", "a.xhtml", progression = 0.10),
+            TocNode("II", "a.xhtml"),
+            TocNode("III", "a.xhtml", progression = 0.60),
+        )
+        val current = buildTocRows(toc, listOf("a.xhtml"), "a.xhtml", 0.30)
+            .filterIsInstance<TocRow.Chapter>().single { it.status == ChapterStatus.CURRENT }
+
+        assertThat(listOf(current.title)).isEqualTo(chapterPathAt(toc, "a.xhtml", 0.30))
+    }
+
+    @Test
+    fun beforeTheFirstAnchorOfTheBookNothingIsReadOrCurrent() {
+        assertThat(statusesAt("a.xhtml", 0.0)).containsExactly(
+            ChapterStatus.UNREAD, ChapterStatus.UNREAD, ChapterStatus.UNREAD, ChapterStatus.UNREAD,
+        )
     }
 
     @Test

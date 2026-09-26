@@ -16,10 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.navigator.common.CssSelector
 import org.readium.navigator.common.HtmlId
-import org.readium.navigator.common.Position
-import org.readium.navigator.common.Progression
 import org.readium.navigator.web.reflowable.ReflowableWebGoLocation
-import org.readium.navigator.web.reflowable.resource.ReflowableWebViewport
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
@@ -273,29 +270,6 @@ class ReflowableReaderControllerTest {
     }
 
     @Test
-    fun topOfViewportKeepsLocationInsideAChapter() {
-        val location = at("ch1.xhtml", 0.4, total = 0.2)
-        val viewport = viewport("ch1.xhtml" to (0.4..0.45))
-
-        assertThat(topOfViewport(location, viewport)).isEqualTo(location)
-    }
-
-    @Test
-    fun topOfViewportStaysOnThePreviousChapterAtABoundary() {
-        // `location` a déjà basculé au début de ch2 alors que le haut de l’écran montre la fin de ch1.
-        val location = at("ch2.xhtml", 0.0, total = 0.5).copy(title = "II")
-        val viewport = viewport("ch1.xhtml" to (0.97..1.0), "ch2.xhtml" to (0.0..0.02))
-
-        val top = topOfViewport(location, viewport)
-
-        assertThat(top.href.toString()).isEqualTo("ch1.xhtml")
-        assertThat(top.locations.progression).isEqualTo(0.97)
-        assertThat(top.locations.position).isNull()
-        assertThat(top.locations.totalProgression).isEqualTo(0.5)
-        assertThat(top.title).isNull()
-    }
-
-    @Test
     fun goLocationDropsFragmentFromHrefAndKeepsItAsHtmlId() {
         val fromToc = Locator(
             href = Url("ch2.xhtml")!!,
@@ -325,13 +299,4 @@ class ReflowableReaderControllerTest {
         assertThat(go.textAnchor).isNull()
         assertThat(go.htmlId).isNull()
     }
-
-    private fun viewport(vararg pages: Pair<String, ClosedFloatingPointRange<Double>>): ReflowableWebViewport =
-        ReflowableWebViewport(
-            readingOrder = pages.map { Url(it.first)!! },
-            progressions = pages.associate { (href, range) ->
-                Url(href)!! to (Progression(range.start)!!..Progression(range.endInclusive)!!)
-            },
-            positions = Position(1)!!..Position(2)!!,
-        )
 }
