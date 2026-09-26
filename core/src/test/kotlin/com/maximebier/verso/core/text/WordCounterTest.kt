@@ -85,6 +85,18 @@ class WordCounterTest {
         assertThat(countWordsInHtml("1 &amp non-entité")).isEqualTo(3)
     }
 
+    /** Chauffe la JIT puis renvoie la médiane de 3 mesures, moins sensible à une pause GC/JIT isolée
+     * qu'une mesure unique. */
+    private fun medianTimeOf(html: String): Long {
+        repeat(3) { countWordsInHtml(html) }
+        val samples = List(3) {
+            val start = System.nanoTime()
+            countWordsInHtml(html)
+            System.nanoTime() - start
+        }.sorted()
+        return samples[1]
+    }
+
     /**
      * Doubler la taille du document ne doit pas faire plus que doubler (à une bonne marge près) le
      * temps de comptage : garde-fou contre une régression en O(n²) (concaténation de chaînes en
@@ -97,19 +109,37 @@ class WordCounterTest {
         val small = paragraph.repeat(2_000)
         val large = paragraph.repeat(16_000) // 8x plus grand
 
-        fun timeOf(html: String): Long {
-            // Chauffe la JIT avant de mesurer, pour ne pas comparer du code interprété à du code compilé.
-            repeat(3) { countWordsInHtml(html) }
-            val start = System.nanoTime()
-            countWordsInHtml(html)
-            return System.nanoTime() - start
-        }
-
-        val smallNanos = timeOf(small)
-        val largeNanos = timeOf(large)
+        val smallNanos = medianTimeOf(small)
+        val largeNanos = medianTimeOf(large)
 
         // 8x la taille -> au plus ~20x le temps (marge généreuse pour l'aléa de la JVM/CI) ; une
         // vraie régression O(n²) donnerait ~64x.
         assertThat(largeNanos).isLessThan(smallNanos * 20)
+    }
+
+    /**
+     * Beaucoup de débuts de balise/commentaire jamais fermés (`<b`, `<!--`) sans le moindre `>` dans
+     * tout le document : sans mémorisation de « ce terminateur n'existe plus au-delà de X » dans
+     * [MarkupScanner], chaque `<` relance un `indexOf` non borné jusqu'à la fin du texte, ce qui
+     * dégénère en O(n²) — un import qui ne finirait jamais sur un chapitre malformé ou tronqué.
+     *
+     * Aucun de ces caractères n'étant une lettre/chiffre, tout se recolle en un seul mot dès qu'un
+     * premier caractère non-mot (`!`) apparaît : le compte attendu est 1, pas 0 (le mot n'est validé
+     * qu'à la fin, dans [WordCounterState.finish]) ni le nombre de répétitions.
+     */
+    @Test
+    fun malformedMarkupWithoutAnyClosingCharStaysLinear() {
+        val html = "a<b".repeat(100_000) + "<!--".repeat(50_000)
+
+        assertThat(countWordsInHtml(html)).isEqualTo(1)
+
+        val half = html.substring(0, html.length / 2)
+        val halfNanos = medianTimeOf(half)
+        val fullNanos = medianTimeOf(html)
+
+        // 2x la taille -> au plus ~6x le temps (marge généreuse) ; une régression O(n²) rendrait ce
+        // rapport très supérieur, et le temps absolu (plusieurs centaines de milliers de caractères)
+        // passerait de quelques millisecondes à des dizaines de secondes, voire plus.
+        assertThat(fullNanos).isLessThan(halfNanos * 6 + 1)
     }
 }

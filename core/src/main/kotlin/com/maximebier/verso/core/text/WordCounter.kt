@@ -89,11 +89,12 @@ private class WordCounterState {
 fun countWordsInHtml(html: String): Long {
     val n = html.length
     val counter = WordCounterState()
+    val scanner = MarkupScanner(html)
     var i = 0
     while (i < n) {
         val c = html[i]
         i = when {
-            c == '<' -> consumeMarkup(html, i, n, counter::onCut)
+            c == '<' -> consumeMarkup(html, i, n, scanner, counter::onCut)
             c == '&' -> consumeEntity(html, i, n, counter::onCodePoint)
             c == '­' -> i + 1 // césure conditionnelle : retirée, transparente
             else -> {
@@ -106,26 +107,64 @@ fun countWordsInHtml(html: String): Long {
     return counter.finish()
 }
 
+/**
+ * Mémorise, pour chaque terminateur de balise (`-->`, `?>`, `>`), la position au-delà de laquelle on
+ * sait déjà qu'il n'existe plus dans le document : évite de rescanner en vain jusqu'à la fin du texte
+ * à chaque nouveau `<` non fermé (ex. une ressource tronquée, ou `a<b<c<d…` sans espaces), ce qui
+ * ferait dégénérer [consumeMarkup] en O(n²). `indexOf` est monotone : si le terminateur est absent à
+ * partir d'une position, il l'est aussi à partir de toute position ultérieure — donc, une fois la
+ * recherche à vide constatée une fois, toutes les recherches suivantes à partir d'une position égale
+ * ou plus loin peuvent répondre « absent » sans rescanner.
+ */
+private class MarkupScanner(private val html: String) {
+    private var noCommentCloseFrom = Int.MAX_VALUE
+    private var noPiCloseFrom = Int.MAX_VALUE
+    private var noGtFrom = Int.MAX_VALUE
+
+    fun findCommentClose(from: Int): Int {
+        if (from >= noCommentCloseFrom) return -1
+        val idx = html.indexOf("-->", from)
+        if (idx == -1) noCommentCloseFrom = from
+        return idx
+    }
+
+    fun findPiClose(from: Int): Int {
+        if (from >= noPiCloseFrom) return -1
+        val idx = html.indexOf("?>", from)
+        if (idx == -1) noPiCloseFrom = from
+        return idx
+    }
+
+    fun findGt(from: Int): Int {
+        if (from >= noGtFrom) return -1
+        val idx = html.indexOf('>', from)
+        if (idx == -1) noGtFrom = from
+        return idx
+    }
+}
+
 /** Lit une balise, un commentaire, une instruction de traitement ou une déclaration à partir de
  * `html[start]` (`html[start] == '<'`) et renvoie l'index suivant. Appelle [onCut] quand ce contenu
  * doit couper un mot en cours (balise de bloc, section ignorée) ; ne l'appelle pas pour une balise en
- * ligne (le texte avant/après se retrouve directement concaténé, sans coupure). */
-private fun consumeMarkup(html: String, start: Int, n: Int, onCut: () -> Unit): Int {
+ * ligne (le texte avant/après se retrouve directement concaténé, sans coupure). Les recherches de
+ * terminateur passent par [scanner] pour rester O(n) même sur une entrée malformée (voir
+ * [MarkupScanner]). */
+private fun consumeMarkup(html: String, start: Int, n: Int, scanner: MarkupScanner, onCut: () -> Unit): Int {
     when {
         html.startsWith("<!--", start) -> {
-            val end = html.indexOf("-->", start + 4)
+            val end = scanner.findCommentClose(start + 4)
             if (end == -1) return start + 1 // pas de fermeture : '<' littéral, comme le ferait la regex
             onCut()
             return end + 3
         }
         html.startsWith("<?", start) -> {
-            val end = html.indexOf("?>", start + 2)
+            val end = scanner.findPiClose(start + 2)
             if (end == -1) return start + 1
             onCut()
             return end + 2
         }
         html.startsWith("<!", start) -> {
-            val end = html.indexOf('>', start + 2)
+            val end = scanner.findGt(start + 2)
             if (end == -1) return start + 1
             onCut()
             return end + 1
@@ -138,7 +177,7 @@ private fun consumeMarkup(html: String, start: Int, n: Int, onCut: () -> Unit): 
             j++
             while (j < n && (html[j].isAsciiLetterOrDigit() || html[j] == ':' || html[j] == '_' || html[j] == '-')) j++
             val name = html.substring(nameStart, j).substringAfter(':').lowercase()
-            val close = html.indexOf('>', j)
+            val close = scanner.findGt(j)
             if (close == -1) return start + 1
             return when {
                 name in SKIPPED_CONTENT_TAGS -> {
