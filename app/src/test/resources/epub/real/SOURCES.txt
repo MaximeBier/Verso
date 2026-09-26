@@ -1,0 +1,20 @@
+Corpus d'EPUB réels pour RealCorpusTest (tâche 7.2), téléchargé le 2026-09-26.
+Fichiers gardés tels quels : ils servent précisément parce qu'ils sont imparfaits.
+
+Sources :
+  gutenberg-14155-madame-bovary-fr.epub            https://www.gutenberg.org/cache/epub/14155/pg14155-images-3.epub
+  gutenberg-19657-notre-dame-de-paris-fr.epub      https://www.gutenberg.org/cache/epub/19657/pg19657-images-3.epub
+  wikisource-les-fleurs-du-mal-1868-fr.epub        https://ws-export.wmcloud.org/?format=epub-3&lang=fr&page=Les_Fleurs_du_mal_(1868)
+  gutenberg-2600-war-and-peace-en.epub             https://www.gutenberg.org/cache/epub/2600/pg2600-images-3.epub
+  gutenberg-1342-pride-and-prejudice-epub2-en.epub https://www.gutenberg.org/cache/epub/1342/pg1342.epub
+  gutenberg-4650-candide-fr.epub                   https://www.gutenberg.org/cache/epub/4650/pg4650-images-3.epub
+
+Licences : Project Gutenberg, domaine public ; Wikisource, texte du domaine public, mise en forme CC BY-SA 3.0.
+
+SHA-256 :
+c25cf3d9ad4d41147ecc6947debcf981a961fd6b69a4219d9892af50b934c8bb *gutenberg-1342-pride-and-prejudice-epub2-en.epub
+0a6af0d3df69a665d7a5a8e9bd99993061c13176f19a8693624ae90ff54be094 *gutenberg-14155-madame-bovary-fr.epub
+f203ddfc3d0eda17d041510c683484ce87cc34f654050439a61c5417f1cf6c0d *gutenberg-19657-notre-dame-de-paris-fr.epub
+7018b87eb43cf32f977fd4d8d1f9b08964edd39b129604ee54dda70d5f78a6f4 *gutenberg-2600-war-and-peace-en.epub
+649c8e740720f07aae24b69b9c35c600f62ec80dcf22242e441c77cf58a923e8 *gutenberg-4650-candide-fr.epub
+424e44566881a90da262840b7bc148aa8c2e3823c7abcc811929e329d7c9d0b5 *wikisource-les-fleurs-du-mal-1868-fr.epub

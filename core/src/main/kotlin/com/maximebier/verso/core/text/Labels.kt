@@ -3,25 +3,50 @@ package com.maximebier.verso.core.text
 import java.text.Normalizer
 import java.util.Locale
 
-/** Entrée du sommaire (titre, href Readium, enfants). */
-data class TocNode(val title: String, val href: String, val children: List<TocNode> = emptyList())
-
 private const val MAX_LEVELS = 2
 
 /**
- * Chemin de titres (partie, chapitre) contenant `href` (sans fragment), du plus haut au plus bas, 2 niveaux max.
+ * Chemin de titres (partie, chapitre) de la position (`href` sans fragment, `progression` dans ce fichier),
+ * du plus haut au plus bas, 2 niveaux max.
  *
- * Les href sont comparés sans fragment ni `/` initial. Parcours en profondeur dans l'ordre du sommaire :
- * la première entrée dont le sous-arbre contient `href` l'emporte, et un descendant l'emporte sur son
- * parent (partie et premier chapitre dans le même fichier). Plusieurs chapitres dans un seul fichier :
- * le premier l'emporte (le fragment est ignoré). Au-delà de 2 niveaux, on garde les deux plus profonds
- * (Tome > Partie > Chapitre → Partie, Chapitre). Titres vides ignorés. Sommaire vide ou href absent → liste vide.
+ * Les href sont comparés sans fragment ni `/` initial. Parmi les entrées du fichier, on garde celles déjà
+ * atteintes ([isReachedAt]) et, parmi elles, celle qui commence le plus loin : plusieurs chapitres ancrés dans
+ * un même fichier sont ainsi départagés par la progression. À égalité (entrées sans ancre, ou partie et premier
+ * chapitre sur la même ancre), le premier l'emporte dans l'ordre du sommaire, un descendant l'emportant sur son
+ * parent. Avant la première ancre du fichier, c'est l'entrée qui précède dans le sommaire (fin du chapitre
+ * précédent, fichiers découpés par taille) ; aucune avant → liste vide. Au-delà de 2 niveaux, on garde les deux
+ * plus profonds (Tome > Partie > Chapitre → Partie, Chapitre). Titres vides ignorés. Sommaire vide ou href
+ * absent → liste vide.
  */
-fun chapterPathAt(toc: List<TocNode>, href: String): List<String> {
+fun chapterPathAt(toc: List<TocNode>, href: String, progression: Double? = null): List<String> {
     val target = normalizeHref(href)
     if (target.isEmpty()) return emptyList()
-    val path = findPath(toc, target) ?: return emptyList()
-    return path.map { it.trim() }.filter { it.isNotEmpty() }.takeLast(MAX_LEVELS)
+    val entries = flattenWithPaths(toc)
+    val inFile = entries.filter { normalizeHref(it.node.href) == target }
+    if (inFile.isEmpty()) return emptyList()
+    // Postordre : à égalité, un descendant passe avant son parent.
+    val chosen = currentInFile(inFile.sortedBy { it.postorder }, progression) { it.node }
+        ?: entries.getOrNull(inFile.first().preorder - 1)
+        ?: return emptyList()
+    return cleanPath(chosen.path)
+}
+
+private class TocEntry(val node: TocNode, val path: List<String>, val preorder: Int, var postorder: Int = 0)
+
+/** Entrées dans l'ordre du sommaire (préordre), avec leur chemin de titres et leur rang en postordre. */
+private fun flattenWithPaths(toc: List<TocNode>): List<TocEntry> {
+    val result = mutableListOf<TocEntry>()
+    var post = 0
+    fun visit(nodes: List<TocNode>, parents: List<String>) {
+        nodes.forEach { node ->
+            val entry = TocEntry(node, parents + node.title, result.size)
+            result += entry
+            visit(node.children, entry.path)
+            entry.postorder = post++
+        }
+    }
+    visit(toc, emptyList())
+    return result
 }
 
 /**
@@ -64,15 +89,6 @@ fun passageLabel(start: List<String>, end: List<String>): String? {
     val startNumber = chapterNumber(startLevels.last())
     val endNumber = chapterNumber(endLevels.last())
     return if (sameParent && startNumber != null && endNumber != null) "$from → $endNumber" else "$from → $to"
-}
-
-private fun findPath(nodes: List<TocNode>, target: String): List<String>? {
-    for (node in nodes) {
-        val deeper = findPath(node.children, target)
-        if (deeper != null) return listOf(node.title) + deeper
-        if (normalizeHref(node.href) == target) return listOf(node.title)
-    }
-    return null
 }
 
 private fun normalizeHref(href: String): String = href.substringBefore('#').trim().removePrefix("/")

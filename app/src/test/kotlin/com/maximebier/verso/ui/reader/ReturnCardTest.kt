@@ -1,12 +1,6 @@
 package com.maximebier.verso.ui.reader
 
 import android.content.Context
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -22,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
+import com.maximebier.verso.screenshots.samples.ReturnCardSample
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -41,17 +36,7 @@ class ReturnCardTest {
 
     private fun show(dark: Boolean = false, onStay: () -> Unit = {}, onGoBack: () -> Unit = {}) {
         compose.setContent {
-            VersoTheme(darkTheme = dark) {
-                Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
-                    ReturnCard(
-                        location = "Partie II, chap. I",
-                        percent = 31,
-                        onStayHere = onStay,
-                        onGoBack = onGoBack,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-                    )
-                }
-            }
+            VersoTheme(darkTheme = dark) { ReturnCardSample(onStayHere = onStay, onGoBack = onGoBack) }
         }
     }
 

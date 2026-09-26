@@ -103,6 +103,18 @@ class ReadiumOpenerTest {
         }
     }
 
+    // Mode LEGACY (celui de RealCorpusTest, sans annotation) : son décodeur de bitmaps est
+    // permissif et transformerait n'importe quel contenu en image factice, masquant le bogue que
+    // ce test vise (une couverture EPUB 2 mal désignée par une page XHTML plutôt qu'une image).
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.LEGACY)
+    fun coverMetaPointingToNonImageResourceIsIgnored() = runTest {
+        val info = opener.inspect(
+            EpubFixtures.epub(file("couverture-non-image.epub"), nonImageCoverMetaId = "titlepage"),
+        ).getOrThrow()
+        assertThat(info.cover).isNull()
+    }
+
     @Test
     fun offlineHttpClientNeverReachesNetwork() = runTest {
         val request = HttpRequest(requireNotNull(AbsoluteUrl("https://www.gutenberg.org/")))

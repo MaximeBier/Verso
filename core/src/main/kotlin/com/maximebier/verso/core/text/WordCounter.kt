@@ -1,21 +1,14 @@
 package com.maximebier.verso.core.text
 
-private val COMMENTS = Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL)
-private val HEAD = Regex("<head\\b[^>]*>.*?</head\\s*>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-private val SCRIPT = Regex("<script\\b[^>]*>.*?</script\\s*>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-private val STYLE = Regex("<style\\b[^>]*>.*?</style\\s*>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-private val PROCESSING_INSTRUCTIONS = Regex("<\\?.*?\\?>", RegexOption.DOT_MATCHES_ALL)
-private val DECLARATIONS = Regex("<![^>]*>")
-private val TAG = Regex("</?([A-Za-z][A-Za-z0-9:_-]*)[^>]*>")
-private val ENTITY = Regex("&(#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);")
-private val WORD = Regex("[\\p{L}\\p{N}\\p{M}]+(?:[''‐‑-][\\p{L}\\p{N}\\p{M}]+)*")
-
 /** Balises en ligne : retirées sans espace pour ne pas couper un mot (« ex<em>tra</em>ordinaire »). */
 private val INLINE_TAGS = setOf(
     "a", "abbr", "b", "bdi", "bdo", "cite", "code", "data", "del", "dfn", "em", "font", "i", "ins",
     "kbd", "mark", "q", "rb", "rp", "rt", "ruby", "s", "samp", "small", "span", "strike", "strong",
     "sub", "sup", "time", "tt", "u", "var", "wbr",
 )
+
+/** Balises dont tout le contenu est ignoré (jamais lu comme du texte). */
+private val SKIPPED_CONTENT_TAGS = setOf("head", "script", "style")
 
 /** Entités nommées courantes ; une entité inconnue est retirée. */
 private val NAMED_ENTITIES = mapOf(
@@ -32,27 +25,182 @@ private val NAMED_ENTITIES = mapOf(
 )
 
 /**
+ * Machine à états qui reproduit `[\p{L}\p{N}\p{M}]+(?:[joiner][\p{L}\p{N}\p{M}]+)*` sans regex, en une
+ * seule passe caractère par caractère (voir [countWordsInHtml]).
+ *
+ * - [NONE] : aucun mot en cours.
+ * - [IN_WORD] : au milieu d'un mot.
+ * - [AFTER_JOINER] : le mot vient de rencontrer une apostrophe ou un tiret ; si le caractère suivant
+ *   est un caractère de mot, il se rattache au même mot ([IN_WORD]) ; sinon, ce tiret/apostrophe ne
+ *   faisait pas partie d'un mot (le mot déjà en cours est compté, ce nouveau caractère repart de zéro).
+ */
+private class WordCounterState {
+    private var state = NONE
+    var count = 0L
+        private set
+
+    fun onCut() {
+        if (state != NONE) count++
+        state = NONE
+    }
+
+    fun onCodePoint(cp: Int) {
+        when {
+            isWordCodePoint(cp) -> state = IN_WORD
+            isJoiner(cp) -> when (state) {
+                IN_WORD -> state = AFTER_JOINER
+                AFTER_JOINER -> {
+                    count++
+                    state = NONE
+                }
+                else -> Unit // NONE + joiner isolé : ne commence pas de mot
+            }
+            else -> onCut()
+        }
+    }
+
+    fun finish(): Long {
+        onCut()
+        return count
+    }
+
+    private companion object {
+        const val NONE = 0
+        const val IN_WORD = 1
+        const val AFTER_JOINER = 2
+    }
+}
+
+/**
  * Nombre de mots d'un document XHTML d'EPUB.
  *
- * Retire `<head>`, `<script>`, `<style>`, commentaires, déclarations et balises (les balises de bloc
- * valent une espace, les balises en ligne rien), décode les entités courantes et numériques, retire
+ * Ignore `<head>`, `<script>`, `<style>`, les commentaires, déclarations et balises (les balises de
+ * bloc coupent un mot, les balises en ligne non), décode les entités courantes et numériques, retire
  * les césures conditionnelles, puis compte les suites de lettres ou chiffres. Une apostrophe (' ou ')
  * ou un trait d'union entre deux lettres ne coupe pas le mot : « l'homme », « peut-être » = 1 mot.
+ *
+ * **Aucune regex** : une seule passe caractère par caractère sur le texte source (voir
+ * [WordCounterState]), sans construire de grande chaîne intermédiaire. Les regex `DOTALL`/`\p{…}`
+ * d'origine — même réduites à une seule passe de nettoyage manuel suivie d'une seule regex de
+ * comptage — restaient superlinéaires sur le moteur Java d'Android (ART) pour de gros documents :
+ * mesuré sur l'appareil (`VersoImport` dans logcat), pas seulement sur le JDK de bureau où le
+ * problème ne se voyait pas. Ce comptage n'appelle plus jamais `java.util.regex`.
  */
 fun countWordsInHtml(html: String): Long {
-    var text = COMMENTS.replace(html, " ")
-    text = HEAD.replace(text, " ")
-    text = SCRIPT.replace(text, " ")
-    text = STYLE.replace(text, " ")
-    text = PROCESSING_INSTRUCTIONS.replace(text, " ")
-    text = DECLARATIONS.replace(text, " ")
-    text = TAG.replace(text) { match ->
-        val name = match.groupValues[1].substringAfter(':').lowercase()
-        if (name in INLINE_TAGS) "" else " "
+    val n = html.length
+    val counter = WordCounterState()
+    var i = 0
+    while (i < n) {
+        val c = html[i]
+        i = when {
+            c == '<' -> consumeMarkup(html, i, n, counter::onCut)
+            c == '&' -> consumeEntity(html, i, n, counter::onCodePoint)
+            c == '­' -> i + 1 // césure conditionnelle : retirée, transparente
+            else -> {
+                val cp = html.codePointAt(i)
+                counter.onCodePoint(cp)
+                i + Character.charCount(cp)
+            }
+        }
     }
-    text = ENTITY.replace(text) { match -> decodeEntity(match.groupValues[1]) }
-    text = text.replace("­", "")
-    return WORD.findAll(text).count().toLong()
+    return counter.finish()
+}
+
+/** Lit une balise, un commentaire, une instruction de traitement ou une déclaration à partir de
+ * `html[start]` (`html[start] == '<'`) et renvoie l'index suivant. Appelle [onCut] quand ce contenu
+ * doit couper un mot en cours (balise de bloc, section ignorée) ; ne l'appelle pas pour une balise en
+ * ligne (le texte avant/après se retrouve directement concaténé, sans coupure). */
+private fun consumeMarkup(html: String, start: Int, n: Int, onCut: () -> Unit): Int {
+    when {
+        html.startsWith("<!--", start) -> {
+            val end = html.indexOf("-->", start + 4)
+            if (end == -1) return start + 1 // pas de fermeture : '<' littéral, comme le ferait la regex
+            onCut()
+            return end + 3
+        }
+        html.startsWith("<?", start) -> {
+            val end = html.indexOf("?>", start + 2)
+            if (end == -1) return start + 1
+            onCut()
+            return end + 2
+        }
+        html.startsWith("<!", start) -> {
+            val end = html.indexOf('>', start + 2)
+            if (end == -1) return start + 1
+            onCut()
+            return end + 1
+        }
+        else -> {
+            var j = start + 1
+            if (j < n && html[j] == '/') j++
+            val nameStart = j
+            if (j >= n || !html[j].isAsciiLetter()) return start + 1 // pas une balise reconnue par la regex d'origine
+            j++
+            while (j < n && (html[j].isAsciiLetterOrDigit() || html[j] == ':' || html[j] == '_' || html[j] == '-')) j++
+            val name = html.substring(nameStart, j).substringAfter(':').lowercase()
+            val close = html.indexOf('>', j)
+            if (close == -1) return start + 1
+            return when {
+                name in SKIPPED_CONTENT_TAGS -> {
+                    onCut()
+                    skipContentTag(html, close + 1, name)
+                }
+                name in INLINE_TAGS -> close + 1 // transparent : pas de coupure
+                else -> {
+                    onCut()
+                    close + 1
+                }
+            }
+        }
+    }
+}
+
+/** À partir de la position juste après la balise ouvrante `<head|script|style ...>`, saute jusqu'à
+ * la fermeture correspondante (insensible à la casse, espace éventuel avant `>`), ou jusqu'à la fin
+ * du document si elle est absente. */
+private fun skipContentTag(html: String, from: Int, name: String): Int {
+    val n = html.length
+    var i = from
+    while (i < n) {
+        if (html[i] == '<' && i + 1 < n && html[i + 1] == '/' &&
+            html.regionMatches(i + 2, name, 0, name.length, ignoreCase = true)
+        ) {
+            var j = i + 2 + name.length
+            while (j < n && html[j].isHtmlSpace()) j++
+            if (j < n && html[j] == '>') return j + 1
+        }
+        i++
+    }
+    return n
+}
+
+/** Lit une entité (nommée ou numérique) à partir de `html[start]` (`html[start] == '&'`) et renvoie
+ * l'index suivant. Appelle [onCodePoint] pour chaque point de code décodé ; une entité vide (`&shy;`,
+ * entité inconnue) n'appelle rien, ce qui recolle les mots de part et d'autre. */
+private fun consumeEntity(html: String, start: Int, n: Int, onCodePoint: (Int) -> Unit): Int {
+    var j = start + 1
+    if (j < n && html[j] == '#') {
+        var k = j + 1
+        val hex = k < n && (html[k] == 'x' || html[k] == 'X')
+        if (hex) k++
+        val digitsStart = k
+        while (k < n && (if (hex) html[k].isAsciiHexDigit() else html[k].isAsciiDigit())) k++
+        if (k > digitsStart && k < n && html[k] == ';') {
+            decodeEntity(html.substring(j, k)).codePoints().forEach(onCodePoint)
+            return k + 1
+        }
+        return start + 1
+    }
+    if (j < n && html[j].isAsciiLetter()) {
+        var k = j + 1
+        while (k < n && html[k].isAsciiLetterOrDigit()) k++
+        if (k < n && html[k] == ';') {
+            decodeEntity(html.substring(j, k)).codePoints().forEach(onCodePoint)
+            return k + 1
+        }
+        return start + 1
+    }
+    return start + 1
 }
 
 private fun decodeEntity(body: String): String = when {
@@ -63,3 +211,23 @@ private fun decodeEntity(body: String): String = when {
 
 private fun codePointToString(codePoint: Int?): String =
     if (codePoint != null && Character.isValidCodePoint(codePoint)) String(Character.toChars(codePoint)) else ""
+
+/** Équivalent de `\p{L}\p{N}\p{M}` : lettre, chiffre (au sens large) ou signe combinant. */
+private fun isWordCodePoint(cp: Int): Boolean = when (Character.getType(cp)) {
+    Character.UPPERCASE_LETTER.toInt(), Character.LOWERCASE_LETTER.toInt(), Character.TITLECASE_LETTER.toInt(),
+    Character.MODIFIER_LETTER.toInt(), Character.OTHER_LETTER.toInt(),
+    Character.DECIMAL_DIGIT_NUMBER.toInt(), Character.LETTER_NUMBER.toInt(), Character.OTHER_NUMBER.toInt(),
+    Character.NON_SPACING_MARK.toInt(), Character.COMBINING_SPACING_MARK.toInt(), Character.ENCLOSING_MARK.toInt(),
+    -> true
+    else -> false
+}
+
+/** Apostrophe droite et tirets qui ne coupent pas un mot entre deux lettres/chiffres. */
+private fun isJoiner(cp: Int): Boolean = cp == '\''.code || cp == '‐'.code || cp == '‑'.code || cp == '-'.code
+
+private fun Char.isAsciiLetter(): Boolean = this in 'A'..'Z' || this in 'a'..'z'
+private fun Char.isAsciiDigit(): Boolean = this in '0'..'9'
+private fun Char.isAsciiLetterOrDigit(): Boolean = isAsciiLetter() || isAsciiDigit()
+private fun Char.isAsciiHexDigit(): Boolean = isAsciiDigit() || this in 'a'..'f' || this in 'A'..'F'
+private fun Char.isHtmlSpace(): Boolean =
+    this == ' ' || this == '\t' || this == '\n' || this == '\u000B' || this == '\u000C' || this == '\r'

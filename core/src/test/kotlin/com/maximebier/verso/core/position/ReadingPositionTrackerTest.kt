@@ -392,61 +392,158 @@ class ReadingPositionTrackerTest {
             .containsExactly(SaveReading(pos(10.9)), ReadingMoved(pos(10.0), pos(10.9))).inOrder()
     }
 
+    /**
+     * Petit glissé de lecture : l'affiché passe à `to` à `timeMs`, le doigt est levé sans fling et le
+     * signal de fin de geste arrive 200 ms plus tard (après le repos du défilement, comme dans l'app).
+     */
+    private fun drag(timeMs: Long, to: Double): Array<ReaderEvent> =
+        arrayOf(Displayed(timeMs, pos(to)), GestureEnded(timeMs + 200, pos(to), isFling = false))
+
+    /** Glissés de lecture de 0,05 écran chacun à partir de `from`, aux instants donnés. */
+    private fun readingDrags(from: Double, times: List<Long>): Array<ReaderEvent> =
+        times.flatMapIndexed { i, t -> drag(t, from + 0.05 * (i + 1)).toList() }.toTypedArray()
+
+    private fun ticks(fromS: Int, toS: Int): Array<ReaderEvent> =
+        (fromS..toS).map { s -> Tick(s * 1_000L) }.toTypedArray()
+
     @Test
     fun confirmationAfter25SecondsOfReadingAtTheNewPlace() {
         val tracker = awayAt15()
-        val before = tracker.feed(
-            Displayed(6_300, pos(15.1)),
-            Displayed(11_300, pos(15.2)),
-            Displayed(16_300, pos(15.3)),
-            Displayed(21_300, pos(15.4)),
-        )
+        // Petits glissés toutes les 3 s à partir de 5 000 : la fenêtre de lecture s'ouvre à la fin du premier
+        // (5 200), pas à l'arrivée (1 300).
+        val before = tracker.feed(*readingDrags(15.0, (0..8).map { 5_000L + 3_000L * it }))
         assertThat(before).isEmpty()
         assertThat(tracker.state.mode).isEqualTo(TrackerMode.AWAY)
+        assertThat(tracker.state.reading).isEqualTo(pos(10.0))
 
-        // 25 000 ms après l'arrivée (1 300) : la lecture passe au nouvel endroit.
-        assertThat(tracker.onEvent(Displayed(26_300, pos(15.5)))).containsExactly(SaveReading(pos(15.5)))
+        // 10ᵉ glissé, fini à 32 200 : 27 s de lecture depuis 5 200, la lecture passe au nouvel endroit.
+        assertThat(tracker.feed(*drag(32_000, 15.5))).containsExactly(SaveReading(pos(15.5)))
         assertThat(tracker.state).isEqualTo(following(15.5))
     }
 
     @Test
-    fun noConfirmationOneMillisecondBefore25Seconds() {
+    fun noConfirmationOneMillisecondBefore25SecondsOfReading() {
         val tracker = awayAt15()
         val effects = tracker.feed(
-            Displayed(6_300, pos(15.1)),
-            Displayed(16_300, pos(15.3)),
-            Displayed(26_299, pos(15.5)),
+            *drag(6_300, 15.1),
+            *drag(16_300, 15.3),
+            *drag(26_300, 15.4),
+            Displayed(31_299, pos(15.5)),
+            GestureEnded(31_499, pos(15.5), isFling = false), // 24 999 ms après la fin du premier glissé
         )
         assertThat(effects).isEmpty()
         assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 15.5))
+        assertThat(tracker.feed(*drag(32_000, 15.6))).containsExactly(SaveReading(pos(15.6)))
     }
 
     @Test
     fun noConfirmationWithoutReadingMovement() {
         val tracker = awayAt15()
-        val ticks = (2..600).map { s -> Tick(s * 1_000L) }
-        val effects = tracker.feed(*ticks.toTypedArray())
+        val effects = tracker.feed(*ticks(2, 600))
         assertThat(effects).isEmpty()
         assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 15.0))
+    }
+
+    /** Défaut A du contrôle sur téléphone : carte laissée 30 s, puis un seul glissé de 150 px. */
+    @Test
+    fun singleSmallDragAfterCardIdleForThirtySecondsDoesNotConfirm() {
+        val tracker = awayAt15()
+        tracker.feed(*ticks(2, 31))
+        val effects = tracker.feed(
+            Displayed(31_300, pos(15.05)),
+            Displayed(31_600, pos(15.1)),
+            Displayed(31_900, pos(15.12)),
+            GestureEnded(32_150, pos(15.12), isFling = false),
+            Tick(33_000),
+        )
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 15.12))
+    }
+
+    @Test
+    fun firstFrameOfAFlingAfterTwentyFiveSecondsDoesNotConfirm() {
+        val tracker = awayAt15()
+        tracker.feed(*ticks(2, 30))
+        // Premier Displayed du fling : lent vu depuis l'arrivée (30 s plus tôt), il n'est pas encore une navigation.
+        assertThat(tracker.onEvent(Displayed(30_500, pos(15.3)))).isEmpty()
+        assertThat(tracker.state.reading).isEqualTo(pos(10.0))
+        val effects = tracker.feed(
+            GestureEnded(30_600, pos(15.3), isFling = true),
+            Displayed(30_700, pos(18.0)),
+            Displayed(30_900, pos(20.0)),
+            Tick(31_500),
+        )
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 20.0))
+    }
+
+    /** Un tap (barres masquées) peut décaler l'affiché sans geste de défilement : ce n'est pas de la lecture. */
+    @Test
+    fun displayedShiftWithoutGestureAfterTwentyFiveSecondsDoesNotConfirm() {
+        val tracker = awayAt15()
+        tracker.feed(*ticks(2, 30))
+        val effects = tracker.feed(Displayed(30_500, pos(15.02)), Tick(31_000), Tick(32_000))
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 15.02))
+    }
+
+    @Test
+    fun longIdleGapInsideTheReadingWindowRestartsIt() {
+        val tracker = awayAt15()
+        // 10 s de lecture, 60 s sans rien, 10 s de lecture : jamais 25 s de lecture continue.
+        val first = tracker.feed(*readingDrags(15.0, (0..5).map { 5_000L + 2_000L * it }))
+        tracker.feed(*ticks(16, 74))
+        val second = tracker.feed(*readingDrags(15.1, (0..5).map { 75_000L + 2_000L * it }))
+        assertThat(first + second).isEmpty()
+        assertThat(tracker.state.mode).isEqualTo(TrackerMode.AWAY)
+
+        // La lecture continue : 25 s après le début de la seconde fenêtre (75 200), elle confirme.
+        val more = tracker.feed(*readingDrags(15.4, (0..5).map { 87_000L + 2_000L * it }))
+        assertThat(more).isEmpty()
+        assertThat(tracker.feed(*drag(100_000, 15.8))).containsExactly(SaveReading(pos(15.8)))
+    }
+
+    @Test
+    fun pausesUpToTheIdleGapKeepTheReadingWindowOpen() {
+        val gap = ReadingThresholds().confirmMaxIdleGapMs
+        val tracker = awayAt15()
+        val effects = tracker.feed(*drag(5_000, 15.1), *drag(5_000 + gap, 15.2))
+        assertThat(effects).isEmpty()
+        // Fenêtre ouverte à 5 200 ; ce glissé finit 25 s plus tard, chaque pause ≤ confirmMaxIdleGapMs.
+        assertThat(tracker.feed(*drag(30_000, 15.3))).containsExactly(SaveReading(pos(15.3)))
+    }
+
+    @Test
+    fun pauseLongerThanTheIdleGapRestartsTheReadingWindow() {
+        val gap = ReadingThresholds().confirmMaxIdleGapMs
+        val tracker = awayAt15()
+        val effects = tracker.feed(
+            *drag(5_000, 15.1),
+            *drag(5_000 + gap + 1, 15.2), // pause trop longue : la fenêtre repart ici
+            *drag(30_000, 15.3),
+        )
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state.mode).isEqualTo(TrackerMode.AWAY)
     }
 
     @Test
     fun driftBeyondOneScreenMovesArrivalPointAndRestartsClock() {
         val tracker = awayAt15()
-        assertThat(tracker.onEvent(Displayed(6_300, pos(15.5)))).isEmpty()
-        // 1,2 écran du point d'arrivée : le point se déplace à 16,2 et le chrono repart à 11 300.
-        assertThat(tracker.onEvent(Displayed(11_300, pos(16.2)))).isEmpty()
-        // 30 s après la première arrivée mais 20 s après la nouvelle : pas encore.
-        assertThat(tracker.onEvent(Displayed(31_300, pos(16.4)))).isEmpty()
+        assertThat(tracker.feed(*drag(6_300, 15.5))).isEmpty()
+        // 1,2 écran du point d'arrivée : le point se déplace à 16,2 et la fenêtre repart à la fin de ce glissé (11 500).
+        assertThat(tracker.feed(*drag(11_300, 16.2))).isEmpty()
+        assertThat(tracker.feed(*drag(21_300, 16.3))).isEmpty()
+        // 25 s après la première fenêtre (6 500) mais 20 s après la nouvelle : pas encore.
+        assertThat(tracker.feed(*drag(31_300, 16.4))).isEmpty()
         assertThat(tracker.state.mode).isEqualTo(TrackerMode.AWAY)
-        assertThat(tracker.onEvent(Displayed(36_300, pos(16.5)))).containsExactly(SaveReading(pos(16.5)))
+        assertThat(tracker.feed(*drag(36_300, 16.5))).containsExactly(SaveReading(pos(16.5)))
         assertThat(tracker.state).isEqualTo(following(16.5))
     }
 
     @Test
     fun newNavigationWhileAwayRestartsFromTheNewPlaceAndKeepsReading() {
         val tracker = awayAt15()
-        tracker.feed(Displayed(11_300, pos(15.1)), Displayed(21_300, pos(15.2)))
+        tracker.feed(*drag(11_300, 15.1), *drag(21_300, 15.2))
         val effects = tracker.feed(
             GestureEnded(22_000, pos(15.3), isFling = true),
             Displayed(22_100, pos(18.0)),
@@ -456,12 +553,12 @@ class ReadingPositionTrackerTest {
         assertThat(effects).isEmpty()
         assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 20.0))
 
-        // Le chrono repart de la nouvelle arrivée (22 300) : 31 s après la première, rien.
-        assertThat(tracker.onEvent(Displayed(32_300, pos(20.1)))).isEmpty()
+        // La navigation ne compte pas et remet la fenêtre à zéro : 25 s après le premier glissé (11 500), rien.
+        assertThat(tracker.feed(*drag(32_300, 20.1), *drag(36_300, 20.2))).isEmpty()
         assertThat(tracker.state.mode).isEqualTo(TrackerMode.AWAY)
 
         // La carte ramène toujours à la lecture d'origine.
-        assertThat(tracker.onEvent(GoBack(33_000))).containsExactly(ScrollTo(pos(10.0)))
+        assertThat(tracker.onEvent(GoBack(37_000))).containsExactly(ScrollTo(pos(10.0)))
     }
 
     @Test

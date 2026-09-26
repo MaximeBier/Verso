@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
 import com.maximebier.verso.ui.theme.VersoDimens
@@ -76,7 +75,10 @@ fun LibraryTopBar(
     }
 }
 
-/** Barre des écrans de détail (fiche, paramètres, licences) : retour + titre 22 sp sur une ligne. */
+/**
+ * Barre des écrans de détail (fiche, paramètres, licences) : retour + titre 22 sp. Le titre, toujours un libellé
+ * de l’app, tient sur une ligne à 100 % et passe à la ligne au lieu d’être tronqué quand le texte système grossit.
+ */
 @Composable
 fun DetailTopBar(
     title: String,
@@ -91,7 +93,8 @@ fun DetailTopBar(
             .background(colors.background)
             .windowInsetsPadding(WindowInsets.statusBars)
             .heightIn(min = VersoDimens.topBarDetail)
-            .padding(start = 4.dp, end = 8.dp),
+            // Marge verticale sans effet à 100 % (hauteur minimale) ; elle décolle le titre des bords quand il passe à la ligne.
+            .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -100,8 +103,6 @@ fun DetailTopBar(
             text = title,
             style = VersoTypography.screenTitle,
             color = colors.text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
     }

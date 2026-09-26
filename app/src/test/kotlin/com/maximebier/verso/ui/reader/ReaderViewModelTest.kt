@@ -11,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
+import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.db.BookEntity
@@ -18,7 +19,10 @@ import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
 import com.maximebier.verso.reader.testLocator
+import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.readium.Locators
+import com.maximebier.verso.readium.ReadiumOpener
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -37,6 +41,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.LocalizedString
 import org.readium.r2.shared.publication.Manifest
 import org.readium.r2.shared.publication.Metadata
@@ -106,6 +111,98 @@ class ReaderViewModelTest {
         assertThat(restored.initialLocator?.locations?.progression).isEqualTo(0.41)
         assertThat(restored.readingPercent).isEqualTo(30)
         secondStore.clear()
+    }
+
+    @Test
+    fun anchoredChaptersOfOneFileAreToldApartByTheReadingProgression() = runTest {
+        // Défaut C : plusieurs chapitres ancrés dans un fichier, la barre affichait le premier du fichier.
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = EpubFixtures.anchoredEpub(context.filesDir.resolve("ancres.epub"))
+        val reading = Locator(
+            href = Url("OEBPS/p1.xhtml")!!,
+            mediaType = MediaType.XHTML,
+            locations = Locator.Locations(progression = 0.5, totalProgression = 0.3),
+        )
+        val id = books.insert(testBook(Locators.toJson(reading), 0.3).copy(filePath = file.path))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id, open = ReadiumOpener(context)::open))[ReaderViewModel::class]
+
+        val state = viewModel.uiState.first { !it.loading }
+
+        assertThat(state.failed).isFalse()
+        assertThat(state.chapterPath).containsExactly("Première partie", "II").inOrder()
+        assertThat(state.shortLocation).isEqualTo("Partie I, chap. II")
+        assertThat(state.currentProgression).isEqualTo(0.5)
+        store.clear()
+    }
+
+    /** Ouvre l'EPUB ancré (position : début de `p1.xhtml`) avec une surface factice ; préordre 3 = « III ». */
+    private suspend fun TestScope.openAnchoredBook(store: ViewModelStore): Pair<ReaderViewModel, FakeReaderController> {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = EpubFixtures.anchoredEpub(context.filesDir.resolve("ancres.epub"))
+        val start = anchoredLocator(0.0)
+        val id = books.insert(testBook(Locators.toJson(start), 0.0).copy(filePath = file.path))
+        val viewModel = ViewModelProvider.create(store, factory(id, open = ReadiumOpener(context)::open))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+        return viewModel to fake
+    }
+
+    private fun anchoredLocator(progression: Double) = Locator(
+        href = Url("OEBPS/p1.xhtml")!!,
+        mediaType = MediaType.XHTML,
+        locations = Locator.Locations(progression = progression, totalProgression = progression * 0.6),
+    )
+
+    private fun ReaderViewModel.tocEntry(index: Int) = preorder(uiState.value.toc) { it.children }[index]
+
+    @Test
+    fun tocJumpToAnAnchorCalibratesItWithTheSettledEngineProgression() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val store = ViewModelStore()
+        val (viewModel, fake) = openAnchoredBook(store)
+        try {
+            val estimate = viewModel.tocEntry(3).progression!!
+
+            viewModel.jumpToTocEntry(3)
+            runCurrent()
+            // Le moteur arrive sur le titre de « III » un peu avant l'estimation, puis ne bouge plus.
+            fake.displayed.value = anchoredLocator(0.61)
+            advanceTimeBy(TocProgress.CALIBRATION_SETTLE_MS + 100)
+            runCurrent()
+
+            assertThat(estimate).isWithin(0.02).of(2.0 / 3)
+            assertThat(viewModel.tocEntry(3).progression).isEqualTo(0.61)
+        } finally {
+            store.clear() // même en échec : sinon le Tick du coordinateur ne s’arrête jamais
+        }
+    }
+
+    @Test
+    fun gestureBeforeTheEngineSettlesCancelsTheCalibration() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val store = ViewModelStore()
+        val (viewModel, fake) = openAnchoredBook(store)
+        try {
+            val estimate = viewModel.tocEntry(3).progression
+
+            viewModel.jumpToTocEntry(3)
+            runCurrent()
+            fake.displayed.value = anchoredLocator(0.61)
+            advanceTimeBy(100)
+            // L'utilisateur fait défiler : la position affichée n'est plus celle de l'ancre.
+            fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false))
+            fake.displayed.value = anchoredLocator(0.70)
+            advanceTimeBy(TocProgress.CALIBRATION_WINDOW_MS)
+            runCurrent()
+
+            assertThat(viewModel.tocEntry(3).progression).isEqualTo(estimate)
+        } finally {
+            store.clear()
+        }
     }
 
     @Test
@@ -295,13 +392,16 @@ class ReaderViewModelTest {
         store.clear()
     }
 
-    private fun TestScope.factory(bookId: Long): ViewModelProvider.Factory = viewModelFactory {
+    private fun TestScope.factory(
+        bookId: Long,
+        open: suspend (File) -> Result<Publication> = { Result.success(testPublication()) },
+    ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
                 bookId = bookId,
                 books = books,
                 sessions = SessionRepository(db.sessionDao()),
-                openPublication = { Result.success(testPublication()) },
+                openPublication = open,
                 clock = { testScheduler.currentTime },
             ).also { viewModels += it }
         }

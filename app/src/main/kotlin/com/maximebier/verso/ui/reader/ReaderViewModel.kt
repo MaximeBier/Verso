@@ -11,6 +11,8 @@ import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.text.TocNode
+import com.maximebier.verso.core.text.TocProgress
+import com.maximebier.verso.core.text.calibrateAnchor
 import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
@@ -19,10 +21,12 @@ import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
+import com.maximebier.verso.readium.TocAnchors
 import java.io.File
 import java.time.ZoneId
 import kotlin.math.floor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,14 +36,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
@@ -60,6 +70,8 @@ data class ReaderUiState(
     val readingOrderHrefs: List<String> = emptyList(),
     /** Fichier (sans fragment) de la position de lecture. */
     val currentHref: String? = null,
+    /** Progression dans ce fichier de la position de lecture (chapitres ancrés, voir `chapterPathAt`). */
+    val currentProgression: Double? = null,
     val chapterPath: List<String> = emptyList(),
     val shortLocation: String? = null,
     /** Progression totale de la position de LECTURE (jamais de la position affichée). */
@@ -101,6 +113,7 @@ class ReaderViewModel(
     private var coordinator: ReadingPositionCoordinator? = null
     private var controller: ReaderController? = null
     private var controllerJob: Job? = null
+    private var calibrationJob: Job? = null
 
     /** Saut demandé sans surface prête (activité recréée) : appliqué au prochain [onReaderReady]. */
     private var pendingJump: PendingJump? = null
@@ -124,7 +137,7 @@ class ReaderViewModel(
                 flowOf(null)
             } else {
                 combine(sessions.observeSessions(bookId), sessionCurrent) { list, current ->
-                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), ::hrefOfLocatorJson)
+                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), ::positionOfLocatorJson)
                 }
             }
         }
@@ -147,6 +160,7 @@ class ReaderViewModel(
         books.markOpened(bookId, clock())
         tocLinks = publication.tableOfContents.ifEmpty { publication.readingOrder }
         positions = ReadingOrderPositions.load(publication)
+        val anchors = TocAnchors.load(publication, tocLinks)
         val saved = book.readingLocatorJson?.let(Locators::fromJson)
         val start = saved ?: publication.readingOrder.firstOrNull()?.let(publication::locatorFromLink)
         val initialPosition = when {
@@ -172,7 +186,7 @@ class ReaderViewModel(
                 initialLocator = saved,
                 bookTitle = book.title,
                 totalWords = book.totalWords,
-                toc = tocLinks.toTocNodes(),
+                toc = tocLinks.toTocNodes(anchors),
                 readingOrderHrefs = publication.readingOrder.map { link -> link.url().removeFragment().toString() },
             )
         }
@@ -207,6 +221,8 @@ class ReaderViewModel(
         coordinator?.attach(readerController)
         controllerJob?.cancel()
         controllerJob = viewModelScope.launch {
+            // Un geste de l’utilisateur : la position affichée n’est plus celle d’une ancre visée par un saut.
+            launch { readerController.gestures.collect { cancelCalibration() } }
             readerController.displayed.filterNotNull().collect { locator ->
                 val previous = lastDisplayed
                 lastDisplayed = locator
@@ -230,6 +246,7 @@ class ReaderViewModel(
     fun onReaderGone() {
         controllerJob?.cancel()
         controllerJob = null
+        cancelCalibration()
         controller = null
         coordinator?.detach()
         // Le premier locator de la prochaine surface est une arrivée, pas un scroll (journal, 6.4).
@@ -257,13 +274,15 @@ class ReaderViewModel(
     private fun onPositionState(position: PositionState) {
         val reading = Locators.fromJson(position.reading.locatorJson)
         val href = reading?.let(Locators::hrefKey)
+        val inFile = reading?.locations?.progression
         val progression = position.reading.totalProgression
         _uiState.update { state ->
-            val path = href?.let { chapterPathAt(state.toc, it) } ?: emptyList()
+            val path = href?.let { chapterPathAt(state.toc, it, inFile) } ?: emptyList()
             val location = shortLocation(path)
             val percent = readingPercent(progression)
             state.copy(
                 currentHref = href,
+                currentProgression = inFile,
                 chapterPath = path,
                 shortLocation = location,
                 readingProgression = progression,
@@ -316,7 +335,7 @@ class ReaderViewModel(
             return
         }
         closeTocAndBars()
-        jumpTo(target)
+        jump(target, calibrateEntry = index)
     }
 
     private fun closeTocAndBars() = _uiState.update { it.copy(tocVisible = false, barsVisible = false) }
@@ -327,12 +346,52 @@ class ReaderViewModel(
      * La cible reçoit sa progression totale (un lien de sommaire n’en a pas), sinon un saut vers le
      * chapitre courant paraîtrait lointain.
      */
-    fun jumpTo(locator: Locator) {
-        if (controller == null) {
+    fun jumpTo(locator: Locator) = jump(locator, calibrateEntry = null)
+
+    /** [jumpTo], avec calibrage de l’entrée de sommaire n° [calibrateEntry] (préordre) si elle est ancrée. */
+    private fun jump(locator: Locator, calibrateEntry: Int?) {
+        val readerController = controller
+        if (readerController == null) {
             pendingJump = PendingJump(locator, closesToc = false)
             return
         }
+        cancelCalibration()
+        // Avant le saut : la position affichée au moment du saut n’est pas celle de l’ancre.
+        calibrateEntry?.let { startCalibration(it, readerController) }
         coordinator?.onJump(withTotalProgression(locator))
+    }
+
+    /**
+     * Calibrage d’une ancre du sommaire (sa position n’est qu’estimée sur le texte, voir `TocAnchors`) : après un
+     * saut vers elle, la première progression affichée dans son fichier qui reste immobile
+     * [TocProgress.CALIBRATION_SETTLE_MS] devient son début pour la session, si [calibrateAnchor] l’accepte
+     * (écart plausible, ordre des ancres gardé). Abandonné au premier geste, à un autre saut, au retour,
+     * ou après [TocProgress.CALIBRATION_WINDOW_MS].
+     */
+    @OptIn(FlowPreview::class)
+    private fun startCalibration(index: Int, readerController: ReaderController) {
+        val entry = preorder(_uiState.value.toc) { it.children }.getOrNull(index) ?: return
+        if (entry.progression == null) return
+        calibrationJob = viewModelScope.launch {
+            val calibrated = withTimeoutOrNull(TocProgress.CALIBRATION_WINDOW_MS) {
+                readerController.displayed
+                    .drop(1)
+                    .filterNotNull()
+                    .debounce(TocProgress.CALIBRATION_SETTLE_MS)
+                    .filter { Locators.hrefKey(it) == entry.href }
+                    .mapNotNull { locator ->
+                        locator.locations.progression?.let { calibrateAnchor(_uiState.value.toc, index, it) }
+                    }
+                    .first()
+            } ?: return@launch
+            _uiState.update { it.copy(toc = calibrated) }
+            coordinator?.let { onPositionState(it.state.value) }
+        }
+    }
+
+    private fun cancelCalibration() {
+        calibrationJob?.cancel()
+        calibrationJob = null
     }
 
     /**
@@ -342,6 +401,7 @@ class ReaderViewModel(
     fun onInternalLinkFollowed(url: Url) {
         val publication = _uiState.value.publication ?: return
         val target = publication.locatorFromLink(Link(href = url)) ?: return
+        cancelCalibration()
         coordinator?.onLinkFollowed(withTotalProgression(target))
     }
 
@@ -352,6 +412,7 @@ class ReaderViewModel(
     }
 
     fun goBack() {
+        cancelCalibration()
         coordinator?.onGoBack()
     }
 
@@ -398,13 +459,21 @@ class ReaderViewModel(
 /** Pourcentage entier arrondi vers le bas (« 31 % lu »). */
 fun readingPercent(progression: Double): Int = floor(progression.coerceIn(0.0, 1.0) * 100).toInt()
 
-internal fun List<Link>.toTocNodes(): List<TocNode> = mapIndexed { index, link ->
-    TocNode(
-        title = link.displayTitle(index),
-        href = link.url().removeFragment().toString(),
-        children = link.children.toTocNodes(),
-    )
-}
+/**
+ * Sommaire Readium → [TocNode]. `anchors` ([TocAnchors.load]) : début estimé de chaque lien ancré dans son
+ * fichier et longueur du texte de ce fichier, par href complet ; un lien sans ancre (ou ancre introuvable) reste
+ * au début du fichier.
+ */
+internal fun List<Link>.toTocNodes(anchors: Map<String, TocAnchors.Anchor> = emptyMap()): List<TocNode> =
+    mapIndexed { index, link ->
+        TocNode(
+            title = link.displayTitle(index),
+            href = link.url().removeFragment().toString(),
+            children = link.children.toTocNodes(anchors),
+            progression = anchors[link.url().toString()]?.progression,
+            fileChars = anchors[link.url().toString()]?.fileChars,
+        )
+    }
 
 /** Titre du sommaire, ou nom du fichier pour un EPUB sans titres (sommaire absent : ordre de lecture). */
 private fun Link.displayTitle(index: Int): String =

@@ -5,6 +5,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import com.maximebier.verso.screenshots.samples.DeleteBookDialogSample
+import com.maximebier.verso.screenshots.samples.DetailsSample
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -21,13 +23,13 @@ class DetailsScreenshotTest {
 
     @Test
     fun details() {
-        compose.setContent { VersoTheme { DetailsContent(DetailsSamples.bovary, DetailsActions()) } }
+        compose.setContent { VersoTheme { DetailsSample() } }
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.07-details-du-livre.png")
     }
 
     @Test
     fun delete_dialog() {
-        compose.setContent { VersoTheme { DetailsContent(DetailsSamples.deleteDialog, DetailsActions()) } }
+        compose.setContent { VersoTheme { DeleteBookDialogSample() } }
         compose.waitForIdle()
         captureScreenRoboImage("build/outputs/roborazzi/1.08-supprimer-un-livre.png")
     }

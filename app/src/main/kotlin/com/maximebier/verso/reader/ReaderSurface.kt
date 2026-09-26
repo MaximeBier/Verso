@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -130,10 +131,14 @@ fun ReaderSurface(
     LaunchedEffect(rendition) {
         val ready = rendition ?: return@LaunchedEffect
         controller.bind { ready.goTo(it) }
-        controller.onDisplayed(topOfViewport(ready.location.toLocator(), ready.viewport))
+        val pager = pagerStateOf(state)
+        val readingOrder = publication.readingOrder.map { it.url() }
+        fun pagerTop(): PagerTop? = pager?.let { pagerTopOf(it, readingOrder) }
+        controller.onViewport(ready.location.toLocator(), ready.viewport, pagerTop())
         currentOnReady(controller)
-        snapshotFlow { topOfViewport(ready.location.toLocator(), ready.viewport) }
-            .collect { controller.onDisplayed(it) }
+        // Le décalage du pager est lu ici : pendant un passage de fichier, lui seul bouge.
+        snapshotFlow { Triple(ready.location.toLocator(), ready.viewport, pagerTop()) }
+            .collect { (location, viewport, top) -> controller.onViewport(location, viewport, top) }
     }
     LaunchedEffect(rendition, dark, fontScale) {
         rendition?.preferences = VersoReadingPreferences.reflowableWeb(dark, fontScale)
@@ -236,24 +241,24 @@ internal suspend fun readChapterHtml(publication: Publication, href: Url): Strin
     }
 
 /**
- * Locator du haut de l’écran. `location` suit la page du pager la plus visible et bascule au début du
- * chapitre suivant alors que le haut de l’écran montre encore la fin du précédent (prototype) :
- * aux frontières, on garde le premier chapitre visible et la progression de son haut visible.
- * `position` (tranche Readium) n’est pas recalculée ; `totalProgression` reste celle de `location`
- * jusqu’au calcul fin de [ReadingOrderPositions].
+ * `PagerState` du navigateur. Readium 3.4.0 ne l’expose pas (`internal`), or c’est le seul endroit
+ * où lire le décalage de la page pendant un passage de fichier ([screenTop]). Lu une fois par
+ * réflexion ; null si une version de Readium le renomme : on retombe alors sur le repli de [screenTop].
  */
-internal fun topOfViewport(location: Locator, viewport: ReflowableWebViewport): Locator {
-    val topHref = viewport.readingOrder.firstOrNull() ?: return location
-    if (topHref == location.href) return location
-    val topProgression = viewport.progressions[topHref]?.start?.value ?: return location
-    return Locator(
-        href = topHref,
-        mediaType = location.mediaType,
-        locations = Locator.Locations(
-            progression = topProgression,
-            totalProgression = location.locations.totalProgression,
-        ),
-    )
+private fun pagerStateOf(state: ReflowableWebRenditionState): PagerState? =
+    runCatching {
+        state.javaClass.methods
+            .firstOrNull { it.name.startsWith("getPagerState") && it.parameterCount == 0 }
+            ?.invoke(state) as? PagerState
+    }.getOrNull()
+
+/** Première page visible et part de cette page cachée au-dessus de l’écran (lecture observable). */
+private fun pagerTopOf(pager: PagerState, readingOrder: List<Url>): PagerTop? {
+    val layout = pager.layoutInfo
+    val first = layout.visiblePagesInfo.firstOrNull() ?: return null
+    val href = readingOrder.getOrNull(first.index) ?: return null
+    if (layout.pageSize <= 0) return null
+    return PagerTop(href = href, hiddenFraction = -first.offset.toDouble() / layout.pageSize)
 }
 
 /**
@@ -306,6 +311,11 @@ internal class ReflowableReaderController(
     fun setPositions(positions: ReadingOrderPositions?) {
         this.positions = positions
         displayedState.value = displayedState.value?.let(::withTotalProgression)
+    }
+
+    /** Nouvel état du navigateur : la position affichée est le haut réel de l’écran ([screenTop]). */
+    fun onViewport(location: Locator, viewport: ReflowableWebViewport, pagerTop: PagerTop?) {
+        onDisplayed(screenTop(location, viewport, pagerTop, previous = displayedState.value))
     }
 
     fun onDisplayed(locator: Locator) {

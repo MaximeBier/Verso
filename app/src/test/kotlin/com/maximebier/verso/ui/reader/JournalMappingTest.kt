@@ -43,9 +43,9 @@ class JournalMappingTest {
         startProgression = startP, endProgression = endP, wordsRead = 0,
     )
 
-    // Dans ce test, le « JSON » du locator est directement le href : hrefOf = { it }.
+    // Dans ce test, le « JSON » du locator est directement le href, sans progression dans le fichier.
     private fun map(sessions: List<SessionEntity>, current: SessionRecord?) =
-        journalUiState(sessions, current, toc, now, zone, hrefOf = { it })
+        journalUiState(sessions, current, toc, now, zone, positionOf = { ResourcePosition(it, null) })
 
     private val yesterday = entity(4, at(2026, 9, 22, 21, 5), at(2026, 9, 22, 21, 36), 31, "p1c6.xhtml", "p1c8.xhtml", 0.18, 0.25)
     private val mondayNoon = entity(3, at(2026, 9, 21, 12, 30), at(2026, 9, 21, 12, 48), 18, "p1c6.xhtml", "p1c6.xhtml", 0.15, 0.18)
@@ -111,8 +111,30 @@ class JournalMappingTest {
     }
 
     @Test
+    fun passageOfAnchoredChaptersFollowsTheProgressionInsideTheFile() {
+        // Défaut C : deux chapitres ancrés dans le même fichier ; le passage ne doit pas se réduire au premier.
+        val anchored = listOf(
+            TocNode(
+                "Première partie", "p1.xhtml", progression = 0.2,
+                children = listOf(
+                    TocNode("Chapitre VI", "p1.xhtml", progression = 0.2),
+                    TocNode("Chapitre VIII", "p1.xhtml", progression = 0.6),
+                ),
+            ),
+        )
+        // « JSON » du locator de ce test : « href@progression ».
+        val session = entity(7, at(2026, 9, 22, 21, 5), at(2026, 9, 22, 21, 36), 31, "p1.xhtml@0.3", "p1.xhtml@0.7", 0.18, 0.25)
+
+        val state = journalUiState(listOf(session), null, anchored, now, zone) { json ->
+            ResourcePosition(json.substringBefore('@'), json.substringAfter('@').toDouble())
+        }
+
+        assertThat(state.days.single().sessions.single().passage).isEqualTo("Partie I, chap. VI → VIII")
+    }
+
+    @Test
     fun unknownHrefGivesNoPassageWithoutCrashing() {
-        val state = journalUiState(listOf(yesterday), null, emptyList(), now, zone, hrefOf = { null })
+        val state = journalUiState(listOf(yesterday), null, emptyList(), now, zone, positionOf = { null })
 
         assertThat(state.days.single().sessions.single().passage)
             .isEqualTo(passageLabel(emptyList(), emptyList()))

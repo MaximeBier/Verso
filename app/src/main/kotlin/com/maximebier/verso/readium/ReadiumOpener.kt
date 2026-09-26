@@ -2,6 +2,7 @@ package com.maximebier.verso.readium
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import android.util.Size
 import com.maximebier.verso.core.text.countWordsInHtml
 import java.io.File
@@ -22,6 +23,16 @@ import org.readium.r2.shared.util.use as useResource
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
+
+/** Noms des étapes journalisées par [ReadiumOpener.inspect] (voir `onPhase`), repris par [EpubImporter]. */
+const val PHASE_OPEN = "ouverture"
+const val PHASE_COVER = "couverture"
+const val PHASE_WORDS = "mots"
+
+/** Même tag que [EpubImporter] : les deux journalisent la durée des imports. */
+private const val IMPORT_LOG_TAG = "VersoImport"
+
+private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
 
 /** Ouvre les EPUB avec Readium, hors ligne, et classe les refus (pas un EPUB, DRM, illisible). */
 class ReadiumOpener(context: Context) {
@@ -48,26 +59,41 @@ class ReadiumOpener(context: Context) {
         guarded { openPublication(file) }
     }
 
-    /** Ouvre, lit titre, auteur, couverture et nombre de mots, puis ferme. */
-    suspend fun inspect(file: File): Result<EpubInfo> = withContext(Dispatchers.IO) {
-        guarded {
-            val publication = openPublication(file)
-            try {
-                EpubInfo(
-                    title = publication.metadata.title?.trim()?.takeIf { it.isNotEmpty() },
-                    author = publication.metadata.authors
-                        .map { it.name.trim() }
-                        .filter { it.isNotEmpty() }
-                        .joinToString(", ")
-                        .takeIf { it.isNotEmpty() },
-                    cover = readCover(publication),
-                    totalWords = countWords(publication),
-                )
-            } finally {
-                publication.close()
+    /**
+     * Ouvre, lit titre, auteur, couverture et nombre de mots, puis ferme.
+     *
+     * [onPhase] est appelé après chaque étape mesurée (« ouverture », « couverture », « mots ») avec sa
+     * durée en millisecondes ; par défaut il ne fait rien, donc ne change aucun comportement existant.
+     * Sert uniquement à journaliser la durée des imports (voir [EpubImporter]).
+     */
+    suspend fun inspect(file: File, onPhase: (phase: String, ms: Long) -> Unit = { _, _ -> }): Result<EpubInfo> =
+        withContext(Dispatchers.IO) {
+            guarded {
+                val openStart = System.nanoTime()
+                val publication = openPublication(file)
+                onPhase(PHASE_OPEN, elapsedMs(openStart))
+                try {
+                    val coverStart = System.nanoTime()
+                    val cover = readCover(publication)
+                    onPhase(PHASE_COVER, elapsedMs(coverStart))
+                    val wordsStart = System.nanoTime()
+                    val words = countWords(publication)
+                    onPhase(PHASE_WORDS, elapsedMs(wordsStart))
+                    EpubInfo(
+                        title = publication.metadata.title?.trim()?.takeIf { it.isNotEmpty() },
+                        author = publication.metadata.authors
+                            .map { it.name.trim() }
+                            .filter { it.isNotEmpty() }
+                            .joinToString(", ")
+                            .takeIf { it.isNotEmpty() },
+                        cover = cover,
+                        totalWords = words,
+                    )
+                } finally {
+                    publication.close()
+                }
             }
         }
-    }
 
     private suspend fun <T> guarded(block: suspend () -> T): Result<T> =
         try {
@@ -121,27 +147,53 @@ class ReadiumOpener(context: Context) {
         }
     }
 
-    private suspend fun readCover(publication: Publication): Bitmap? =
-        try {
+    /**
+     * Lien `rel=cover` déclaré par la publication (métadonnée EPUB 2 `<meta name="cover">` ou
+     * propriété EPUB 3 `cover-image`), parmi les ressources et le fil de lecture.
+     */
+    private fun coverLink(publication: Publication) =
+        (publication.readingOrder + publication.resources).firstOrNull { COVER_REL in it.rels }
+
+    /**
+     * Couverture réelle, jamais d'image de repli : si le lien `rel=cover` désigne une ressource
+     * qui n'est pas une image (par exemple une page XHTML, cas observé chez Wikisource), on ne
+     * tente même pas de la décoder — un décodeur trop permissif pourrait sinon y voir une image.
+     */
+    private suspend fun readCover(publication: Publication): Bitmap? {
+        if (coverLink(publication)?.mediaType?.isBitmap != true) return null
+        return try {
             publication.coverFitting(Size(COVER_MAX_WIDTH, COVER_MAX_HEIGHT))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             null
         }
+    }
 
+    /** Détail par ressource et par sous-étape (lecture Readium, décodage puis comptage), utile pour
+     * localiser un point chaud (voir le tag [IMPORT_LOG_TAG] dans logcat). */
     private suspend fun countWords(publication: Publication): Long =
         publication.readingOrder
             .filter { it.mediaType?.isHtml == true }
             .sumOf { link ->
+                val readStart = System.nanoTime()
                 val bytes = publication.get(link)?.useResource { resource -> resource.read().getOrNull() }
-                if (bytes == null) 0L else countWordsInHtml(bytes.decodeToString())
+                val readMs = elapsedMs(readStart)
+                val countStart = System.nanoTime()
+                val words = if (bytes == null) 0L else countWordsInHtml(bytes.decodeToString())
+                val countMs = elapsedMs(countStart)
+                Log.d(
+                    IMPORT_LOG_TAG,
+                    "  ressource href=${link.href} octets=${bytes?.size ?: 0} lecture=${readMs}ms comptage=${countMs}ms mots=$words",
+                )
+                words
             }
 
     private companion object {
         const val CONTAINER_ENTRY = "META-INF/container.xml"
         const val COVER_MAX_WIDTH = 600
         const val COVER_MAX_HEIGHT = 900
+        const val COVER_REL = "cover"
     }
 }
 

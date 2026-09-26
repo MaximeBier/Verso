@@ -54,7 +54,13 @@ object EpubFixtures {
     private val PNG_1X1: ByteArray = Base64.getDecoder()
         .decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
 
-    private fun opf(title: String?, author: String?): String = buildString {
+    private const val TITLEPAGE_XHTML = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Page de titre</title></head>
+<body><h1>Un petit livre</h1></body>
+</html>"""
+
+    private fun opf(title: String?, author: String?, nonImageCoverMetaId: String? = null): String = buildString {
         append("""<?xml version="1.0" encoding="UTF-8"?>""").append('\n')
         append("""<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">""").append('\n')
         append("""  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">""").append('\n')
@@ -63,22 +69,33 @@ object EpubFixtures {
         if (author != null) append("    <dc:creator>").append(author).append("</dc:creator>\n")
         append("    <dc:language>fr</dc:language>\n")
         append("""    <meta property="dcterms:modified">2026-09-25T00:00:00Z</meta>""").append('\n')
+        if (nonImageCoverMetaId != null) {
+            append("""    <meta name="cover" content="$nonImageCoverMetaId"/>""").append('\n')
+        }
         append("  </metadata>\n")
         append("  <manifest>\n")
         append("""    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>""").append('\n')
         append("""    <item id="c1" href="chapitre1.xhtml" media-type="application/xhtml+xml"/>""").append('\n')
+        if (nonImageCoverMetaId != null) {
+            append("""    <item id="$nonImageCoverMetaId" href="titlepage.xhtml" media-type="application/xhtml+xml"/>""").append('\n')
+        }
         append("  </manifest>\n")
         append("""  <spine><itemref idref="c1"/></spine>""").append('\n')
         append("</package>\n")
     }
 
-    /** EPUB 3 minimal : un chapitre, sans couverture ; titre et auteur au choix (null = absent). */
+    /**
+     * EPUB 3 minimal : un chapitre, sans couverture ; titre et auteur au choix (null = absent).
+     * [nonImageCoverMetaId] reproduit une couverture EPUB 2 mal formée (`<meta name="cover">`)
+     * qui désigne une page XHTML au lieu d'une image, comme observé chez Wikisource.
+     */
     fun epub(
         target: File,
         title: String? = "Un petit livre",
         author: String? = null,
         withMimetype: Boolean = true,
         extraEntries: Map<String, ByteArray> = emptyMap(),
+        nonImageCoverMetaId: String? = null,
     ): File {
         target.parentFile?.mkdirs()
         ZipOutputStream(target.outputStream()).use { zip ->
@@ -100,9 +117,10 @@ object EpubFixtures {
                 zip.closeEntry()
             }
             put("META-INF/container.xml", CONTAINER_XML.toByteArray())
-            put("OEBPS/content.opf", opf(title, author).toByteArray())
+            put("OEBPS/content.opf", opf(title, author, nonImageCoverMetaId).toByteArray())
             put("OEBPS/nav.xhtml", NAV_XHTML.toByteArray())
             put("OEBPS/chapitre1.xhtml", CHAPTER_XHTML.toByteArray())
+            if (nonImageCoverMetaId != null) put("OEBPS/titlepage.xhtml", TITLEPAGE_XHTML.toByteArray())
             extraEntries.forEach { (name, bytes) -> put(name, bytes) }
         }
         return target
@@ -150,6 +168,52 @@ object EpubFixtures {
         target.parentFile?.mkdirs()
         val stream = requireNotNull(EpubFixtures::class.java.classLoader?.getResourceAsStream(path)) { "Ressource absente : $path" }
         stream.use { input -> target.outputStream().use { input.copyTo(it) } }
+        return target
+    }
+
+    /**
+     * Deux fichiers, trois puis deux chapitres ancrés, d'environ 4 000 caractères chacun. `p2.xhtml` commence par
+     * un titre courant de 50 caractères avant sa première ancre ; l'ancre de « V » a un id accentué, encodé
+     * dans le lien du sommaire (`#cinqui%C3%A8me`).
+     */
+    fun anchoredEpub(target: File): File {
+        val words = "mot ".repeat(1_000).trim()
+        fun section(id: String) = """<h2 id="$id">$id</h2><p>$words</p>"""
+        fun chapter(head: String, ids: List<String>) = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Texte</title></head><body>
+$head${ids.joinToString("\n") { section(it) }}
+</body></html>"""
+        val nav = """<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Sommaire</title></head>
+<body><nav epub:type="toc"><ol>
+<li><a href="p1.xhtml#c1">Première partie</a><ol>
+<li><a href="p1.xhtml#c1">I</a></li><li><a href="p1.xhtml#c2">II</a></li><li><a href="p1.xhtml#c3">III</a></li></ol></li>
+<li><a href="p2.xhtml#c4">Deuxième partie</a><ol>
+<li><a href="p2.xhtml#c4">IV</a></li><li><a href="p2.xhtml#cinqui%C3%A8me">V</a></li></ol></li>
+</ol></nav></body></html>"""
+        val runningHead = "<p class=\"titre-courant\">${"Madame Bovary — Deuxième partie ".padEnd(50, '.')}</p>"
+        val opf = """<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="uid">urn:uuid:c</dc:identifier>
+<dc:title>Ancres</dc:title><dc:language>fr</dc:language><meta property="dcterms:modified">2026-09-25T00:00:00Z</meta></metadata>
+<manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+<item id="p1" href="p1.xhtml" media-type="application/xhtml+xml"/><item id="p2" href="p2.xhtml" media-type="application/xhtml+xml"/></manifest>
+<spine><itemref idref="p1"/><itemref idref="p2"/></spine></package>"""
+        target.parentFile?.mkdirs()
+        ZipOutputStream(target.outputStream()).use { zip ->
+            mapOf(
+                "mimetype" to "application/epub+zip",
+                "META-INF/container.xml" to CONTAINER_XML,
+                "OEBPS/content.opf" to opf,
+                "OEBPS/nav.xhtml" to nav,
+                "OEBPS/p1.xhtml" to chapter("", listOf("c1", "c2", "c3")),
+                "OEBPS/p2.xhtml" to chapter(runningHead, listOf("c4", "cinquième")),
+            ).forEach { (name, text) ->
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(text.toByteArray())
+                zip.closeEntry()
+            }
+        }
         return target
     }
 }

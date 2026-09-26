@@ -54,15 +54,9 @@ fun VersoBottomSheet(
         contentColor = colors.text,
         tonalElevation = 0.dp,
         scrimColor = colors.scrim,
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(top = 6.dp, bottom = 4.dp)
-                    .size(width = 32.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(colors.outline),
-            )
-        },
+        // Poignée dessinée dans le contenu, sans sémantique : dans l’emplacement dragHandle, M3 en fait une
+        // commande de 32 × 14 dp sans intitulé. La feuille reste glissable ; « Fermer » et le voile la ferment.
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
     ) {
         Column(
@@ -71,6 +65,14 @@ fun VersoBottomSheet(
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = 24.dp),
         ) {
+            Box(
+                Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 6.dp, bottom = 4.dp)
+                    .size(width = 32.dp, height = 4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(colors.outline),
+            )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 4.dp, end = 12.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

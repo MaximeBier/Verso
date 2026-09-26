@@ -24,8 +24,20 @@ data class ReadingThresholds(
     val navigationWindowScreens: Double = 3.0,
     /** La carte « Revenir » apparaît si la position affichée est à plus de ce nombre d'écrans de la lecture. */
     val returnCardMinScreens: Double = 1.0,
-    /** Durée de mouvement de lecture au nouvel endroit avant que la lecture y passe d'elle-même. */
+    /**
+     * Durée de lecture au nouvel endroit avant que la lecture y passe d'elle-même. Mesurée depuis le
+     * premier glissé de lecture qui suit l'arrivée (jamais depuis l'arrivée elle-même), jusqu'au glissé
+     * qui la fait atteindre ; les pauses de plus de [confirmMaxIdleGapMs] la remettent à zéro.
+     */
     val confirmReadingMs: Long = 25_000,
+    /**
+     * Pause maximale entre deux glissés de lecture sans que la fenêtre de confirmation reparte à zéro.
+     * En défilement continu, on avance le texte de quelques lignes toutes les quelques secondes
+     * (5 à 10 s) ; 15 s couvre ces pauses avec marge. Rester nettement sous [confirmReadingMs] impose au
+     * moins trois glissés pour confirmer : deux gestes isolés séparés par un temps mort ne suffisent jamais.
+     * Un lecteur plus lent garde la carte, ce qui est l'erreur sans conséquence (il choisit lui-même).
+     */
+    val confirmMaxIdleGapMs: Long = 15_000,
     /** Dérive maximale, en écrans, autour du point d'arrivée pendant la confirmation. */
     val confirmMaxDriftScreens: Double = 1.0,
     /**

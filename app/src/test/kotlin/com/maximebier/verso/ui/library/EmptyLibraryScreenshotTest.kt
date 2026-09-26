@@ -2,6 +2,7 @@ package com.maximebier.verso.ui.library
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.maximebier.verso.screenshots.samples.LibraryEmptySample
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +17,7 @@ class EmptyLibraryScreenshotTest {
     @Test
     fun emptyLibraryLight() {
         captureRoboImage("build/outputs/roborazzi/1.01-premier-lancement-clair.png") {
-            VersoTheme { EmptyLibraryScreen(onOpenSettings = {}, onImport = {}) }
+            VersoTheme { LibraryEmptySample() }
         }
     }
 
@@ -24,7 +25,7 @@ class EmptyLibraryScreenshotTest {
     @Config(qualifiers = "+night")
     fun emptyLibraryDark() {
         captureRoboImage("build/outputs/roborazzi/1.01-premier-lancement-sombre.png") {
-            VersoTheme { EmptyLibraryScreen(onOpenSettings = {}, onImport = {}) }
+            VersoTheme { LibraryEmptySample() }
         }
     }
 }

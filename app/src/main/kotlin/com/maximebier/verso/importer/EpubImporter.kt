@@ -8,6 +8,9 @@ import android.util.Log
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.readium.OpenFailureException
+import com.maximebier.verso.readium.PHASE_COVER
+import com.maximebier.verso.readium.PHASE_OPEN
+import com.maximebier.verso.readium.PHASE_WORDS
 import com.maximebier.verso.readium.ReadiumOpener
 import java.io.File
 import java.io.IOException
@@ -20,6 +23,34 @@ import kotlinx.coroutines.withContext
 private const val DELETE_RETRYING_TAG = "EpubImporter"
 private const val DEFAULT_DELETE_RETRY_ATTEMPTS = 5
 private const val DEFAULT_DELETE_RETRY_DELAY_MS = 20L
+
+/** Tag unique pour la mesure par phase de chaque import (voir [logImportTimings]). Pas de PII : que des durées. */
+private const val IMPORT_LOG_TAG = "VersoImport"
+
+private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos) / 1_000_000
+
+/**
+ * Durées par phase d'un import, en millisecondes. `copySha256Ms` couvre la copie depuis l'URI *et*
+ * l'empreinte SHA-256 : les deux se font en un seul passage streaming ([Sha256.copyAndHash]), les
+ * séparer nécessiterait une deuxième lecture complète du fichier (donc changerait le comportement).
+ * `coverMs` couvre l'extraction de la couverture par Readium *et* son écriture en PNG.
+ */
+private class ImportTimings {
+    var copySha256Ms: Long = 0
+    var openMs: Long = 0
+    var wordsMs: Long = 0
+    var coverMs: Long = 0
+    var insertMs: Long = 0
+}
+
+/** Une seule ligne par import, avec toutes les phases mesurées. */
+private fun logImportTimings(t: ImportTimings, totalMs: Long, resultat: String) {
+    Log.d(
+        IMPORT_LOG_TAG,
+        "resultat=$resultat copie_sha256=${t.copySha256Ms}ms ouverture=${t.openMs}ms mots=${t.wordsMs}ms " +
+            "couverture=${t.coverMs}ms insertion=${t.insertMs}ms total=${totalMs}ms",
+    )
+}
 
 /**
  * Supprime [file], avec de courtes tentatives : juste après la fermeture d'une ressource Readium
@@ -67,10 +98,18 @@ class EpubImporter(
     private val coversDir: File get() = File(appContext.filesDir, COVERS_DIR)
 
     suspend fun import(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
+        val totalStart = System.nanoTime()
+        val timings = ImportTimings()
         purgeStaleTemps()
-        val copied = copyToTemp(uri) ?: return@withContext ImportResult.Rejected(RejectReason.UNREADABLE)
+        val copyStart = System.nanoTime()
+        val copied = copyToTemp(uri)
+        timings.copySha256Ms = elapsedMs(copyStart)
+        if (copied == null) {
+            logImportTimings(timings, elapsedMs(totalStart), "echec_copie")
+            return@withContext ImportResult.Rejected(RejectReason.UNREADABLE)
+        }
         val originalName = displayName(uri)
-        mutex.withLock { importTemp(copied.file, copied.sha256, originalName) }
+        mutex.withLock { importTemp(copied.file, copied.sha256, originalName, timings, totalStart) }
     }
 
     suspend fun replace(duplicate: ImportResult.Duplicate): ImportResult.Added = withContext(Dispatchers.IO) {
@@ -141,24 +180,41 @@ class EpubImporter(
         }
     }
 
-    private suspend fun importTemp(temp: File, sha256: String, originalName: String): ImportResult {
+    private suspend fun importTemp(
+        temp: File,
+        sha256: String,
+        originalName: String,
+        timings: ImportTimings = ImportTimings(),
+        totalStart: Long = System.nanoTime(),
+    ): ImportResult {
         val bookFile = File(booksDir, "$sha256$BOOK_EXTENSION")
         val coverFile = File(coversDir, "$sha256$COVER_EXTENSION")
         var moved = false
         return try {
             val existing = books.findBySha256(sha256)
             if (existing != null) {
+                logImportTimings(timings, elapsedMs(totalStart), "doublon")
                 return ImportResult.Duplicate(existing, PendingImport(temp, sha256, originalName, temp.length()))
             }
-            val info = opener.inspect(temp).getOrElse { error ->
+            val info = opener.inspect(temp) { phase, ms ->
+                when (phase) {
+                    PHASE_OPEN -> timings.openMs = ms
+                    PHASE_WORDS -> timings.wordsMs = ms
+                    PHASE_COVER -> timings.coverMs += ms
+                }
+            }.getOrElse { error ->
                 deleteRetrying(temp)
+                logImportTimings(timings, elapsedMs(totalStart), "rejete")
                 return ImportResult.Rejected(rejectReasonOf(error))
             }
             val sizeBytes = temp.length()
             moveInto(temp, bookFile)
             moved = true
+            val coverWriteStart = System.nanoTime()
             val coverPath = info.cover?.let { writeCover(it, coverFile) }
+            timings.coverMs += elapsedMs(coverWriteStart)
             val title = info.title ?: defaultTitle(originalName)
+            val insertStart = System.nanoTime()
             val id = books.insert(
                 BookEntity(
                     title = title,
@@ -175,6 +231,8 @@ class EpubImporter(
                     totalWords = info.totalWords,
                 ),
             )
+            timings.insertMs = elapsedMs(insertStart)
+            logImportTimings(timings, elapsedMs(totalStart), "ajoute")
             ImportResult.Added(id, title)
         } catch (e: CancellationException) {
             // On ne remplace jamais une CancellationException : un échec de nettoyage est
@@ -185,6 +243,7 @@ class EpubImporter(
             // Ici en revanche, filesDir/books et filesDir/covers ne doivent jamais garder de trace
             // d'un import raté : si le nettoyage échoue, on le remonte au lieu de l'avaler.
             discard(temp, bookFile.takeIf { moved }, coverFile.takeIf { moved }, throwOnOrphanedBookFile = true)
+            logImportTimings(timings, elapsedMs(totalStart), "erreur")
             ImportResult.Rejected(RejectReason.UNREADABLE)
         }
     }

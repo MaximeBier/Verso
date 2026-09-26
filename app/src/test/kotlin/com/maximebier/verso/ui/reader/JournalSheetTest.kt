@@ -31,6 +31,14 @@ class JournalSheetTest {
     private fun clock(h: Int, m: Int) = ctx.getString(R.string.common_clock_time, h, m)
 
     @Test
+    fun positionOfLocatorJsonGivesTheFileWithoutFragmentAndTheProgressionInside() {
+        val json = """{"href":"OEBPS/p1.xhtml#c2","type":"application/xhtml+xml","locations":{"progression":0.42,"totalProgression":0.1}}"""
+
+        assertThat(positionOfLocatorJson(json)).isEqualTo(ResourcePosition("OEBPS/p1.xhtml", 0.42))
+        assertThat(positionOfLocatorJson("pas du json")).isNull()
+    }
+
+    @Test
     fun showsHeaderDayGroupsAndSessionDetails() {
         composeRule.setContent { VersoTheme { JournalSample() } }
 

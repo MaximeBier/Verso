@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -95,11 +98,20 @@ fun DetailsTextField(
     }
 }
 
-/** Ligne de métadonnée (§3.14) : libellé à gauche, valeur 600 alignée à droite (peut passer à la ligne), filet bas divider. */
+private val MetadataGap = 16.dp
+
+/**
+ * Ligne de métadonnée (§3.14) : libellé à gauche, valeur 600 alignée à droite, filet bas divider. Si la valeur
+ * ne tient plus sur une ligne à côté du libellé (texte système agrandi, nom de fichier long), elle passe sous le
+ * libellé sur toute la largeur, pour ne pas couper « madame-bovary.epub » au milieu d'un mot.
+ */
 @Composable
 fun MetadataRow(label: String, value: String, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
-    Row(
+    val valueStyle = VersoTypography.body.copy(fontWeight = FontWeight(600))
+    val measurer = rememberTextMeasurer()
+    val gapPx = with(LocalDensity.current) { MetadataGap.roundToPx() }
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .drawBehind {
@@ -108,16 +120,20 @@ fun MetadataRow(label: String, value: String, modifier: Modifier = Modifier) {
                 drawLine(color = colors.divider, start = Offset(0f, y), end = Offset(size.width, y), strokeWidth = stroke)
             }
             .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.Top,
     ) {
-        Text(label, style = VersoTypography.body, color = colors.textSecondary)
-        Text(
-            text = value,
-            style = VersoTypography.body.copy(fontWeight = FontWeight(600)),
-            color = colors.text,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f),
-        )
+        val labelWidth = measurer.measure(label, VersoTypography.body, maxLines = 1).size.width
+        val valueWidth = measurer.measure(value, valueStyle, maxLines = 1).size.width
+        val sideBySide = labelWidth + gapPx + valueWidth <= constraints.maxWidth
+        if (sideBySide) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MetadataGap), verticalAlignment = Alignment.Top) {
+                Text(label, style = VersoTypography.body, color = colors.textSecondary)
+                Text(value, style = valueStyle, color = colors.text, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+            }
+        } else {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(label, style = VersoTypography.body, color = colors.textSecondary)
+                Text(value, style = valueStyle, color = colors.text)
+            }
+        }
     }
 }

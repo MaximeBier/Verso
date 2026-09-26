@@ -76,10 +76,14 @@ sealed interface TrackerEffect {
  * - **AWAY** : pas de minuterie. `StayHere` → lecture := affiché. `GoBack` → `ScrollTo(lecture)` ;
  *   les `Displayed` suivants sont ignorés jusqu'à l'arrivée près de la cible (« saut en cours »), qui
  *   ne compte ni comme navigation ni comme lecture. Retour manuel par petits mouvements à au plus un
- *   écran de la lecture → FOLLOWING. Confirmation : un mouvement de lecture survenant au moins
- *   [ReadingThresholds.confirmReadingMs] après le point d'arrivée, à au plus
- *   [ReadingThresholds.confirmMaxDriftScreens] de ce point, fait passer la lecture à l'affiché ; si la
- *   dérive dépasse, le point d'arrivée se déplace et le chrono repart. Les `Tick` seuls ne confirment
+ *   écran de la lecture → FOLLOWING. Confirmation : environ [ReadingThresholds.confirmReadingMs] de
+ *   **lecture** à au plus [ReadingThresholds.confirmMaxDriftScreens] du point d'arrivée fait passer la
+ *   lecture à l'affiché. Seule la fin d'un glissé sans fling qui a bougé l'affiché, hors navigation, compte
+ *   comme lecture (jamais un `Displayed` seul : première image d'un fling, décalage d'un tap). La fenêtre
+ *   s'ouvre au premier de ces glissés après l'arrivée (pas à l'arrivée : la carte laissée affichée ne
+ *   compte pas), repart après une pause de plus de [ReadingThresholds.confirmMaxIdleGapMs], et confirme
+ *   au glissé qui l'amène à [ReadingThresholds.confirmReadingMs]. Dérive au-delà du point d'arrivée ou
+ *   nouvelle navigation : nouveau point d'arrivée, fenêtre remise à zéro. Les `Tick` seuls ne confirment
  *   jamais : un téléphone posé avec la carte la garde.
  * - Saut vers une cible approximative (`Jumped.approximate` : ancre, rapportée au début du fichier) :
  *   chaque `Displayed` est gardé comme position affichée, et la première position stabilisée
@@ -123,8 +127,17 @@ class ReadingPositionTracker(
     /** Au moins une position affichée reçue depuis le début du saut approximatif. */
     private var jumpDisplayedSeen = false
 
-    /** Point d'arrivée en AWAY et début du chrono de confirmation. */
+    /** Point d'arrivée en AWAY : la confirmation exige de lire à au plus un écran de lui. */
     private var anchor: Stamped = Stamped(0L, initial)
+
+    /** Fin du premier glissé de lecture de la fenêtre de confirmation en cours ; null si aucune. */
+    private var confirmWindowStartMs: Long? = null
+
+    /** Fin du dernier glissé de lecture compté dans la fenêtre de confirmation. */
+    private var lastReadingGestureMs: Long = Long.MIN_VALUE
+
+    /** L'affiché a bougé (mouvement de lecture en AWAY) depuis la dernière fin de geste. */
+    private var movedSinceGesture = false
 
     /** Positions affichées de la fenêtre glissante. */
     private val samples = ArrayDeque<Stamped>()
@@ -207,6 +220,7 @@ class ReadingPositionTracker(
         } else if (isFling && !navigating) {
             startNavigation(timeMs, windowStartMs = null, effects = effects)
         }
+        if (!isFling && !navigating && mode == TrackerMode.AWAY) readingGestureWhileAway(timeMs, effects)
         if (!isFling) settle(effects)
     }
 
@@ -280,11 +294,15 @@ class ReadingPositionTracker(
             startNavigation(timeMs, windowStartMs, effects)
             return
         }
-        if (mode == TrackerMode.AWAY) moveWhileAway(timeMs, position, effects)
+        if (mode == TrackerMode.AWAY) moveWhileAway(timeMs, position)
     }
 
-    /** Mouvement de lecture en AWAY : retour manuel, dérive du point d'arrivée, confirmation. */
-    private fun moveWhileAway(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {
+    /**
+     * Mouvement de l'affiché en AWAY, pas (encore) reconnu comme navigation : retour manuel, dérive du point
+     * d'arrivée. Il ne confirme jamais : ce peut être la première image d'un fling ou le décalage d'un tap ;
+     * seule la fin d'un glissé sans fling ([readingGestureWhileAway]) prouve la lecture.
+     */
+    private fun moveWhileAway(timeMs: Long, position: BookPosition) {
         if (screens(position, reading) <= thresholds.returnCardMinScreens) {
             // Retour manuel près de la lecture : la carte disparaît, la lecture suivra au repos.
             mode = TrackerMode.FOLLOWING
@@ -292,13 +310,29 @@ class ReadingPositionTracker(
         }
         if (screens(position, anchor.position) > thresholds.confirmMaxDriftScreens) {
             anchor = Stamped(timeMs, position)
-            return
+            confirmWindowStartMs = null
         }
-        if (timeMs - anchor.timeMs >= thresholds.confirmReadingMs) {
-            commit(position, timeMs, reportMove = false, effects = effects)
+        movedSinceGesture = true
+    }
+
+    /**
+     * Fin d'un glissé sans fling en AWAY, hors navigation : un mouvement de lecture près du point d'arrivée.
+     * La fenêtre de confirmation s'ouvre au premier, repart après une pause de plus de
+     * [ReadingThresholds.confirmMaxIdleGapMs], et confirme dès qu'elle couvre [ReadingThresholds.confirmReadingMs].
+     */
+    private fun readingGestureWhileAway(timeMs: Long, effects: MutableList<TrackerEffect>) {
+        if (!movedSinceGesture) return
+        movedSinceGesture = false
+        val start = confirmWindowStartMs
+            ?.takeIf { timeMs - lastReadingGestureMs <= thresholds.confirmMaxIdleGapMs }
+            ?: timeMs
+        confirmWindowStartMs = start
+        lastReadingGestureMs = timeMs
+        if (timeMs - start >= thresholds.confirmReadingMs) {
+            commit(displayed, timeMs, reportMove = false, effects = effects)
             mode = TrackerMode.FOLLOWING
             motionPending = false
-            resetWindow(timeMs, position)
+            resetWindow(timeMs, displayed)
         }
     }
 
@@ -359,6 +393,8 @@ class ReadingPositionTracker(
     private fun enterAway(timeMs: Long) {
         mode = TrackerMode.AWAY
         anchor = Stamped(timeMs, displayed)
+        confirmWindowStartMs = null
+        movedSinceGesture = false
     }
 
     private fun arriveAt(timeMs: Long, position: BookPosition) {

@@ -117,7 +117,7 @@ Règles :
   - texte : « Vous avez quitté votre lecture » et « Votre lecture : Partie II, chap. I · 31 % » ;
   - boutons : « Rester ici » (la position affichée devient la position de lecture) et « Revenir » (retour à la position de lecture, bouton principal) ;
   - **pas de minuterie** : la carte reste tant que l'utilisateur n'a pas choisi.
-- La carte disparaît aussi si l'on se met à lire à la nouvelle place : après environ 25 secondes de mouvement de lecture à moins d'un écran de ce point, la position de lecture y passe automatiquement.
+- La carte disparaît aussi si l'on se met à lire à la nouvelle place : après environ 25 secondes de mouvement de lecture à moins d'un écran de ce point, la position de lecture y passe automatiquement. Les 25 secondes courent depuis le premier glissé de lecture au nouvel endroit, pas depuis l'arrivée : la carte laissée affichée, un tap ou le début d'un fling ne comptent pas, et une pause de plus de 15 secondes entre deux glissés les remet à zéro.
 - La position de lecture est sauvegardée automatiquement à chaque arrêt de scroll (debounce d'environ 500 ms) et à chaque mise en arrière-plan (`onStop`).
 - À la réouverture, l'app revient à la position de lecture, jamais à l'endroit d'un scroll accidentel.
 - Tous les seuils (vitesse de fling, nombre d'écrans, délai de confirmation) sont des constantes nommées, faciles à ajuster à l'usage.
@@ -499,3 +499,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-25 (plan) : dépôt GitHub privé `MaximeBier/Verso` ; `CLAUDE.md` à la racine, spec et maquettes dans `docs/` ; compileSdk 37 (Readium 3.4.0, Compose 1.12), targetSdk 36 inchangé ; tout sur `master`, un commit par étape, sans pull request ; plan V1 dans `docs/superpowers/plans/`.
 - 2026-09-26 : conclusions du prototype Readium (étape 1) : navigateur Compose `readium-navigator-web-reflowable` retenu, seuil de fling 1,0 écran/s, points de vigilance 1 et 2 mis à jour.
 - 2026-09-26 (étape 5) : deux seuils de vitesse distincts : fling au relâchement du doigt (1,0 écran/s) et navigation entre deux positions affichées consécutives (4,0 écrans/s) ; un lien interne suivi dans le livre est un saut explicite.
+- 2026-09-26 (correctif A) : la confirmation « 25 secondes de lecture » compte la lecture effective (glissés sans fling près du point d'arrivée), depuis le premier glissé et non depuis l'arrivée ; une pause de plus de 15 secondes entre deux glissés (`confirmMaxIdleGapMs`) remet la fenêtre à zéro.
