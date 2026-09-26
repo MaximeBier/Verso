@@ -4,14 +4,23 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,8 +38,13 @@ fun ReaderDestination(bookId: Long, onBack: () -> Unit) {
 @Composable
 fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val density = LocalDensity.current
+    var bottomBarHeightPx by remember { mutableIntStateOf(0) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }
+    LaunchedEffect(density.fontScale, density.density) {
+        viewModel.onDisplayMetrics(fontScale = density.fontScale, density = density.density)
+    }
     KeepScreenOn()
     ImmersiveSystemBars(showSystemBars = state.barsVisible)
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
@@ -47,6 +61,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
                 dark = isSystemInDarkTheme(),
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
+                onInternalLink = viewModel::onInternalLinkFollowed,
             )
             // Surface quittée (rotation, thème) : plus de sauts vers l’ancienne rendition jusqu’au prochain onReady.
             DisposableEffect(publication) {
@@ -66,7 +81,26 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
             onTocClick = viewModel::showToc,
             // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas par la tâche 6.4.
             onJournalClick = viewModel::showJournal,
+            onBottomBarHeightChanged = { bottomBarHeightPx = it },
         )
+        state.returnCard?.let { card ->
+            // Au-dessus de la barre du bas quand elle est affichée, sinon à 24 dp du bas plus la barre de gestes.
+            val placement = if (state.barsVisible && bottomBarHeightPx > 0) {
+                Modifier.padding(bottom = with(density) { bottomBarHeightPx.toDp() } + 16.dp)
+            } else {
+                Modifier.windowInsetsPadding(WindowInsets.navigationBars).padding(bottom = 24.dp)
+            }
+            ReturnCard(
+                location = card.location ?: state.bookTitle,
+                percent = card.percent,
+                onStayHere = viewModel::stayHere,
+                onGoBack = viewModel::goBack,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .then(placement)
+                    .padding(horizontal = 16.dp),
+            )
+        }
     }
 
     if (state.tocVisible) {

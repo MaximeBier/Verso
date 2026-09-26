@@ -117,6 +117,24 @@ class ReflowableReaderControllerTest {
     }
 
     @Test
+    fun releaseAtOneAndAHalfScreensPerSecondIsAFlingWithDefaultThresholds() = runTest {
+        val controller = ReflowableReaderController(
+            scope = backgroundScope,
+            readChapterHtml = { null },
+            onCenterTap = {},
+            thresholds = ReadingThresholds(), // flingScreensPerSecond = 1,0 (vitesse au relâchement)
+            uptimeMs = { testScheduler.currentTime },
+            wallClockMs = { testScheduler.currentTime },
+        ).apply { viewportHeightPx = 2_000 }
+        controller.gestures.test {
+            controller.onPointerDown()
+            controller.onGestureReleased(velocityYPxPerSecond = -3_000f) // 1,5 écran/s
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+            assertThat(awaitItem().isFling).isTrue()
+        }
+    }
+
+    @Test
     fun aNewTouchEndsThePreviousScrollAndEmitsItsSignalAtOnce() = runTest {
         val h = Harness(this)
         h.controller.gestures.test {

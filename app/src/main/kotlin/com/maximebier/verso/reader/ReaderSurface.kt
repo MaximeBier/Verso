@@ -69,7 +69,8 @@ import org.readium.r2.shared.util.Url
 
 /**
  * Variante A : navigateur Compose de Readium, chapitres enchaînés par un `VerticalPager` de WebViews.
- * `initialLocator` n’est lu qu’à la création (clé : la publication).
+ * `initialLocator` n’est lu qu’à la création (clé : la publication). `onInternalLink` : lien interne
+ * touché (ordre de lecture), appelé juste avant que Readium ne le suive.
  */
 @Composable
 fun ReaderSurface(
@@ -79,11 +80,13 @@ fun ReaderSurface(
     onReady: (ReaderController) -> Unit,
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
+    onInternalLink: (Url) -> Unit = {},
 ) {
     val context = LocalContext.current
     val fontScale = LocalDensity.current.fontScale
     val currentOnReady by rememberUpdatedState(onReady)
     val currentOnCenterTap by rememberUpdatedState(onCenterTap)
+    val currentOnInternalLink by rememberUpdatedState(onInternalLink)
     val background = Color(ReadingStyle.colors(dark).background)
 
     val factory = remember(publication) {
@@ -144,13 +147,15 @@ fun ReaderSurface(
             }
         }
     }
-    // Liens internes suivis par Readium (liens externes ignorés : aucun réseau) ; on retient seulement
-    // qu’un lien a été touché, pour ne pas prendre ce tap pour un tap au centre.
+    // Liens internes suivis par Readium (liens externes ignorés : aucun réseau) ; on retient qu’un lien
+    // a été touché, pour ne pas prendre ce tap pour un tap au centre, et on signale les liens internes.
     val readiumLinks = defaultHyperlinkListener(rendition)
     val hyperlinkListener = remember(controller, readiumLinks) {
         object : HyperlinkListener {
             override fun onReadingOrderLinkActivated(url: Url, context: LinkContext?) {
                 controller.onLinkActivated()
+                // Saut explicite (spec) : annoncé avant que Readium ne lance le déplacement.
+                currentOnInternalLink(url)
                 readiumLinks.onReadingOrderLinkActivated(url, context)
             }
 
@@ -328,7 +333,7 @@ internal class ReflowableReaderController(
         }
     }
 
-    /** Fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde. */
+    /** Fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde (seul usage de ce seuil). */
     fun onGestureReleased(velocityYPxPerSecond: Float) {
         val height = viewportHeightPx
         val isFling = height > 0 &&

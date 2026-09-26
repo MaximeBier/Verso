@@ -9,6 +9,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
@@ -19,6 +20,7 @@ import com.maximebier.verso.readium.Locators
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -137,6 +139,60 @@ class ReaderViewModelTest {
 
         assertThat(fake.goCalls.last().href.toString()).isEqualTo("chapitre-1.xhtml")
         assertThat(fake.goCalls.last().locations.progression).isEqualTo(0.25)
+        store.clear()
+    }
+
+    @Test
+    fun tocJumpShowsReturnCardAndGoBackReturnsToReading() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val effects = mutableListOf<TrackerEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.readingEffects.collect { effects += it } }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        viewModel.jumpToTocEntry(0) // « Chapitre I » : début du livre
+        runCurrent()
+
+        assertThat(fake.goCalls.last().href.toString()).isEqualTo("chapitre-1.xhtml")
+        val withCard = viewModel.uiState.first { it.returnCard != null }
+        assertThat(withCard.returnCard?.percent).isEqualTo(30)
+        assertThat(withCard.readingPercent).isEqualTo(30)
+
+        viewModel.goBack()
+        runCurrent()
+
+        assertThat(fake.goCalls.last().locations.totalProgression!!).isWithin(1e-9).of(0.30)
+        assertThat(viewModel.uiState.value.returnCard).isNull()
+        // Un saut et un retour sont de la navigation : aucun SaveReading ni ReadingMoved sur readingEffects.
+        assertThat(effects).isEmpty()
+        store.clear() // arrête le Tick du coordinateur avant la fin de runTest
+    }
+
+    @Test
+    fun internalLinkIsAnExplicitJump() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        // Lien interne suivi par le moteur (qui se déplace lui-même) : annoncé comme un saut, sans go().
+        viewModel.onInternalLinkFollowed(Url("chapitre-1.xhtml#note-3")!!)
+        runCurrent()
+
+        assertThat(fake.goCalls).isEmpty()
+        assertThat(viewModel.uiState.value.returnCard?.percent).isEqualTo(30)
+        assertThat(viewModel.uiState.value.readingPercent).isEqualTo(30)
         store.clear()
     }
 

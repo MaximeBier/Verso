@@ -16,8 +16,16 @@ sealed interface ReaderEvent {
     /** Fin d'un geste (doigt levé) ; `isFling` si le geste a été lancé. */
     data class GestureEnded(override val timeMs: Long, val position: BookPosition, val isFling: Boolean) : ReaderEvent
 
-    /** Saut explicite : sommaire, journal, carte. */
-    data class Jumped(override val timeMs: Long, val target: BookPosition) : ReaderEvent
+    /**
+     * Saut explicite : sommaire, journal, carte, lien interne. `approximate` : la cible n'a pas de
+     * progression fiable (ancre d'un lien ou du sommaire, rapportée au début du fichier) ; l'arrivée est
+     * alors la prochaine position affichée stabilisée, où qu'elle soit.
+     */
+    data class Jumped(
+        override val timeMs: Long,
+        val target: BookPosition,
+        val approximate: Boolean = false,
+    ) : ReaderEvent
 
     /** « Rester ici » sur la carte de retour. */
     data class StayHere(override val timeMs: Long) : ReaderEvent
@@ -58,7 +66,7 @@ sealed interface TrackerEffect {
  *   [ReadingThresholds.saveDebounceMs] (constaté au `Tick` ou à l'événement suivant). Émet alors
  *   `SaveReading` + `ReadingMoved`.
  * - **Navigation** = fling (`GestureEnded.isFling`, ou vitesse entre deux `Displayed` consécutifs
- *   supérieure à [ReadingThresholds.flingScreensPerSecond]), déplacement net supérieur à
+ *   supérieure à [ReadingThresholds.displayedSpeedNavigationScreensPerSecond]), déplacement net supérieur à
  *   [ReadingThresholds.navigationWindowScreens] dans une fenêtre glissante de
  *   [ReadingThresholds.navigationWindowMs], ou `Jumped`. Elle ne touche pas la lecture. Si la fenêtre
  *   révèle une navigation après que de petits mouvements ont déjà avancé la lecture, la lecture est
@@ -73,6 +81,10 @@ sealed interface TrackerEffect {
  *   [ReadingThresholds.confirmMaxDriftScreens] de ce point, fait passer la lecture à l'affiché ; si la
  *   dérive dépasse, le point d'arrivée se déplace et le chrono repart. Les `Tick` seuls ne confirment
  *   jamais : un téléphone posé avec la carte la garde.
+ * - Saut vers une cible approximative (`Jumped.approximate` : ancre, rapportée au début du fichier) :
+ *   chaque `Displayed` est gardé comme position affichée, et la première position stabilisée
+ *   ([ReadingThresholds.saveDebounceMs] sans nouveau `Displayed`) est l'arrivée ; la carte est alors
+ *   réévaluée depuis elle. `StayHere` enregistre toujours la dernière position affichée.
  * - Le premier `Displayed` reçu est l'arrivée à la position initiale : il ne modifie jamais la lecture.
  * - `SaveReading` sans `ReadingMoved` (restauration, « Rester ici », confirmation) : la lecture change
  *   sans mouvement de lecture, aucun mot n'est compté.
@@ -105,6 +117,12 @@ class ReadingPositionTracker(
     /** Saut en cours (Jumped, GoBack) : Displayed ignorés jusqu'à l'arrivée près de cette cible. */
     private var jumpTarget: BookPosition? = null
 
+    /** Le saut en cours vise une cible approximative (ancre) : l'arrivée est la position stabilisée. */
+    private var jumpApproximate = false
+
+    /** Au moins une position affichée reçue depuis le début du saut approximatif. */
+    private var jumpDisplayedSeen = false
+
     /** Point d'arrivée en AWAY et début du chrono de confirmation. */
     private var anchor: Stamped = Stamped(0L, initial)
 
@@ -133,7 +151,7 @@ class ReadingPositionTracker(
         when (event) {
             is ReaderEvent.Displayed -> onDisplayed(event.timeMs, event.position, effects)
             is ReaderEvent.GestureEnded -> onGestureEnded(event.timeMs, event.position, event.isFling, effects)
-            is ReaderEvent.Jumped -> onJumped(event.timeMs, event.target, effects)
+            is ReaderEvent.Jumped -> onJumped(event.timeMs, event.target, event.approximate, effects)
             is ReaderEvent.StayHere -> onStayHere(event.timeMs, effects)
             is ReaderEvent.GoBack -> onGoBack(event.timeMs, effects)
             is ReaderEvent.Tick -> Unit
@@ -145,6 +163,15 @@ class ReadingPositionTracker(
     private fun onDisplayed(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {
         val target = jumpTarget
         if (target != null) {
+            if (jumpApproximate) {
+                // Cible sans progression fiable : on garde la dernière position rapportée par le moteur ;
+                // l'arrivée sera la prochaine position stabilisée (voir settleIfResting).
+                displayed = position
+                displayedAtMs = timeMs
+                lastMotion = Stamped(timeMs, position)
+                jumpDisplayedSeen = true
+                return
+            }
             // Saut en cours : seule une position proche de la cible marque l'arrivée.
             if (screens(position, target) <= thresholds.returnCardMinScreens) arriveAt(timeMs, position)
             return
@@ -156,7 +183,7 @@ class ReadingPositionTracker(
             return
         }
         if (position == displayed) return // Displayed stable : pas un mouvement.
-        val fast = speedScreensPerSecond(previous, timeMs, position) > thresholds.flingScreensPerSecond
+        val fast = speedScreensPerSecond(previous, timeMs, position) > thresholds.displayedSpeedNavigationScreensPerSecond
         lastMotion = Stamped(timeMs, position)
         move(timeMs, position, forcedNavigation = fast, effects = effects)
     }
@@ -169,7 +196,7 @@ class ReadingPositionTracker(
     ) {
         if (jumpTarget != null) {
             // L'utilisateur reprend la main pendant un saut : sa position devient la référence.
-            arriveAt(timeMs, position)
+            if (jumpApproximate) arriveFromApproximateJump(timeMs, position) else arriveAt(timeMs, position)
             if (isFling) navigating = true
             return
         }
@@ -183,19 +210,37 @@ class ReadingPositionTracker(
         if (!isFling) settle(effects)
     }
 
-    private fun onJumped(timeMs: Long, target: BookPosition, effects: MutableList<TrackerEffect>) {
+    private fun onJumped(
+        timeMs: Long,
+        target: BookPosition,
+        approximate: Boolean,
+        effects: MutableList<TrackerEffect>,
+    ) {
         settle(effects)
         navigating = false
         motionPending = false
         displayed = target
         displayedAtMs = timeMs
         jumpTarget = target
+        jumpApproximate = approximate
+        jumpDisplayedSeen = false
         lastMotion = Stamped(timeMs, target)
         resetWindow(timeMs, target)
         if (screens(target, reading) > thresholds.returnCardMinScreens) enterAway(timeMs) else mode = TrackerMode.FOLLOWING
     }
 
+    /**
+     * Fin d'un saut approximatif : la dernière position affichée par le moteur est l'arrivée, et la carte
+     * est réévaluée depuis elle (la cible, début du fichier, n'était qu'une estimation).
+     */
+    private fun arriveFromApproximateJump(timeMs: Long, position: BookPosition) {
+        arriveAt(timeMs, position)
+        if (screens(position, reading) > thresholds.returnCardMinScreens) enterAway(timeMs) else mode = TrackerMode.FOLLOWING
+    }
+
     private fun onStayHere(timeMs: Long, effects: MutableList<TrackerEffect>) {
+        // « Rester ici » enregistre toujours la position réellement affichée, même avant la stabilisation.
+        if (jumpTarget != null && jumpApproximate && jumpDisplayedSeen) arriveFromApproximateJump(timeMs, displayed)
         settle(effects)
         if (mode != TrackerMode.AWAY) return
         commit(displayed, timeMs, reportMove = false, effects = effects)
@@ -213,6 +258,7 @@ class ReadingPositionTracker(
         displayed = reading
         displayedAtMs = timeMs
         jumpTarget = reading
+        jumpApproximate = false
         lastMotion = Stamped(timeMs, reading)
         resetWindow(timeMs, reading)
         effects += TrackerEffect.ScrollTo(reading)
@@ -281,6 +327,12 @@ class ReadingPositionTracker(
 
     private fun settleIfResting(nowMs: Long, effects: MutableList<TrackerEffect>) {
         val last = lastMotion ?: return
+        val resting = nowMs - last.timeMs >= thresholds.saveDebounceMs
+        if (jumpTarget != null && jumpApproximate && jumpDisplayedSeen && resting) {
+            // Saut approximatif : la position affichée stabilisée est l'arrivée.
+            arriveFromApproximateJump(last.timeMs, last.position)
+            return
+        }
         if ((motionPending || navigating) && nowMs - last.timeMs >= thresholds.saveDebounceMs) settle(effects)
     }
 
@@ -310,6 +362,8 @@ class ReadingPositionTracker(
     }
 
     private fun arriveAt(timeMs: Long, position: BookPosition) {
+        jumpApproximate = false
+        jumpDisplayedSeen = false
         jumpTarget = null
         displayed = position
         displayedAtMs = timeMs

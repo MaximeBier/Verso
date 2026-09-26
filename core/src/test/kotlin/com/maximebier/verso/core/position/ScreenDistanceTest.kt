@@ -53,7 +53,10 @@ class ScreenDistanceTest {
     @Test
     fun defaultThresholdsMatchSpec() {
         val t = ReadingThresholds()
-        assertThat(t.flingScreensPerSecond).isEqualTo(4.0)
+        // Calibré par le prototype (étape 1) : flicks d’un vrai doigt entre 1,0 et 7,4 écrans/s.
+        assertThat(t.flingScreensPerSecond).isEqualTo(1.0)
+        // Vitesse entre deux positions affichées : bien plus haute qu’au relâchement.
+        assertThat(t.displayedSpeedNavigationScreensPerSecond).isEqualTo(4.0)
         assertThat(t.navigationWindowMs).isEqualTo(5_000L)
         assertThat(t.navigationWindowScreens).isEqualTo(3.0)
         assertThat(t.returnCardMinScreens).isEqualTo(1.0)
