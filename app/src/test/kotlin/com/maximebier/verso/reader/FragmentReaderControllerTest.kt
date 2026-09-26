@@ -334,6 +334,27 @@ class FragmentReaderControllerTest {
     }
 
     @Test
+    fun chapterTurnSignalWaitsUntilTheSlowNextChapterIsDisplayed() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.97))
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -h.controller.chainThresholdPx)
+            // Chapitre non préchargé : la WebView ne l’affiche que 800 ms après le saut.
+            advanceTimeBy(800)
+            expectNoEvents()
+            h.controller.onDisplayed(at("ch2.xhtml", 0.0))
+            advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS + ReaderGestures.SETTLE_POLL_MS)
+            assertThat(awaitItem().chapterTurn).isTrue()
+            assertThat(h.controller.displayed.value!!.href.toString()).isEqualTo("ch2.xhtml")
+        }
+    }
+
+    @Test
     fun flingThatReachesTheEdgeWithoutStartingThereStaysInTheChapter() = runTest {
         val h = Harness(this)
         h.edges = ChapterEdges(atTop = false, atBottom = false)
