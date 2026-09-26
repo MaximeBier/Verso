@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.reader
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -38,10 +39,16 @@ fun ReaderDestination(bookId: Long, onBack: () -> Unit) {
 @Composable
 fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val journal by viewModel.journal.collectAsStateWithLifecycle()
     val density = LocalDensity.current
+    val activity = LocalActivity.current
     var bottomBarHeightPx by remember { mutableIntStateOf(0) }
 
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onStart() }
+    // Rotation ou thème du système : ON_STOP puis ON_START sur une activité recréée, la session continue.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.onStop(changingConfigurations = activity?.isChangingConfigurations == true)
+    }
     LaunchedEffect(density.fontScale, density.density) {
         viewModel.onDisplayMetrics(fontScale = density.fontScale, density = density.density)
     }
@@ -79,7 +86,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
             ),
             onBack = onBackToLibrary,
             onTocClick = viewModel::showToc,
-            // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas par la tâche 6.4.
+            // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas.
             onJournalClick = viewModel::showJournal,
             onBottomBarHeightChanged = { bottomBarHeightPx = it },
         )
@@ -117,7 +124,13 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
             onDismiss = viewModel::hideToc,
         )
     }
-    // La feuille « Journal » (6.2) est affichée ici par la tâche 6.4 quand state.journalVisible est vrai.
+    journal?.let { journalState ->
+        JournalSheet(
+            state = journalState,
+            onResume = viewModel::resumeFromJournal,
+            onDismiss = viewModel::hideJournal,
+        )
+    }
 }
 
 /** Écran maintenu allumé pendant la lecture uniquement ; la luminosité n’est jamais touchée. */
