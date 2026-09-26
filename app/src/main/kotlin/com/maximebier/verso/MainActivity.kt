@@ -26,10 +26,12 @@ class MainActivity : FragmentActivity() {
         // Fichier reçu par « Ouvrir avec » / « Partager vers ». Après une recréation, l'intent a déjà été traité.
         // Appelé avant setContent : IncomingImports.hasPending() est donc connu dès la première composition.
         if (savedInstanceState == null) handleIncomingIntent(intent)
+        // Premier lancement seulement (après une recréation, Navigation restaure la pile), et jamais devant un import.
+        val allowAutoReopen = savedInstanceState == null && !IncomingImports.hasPending()
         setContent {
             VersoTheme {
                 val navController = rememberNavController()
-                VersoNavHost(navController = navController)
+                VersoNavHost(navController = navController, allowAutoReopen = allowAutoReopen)
                 ReturnToLibraryOnIncomingImport(navController)
             }
         }

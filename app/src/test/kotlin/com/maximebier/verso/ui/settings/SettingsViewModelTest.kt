@@ -45,12 +45,18 @@ class SettingsViewModelTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        val testDispatcher = UnconfinedTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
         val ctx = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(ctx, VersoDatabase::class.java).allowMainThreadQueries().build()
         books = BookRepository(db.bookDao(), tmp.newFolder("books"), tmp.newFolder("covers"))
         sessions = SessionRepository(db.sessionDao())
-        dataStoreScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        // DataStore doit tourner sur le même dispatcher de test que le reste (immédiat, sans
+        // vrai thread d'IO) : sinon ses lectures/écritures s'exécutent en temps réel hors du
+        // contrôle de `runTest`, et le round-trip édition -> réémission peut, rarement, dépasser
+        // le délai fixe de Turbine (3s) sous charge — un flake purement lié au test, pas à
+        // SettingsViewModel ni à SettingsRepository.
+        dataStoreScope = CoroutineScope(testDispatcher + SupervisorJob())
         settings = SettingsRepository(
             PreferenceDataStoreFactory.create(scope = dataStoreScope) { File(tmp.root, "settings.preferences_pb") },
         )
