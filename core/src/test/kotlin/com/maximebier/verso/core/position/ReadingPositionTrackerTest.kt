@@ -23,8 +23,18 @@ class ReadingPositionTrackerTest {
     private fun pos(screens: Double) =
         BookPosition(locatorJson = "{\"screens\":$screens}", totalProgression = screens / 100.0)
 
+    /**
+     * Seuils des scénarios, explicites pour ne pas dépendre des valeurs par défaut (calibrées à l'usage) :
+     * navigation au-delà de 4 écrans/s entre deux Displayed, pour que les vitesses des scénarios (3,5 et
+     * 5 écrans/s) restent de part et d'autre. La vitesse au relâchement n'est pas lue par le tracker.
+     */
+    private val thresholds = ReadingThresholds(
+        flingScreensPerSecond = 1.0,
+        displayedSpeedNavigationScreensPerSecond = 4.0,
+    )
+
     /** Lecture à 10 écrans, déjà affichée : le premier Displayed (arrivée) est reçu à t = 0. */
-    private fun tracker(thresholds: ReadingThresholds = ReadingThresholds()): ReadingPositionTracker =
+    private fun tracker(thresholds: ReadingThresholds = this.thresholds): ReadingPositionTracker =
         ReadingPositionTracker(pos(10.0), distance, thresholds).also { it.onEvent(Displayed(0, pos(10.0))) }
 
     private fun ReadingPositionTracker.feed(vararg events: ReaderEvent): List<TrackerEffect> =
@@ -52,13 +62,13 @@ class ReadingPositionTrackerTest {
 
     @Test
     fun initialStateFollowsInitialPosition() {
-        val tracker = ReadingPositionTracker(pos(10.0), distance)
+        val tracker = ReadingPositionTracker(pos(10.0), distance, thresholds)
         assertThat(tracker.state).isEqualTo(following(10.0))
     }
 
     @Test
     fun firstDisplayedIsTheArrivalAndNeverMovesReading() {
-        val tracker = ReadingPositionTracker(pos(10.0), distance)
+        val tracker = ReadingPositionTracker(pos(10.0), distance, thresholds)
         val effects = tracker.feed(Displayed(0, pos(10.2)), Tick(5_000), Tick(60_000))
         assertThat(effects).isEmpty()
         assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 10.2))
@@ -114,6 +124,16 @@ class ReadingPositionTrackerTest {
         tracker.onEvent(Displayed(100, pos(10.35))) // 3,5 écrans/s
         assertThat(tracker.onEvent(GestureEnded(200, pos(10.35), isFling = false)))
             .containsExactly(SaveReading(pos(10.35)), ReadingMoved(pos(10.0), pos(10.35))).inOrder()
+    }
+
+    @Test
+    fun briskReadingDragAtTwoScreensPerSecondBetweenDisplayedStaysReading() {
+        // Seuils par défaut : le seuil de fling au relâchement (1,0) ne s'applique pas entre deux Displayed.
+        val tracker = tracker(ReadingThresholds())
+        tracker.onEvent(Displayed(100, pos(10.2))) // 0,2 écran en 100 ms : 2 écrans/s
+        assertThat(tracker.onEvent(GestureEnded(400, pos(10.2), isFling = false)))
+            .containsExactly(SaveReading(pos(10.2)), ReadingMoved(pos(10.0), pos(10.2))).inOrder()
+        assertThat(tracker.state).isEqualTo(following(10.2))
     }
 
     @Test
@@ -262,6 +282,46 @@ class ReadingPositionTrackerTest {
     }
 
     // ---------- Carte « Revenir » (AWAY) ----------
+
+    @Test
+    fun linkToAnchorThenStayHereSavesTheActuallyDisplayedPositionNotTheFileStart() {
+        val tracker = tracker()
+        // Lien vers une note : cible approximative (début du fichier à 50), le moteur affiche l'ancre à 57.
+        assertThat(tracker.onEvent(Jumped(1_000, pos(50.0), approximate = true))).isEmpty()
+        tracker.onEvent(Displayed(1_100, pos(57.0)))
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 57.0))
+
+        // « Rester ici » avant même la stabilisation : la position réellement affichée.
+        assertThat(tracker.onEvent(StayHere(1_200))).containsExactly(SaveReading(pos(57.0)))
+        assertThat(tracker.state).isEqualTo(following(57.0))
+    }
+
+    @Test
+    fun tocEntryWithAnchorArrivesAtTheStabilizedDisplayedPositionAndStayHereSavesIt() {
+        val tracker = tracker()
+        tracker.onEvent(Jumped(1_000, pos(50.0), approximate = true))
+        // Le moteur passe par le début du fichier puis se pose sur l'ancre.
+        tracker.feed(Displayed(1_050, pos(50.0)), Displayed(1_150, pos(57.0)))
+        assertThat(tracker.feed(Tick(1_700))).isEmpty() // stabilisée : arrivée à 57
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 57.0))
+
+        // Après l'arrivée, l'affiché suit de nouveau les petits mouvements de lecture.
+        tracker.onEvent(Displayed(3_700, pos(57.2)))
+        assertThat(tracker.onEvent(StayHere(3_800))).containsExactly(SaveReading(pos(57.2)))
+        assertThat(tracker.state).isEqualTo(following(57.2))
+    }
+
+    @Test
+    fun approximateJumpLandingNearReadingHidesTheCardAtArrival() {
+        val tracker = tracker()
+        // Ancre dans le chapitre courant : la cible (début du chapitre, à 4) paraît lointaine…
+        tracker.onEvent(Jumped(1_000, pos(4.0), approximate = true))
+        assertThat(tracker.state.showReturnCard).isTrue()
+        // … mais le moteur se pose à 0,5 écran de la lecture.
+        tracker.onEvent(Displayed(1_100, pos(10.5)))
+        assertThat(tracker.feed(Tick(1_700))).isEmpty()
+        assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 10.5))
+    }
 
     @Test
     fun goBackScrollsToReadingIgnoresStaleDisplayedAndArrivalDoesNotMoveReading() {
@@ -448,7 +508,7 @@ class ReadingPositionTrackerTest {
 
     @Test
     fun thresholdsAreConfigurable() {
-        val tracker = tracker(ReadingThresholds(returnCardMinScreens = 3.0))
+        val tracker = tracker(thresholds.copy(returnCardMinScreens = 3.0))
         tracker.feed(
             GestureEnded(1_000, pos(10.2), isFling = true),
             Displayed(1_100, pos(11.5)),

@@ -5,8 +5,19 @@ package com.maximebier.verso.core.position
  * Valeurs de départ, à ajuster à l'usage : tout seuil passe par ici, jamais en dur.
  */
 data class ReadingThresholds(
-    /** Au-delà de cette vitesse (écrans par seconde) entre deux positions affichées : fling, donc navigation. */
-    val flingScreensPerSecond: Double = 4.0,
+    /**
+     * Vitesse du doigt **au relâchement** (écrans par seconde) au-delà de laquelle le geste est un fling
+     * (`GestureEnded.isFling`, décidé par la surface de lecture de l'app). Calibrée par le prototype
+     * (étape 1) : lecture ≤ 0,32, flicks d'un vrai doigt de 1,0 à 7,4
+     * (`docs/superpowers/plans/spike-readium-conclusions.md`). Le tracker ne la lit pas.
+     */
+    val flingScreensPerSecond: Double = 1.0,
+    /**
+     * Vitesse **entre deux positions affichées consécutives** (écrans par seconde) au-delà de laquelle le
+     * mouvement est une navigation, même sans fin de geste lancée. Plus haute que [flingScreensPerSecond] :
+     * en plein glissé de lecture, la vitesse instantanée dépasse largement la vitesse au relâchement.
+     */
+    val displayedSpeedNavigationScreensPerSecond: Double = 4.0,
     /** Durée de la fenêtre glissante de « plus de 3 écrans en moins de 5 s ». */
     val navigationWindowMs: Long = 5_000,
     /** Déplacement net, en écrans, qui fait d'un mouvement une navigation dans la fenêtre glissante. */
