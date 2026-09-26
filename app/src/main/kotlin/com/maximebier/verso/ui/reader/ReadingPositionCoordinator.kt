@@ -74,7 +74,7 @@ class ReadingPositionCoordinator(
             },
             scope.launch {
                 readerController.gestures.collect { signal ->
-                    dispatch(ReaderEvent.GestureEnded(signal.timeMs, lastDisplayed, signal.isFling))
+                    dispatch(ReaderEvent.GestureEnded(signal.timeMs, lastDisplayed, signal.isFling, signal.chapterTurn))
                 }
             },
         )

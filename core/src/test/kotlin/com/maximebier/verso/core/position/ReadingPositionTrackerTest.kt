@@ -58,6 +58,34 @@ class ReadingPositionTrackerTest {
     private fun away(reading: Double, displayed: Double) =
         TrackerState(pos(reading), pos(displayed), TrackerMode.AWAY, showReturnCard = true)
 
+    // ---------- Changement de chapitre (glissé au bord) ----------
+
+    @Test
+    fun chapterTurnWhileFollowingMovesReadingWithoutReturnCard() {
+        val tracker = tracker()
+        // Le nouveau chapitre s’affiche 30 ms après la fin du glissé, 1,2 écran plus loin : vitesse de navigation.
+        val effects = tracker.feed(
+            Displayed(1_000, pos(10.2)),
+            Displayed(1_030, pos(11.4)),
+            GestureEnded(1_300, pos(11.4), isFling = false, chapterTurn = true),
+            Tick(5_000),
+        )
+        assertThat(tracker.state).isEqualTo(following(11.4))
+        assertThat(effects).contains(SaveReading(pos(11.4)))
+    }
+
+    @Test
+    fun chapterTurnWhileAwayKeepsTheCardAndTheReading() {
+        val tracker = awayAt15()
+        val effects = tracker.feed(
+            Displayed(3_000, pos(16.2)),
+            GestureEnded(3_300, pos(16.2), isFling = false, chapterTurn = true),
+            Tick(6_000),
+        )
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 16.2))
+        assertThat(effects.filterIsInstance<SaveReading>()).isEmpty()
+    }
+
     // ---------- Suivi (FOLLOWING) ----------
 
     @Test

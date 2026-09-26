@@ -13,8 +13,16 @@ sealed interface ReaderEvent {
     /** La position affichée a changé (ou est confirmée). */
     data class Displayed(override val timeMs: Long, val position: BookPosition) : ReaderEvent
 
-    /** Fin d'un geste (doigt levé) ; `isFling` si le geste a été lancé. */
-    data class GestureEnded(override val timeMs: Long, val position: BookPosition, val isFling: Boolean) : ReaderEvent
+    /**
+     * Fin d'un geste (doigt levé) ; `isFling` si le geste a été lancé. `chapterTurn` : le glissé, commencé au
+     * bord d'un chapitre, a ouvert le chapitre voisin ; c'est de la lecture, même si l'affiché a bondi.
+     */
+    data class GestureEnded(
+        override val timeMs: Long,
+        val position: BookPosition,
+        val isFling: Boolean,
+        val chapterTurn: Boolean = false,
+    ) : ReaderEvent
 
     /**
      * Saut explicite : sommaire, journal, carte, lien interne. `approximate` : la cible n'a pas de
@@ -163,7 +171,12 @@ class ReadingPositionTracker(
         settleIfResting(event.timeMs, effects)
         when (event) {
             is ReaderEvent.Displayed -> onDisplayed(event.timeMs, event.position, effects)
-            is ReaderEvent.GestureEnded -> onGestureEnded(event.timeMs, event.position, event.isFling, effects)
+            is ReaderEvent.GestureEnded ->
+                if (event.chapterTurn && jumpTarget == null) {
+                    onChapterTurn(event.timeMs, event.position, effects)
+                } else {
+                    onGestureEnded(event.timeMs, event.position, event.isFling, effects)
+                }
             is ReaderEvent.Jumped -> onJumped(event.timeMs, event.target, event.approximate, effects)
             is ReaderEvent.StayHere -> onStayHere(event.timeMs, effects)
             is ReaderEvent.GoBack -> onGoBack(event.timeMs, effects)
@@ -222,6 +235,27 @@ class ReadingPositionTracker(
         }
         if (!isFling && !navigating && mode == TrackerMode.AWAY) readingGestureWhileAway(timeMs, effects)
         if (!isFling) settle(effects)
+    }
+
+    /**
+     * Changement de chapitre par un glissé au bord : l'affiché a bondi d'environ un écran en quelques millisecondes,
+     * ce que la vitesse des `Displayed` prend pour une navigation. Elle est annulée : en suivi, la lecture passe à la
+     * nouvelle position ; en AWAY, la carte reste et le point d'arrivée suit.
+     */
+    private fun onChapterTurn(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {
+        navigating = false
+        resetWindow(timeMs, position)
+        lastMotion = Stamped(timeMs, position)
+        displayed = position
+        displayedAtMs = timeMs
+        if (mode == TrackerMode.AWAY) {
+            motionPending = false
+            anchor = Stamped(timeMs, position)
+            movedSinceGesture = false
+            return
+        }
+        motionPending = true
+        settle(effects)
     }
 
     private fun onJumped(
