@@ -33,6 +33,7 @@ class SettingsRepositoryTest {
         assertThat(settings.reopenLastBook.first()).isTrue()
         assertThat(settings.librarySort.first()).isEqualTo(LibrarySort.RECENT)
         assertThat(settings.libraryViewMode.first()).isEqualTo(LibraryViewMode.LIST)
+        assertThat(settings.themeMode.first()).isEqualTo(ThemeMode.AUTO)
     }
 
     @Test
@@ -42,9 +43,11 @@ class SettingsRepositoryTest {
         settings.setReopenLastBook(false)
         settings.setLibrarySort(LibrarySort.AUTHOR)
         settings.setLibraryViewMode(LibraryViewMode.GRID)
+        settings.setThemeMode(ThemeMode.DARK)
         assertThat(settings.reopenLastBook.first()).isFalse()
         assertThat(settings.librarySort.first()).isEqualTo(LibrarySort.AUTHOR)
         assertThat(settings.libraryViewMode.first()).isEqualTo(LibraryViewMode.GRID)
+        assertThat(settings.themeMode.first()).isEqualTo(ThemeMode.DARK)
     }
 
     @Test
@@ -52,5 +55,12 @@ class SettingsRepositoryTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "unknown.preferences_pb") })
         store.edit { it[stringPreferencesKey("library_sort")] = "PAGES" }
         assertThat(SettingsRepository(store).librarySort.first()).isEqualTo(LibrarySort.RECENT)
+    }
+
+    @Test
+    fun unknownThemeFallsBackToAuto() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "theme.preferences_pb") })
+        store.edit { it[stringPreferencesKey("theme_mode")] = "SEPIA" }
+        assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.AUTO)
     }
 }

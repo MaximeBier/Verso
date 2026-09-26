@@ -9,6 +9,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -23,6 +24,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
+import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -39,16 +41,18 @@ class SettingsScreenTest {
 
     private var reopen by mutableStateOf(true)
     private var confirming by mutableStateOf(false)
+    private var theme by mutableStateOf(ThemeMode.AUTO)
     private val events = mutableListOf<String>()
 
     private fun show() {
         composeRule.setContent {
             VersoTheme {
                 SettingsScreen(
-                    state = SettingsUiState(reopenLastBook = reopen, confirmingClearJournal = confirming),
+                    state = SettingsUiState(reopenLastBook = reopen, themeMode = theme, confirmingClearJournal = confirming),
                     versionName = "1.0.0",
                     onBack = { events += "back" },
                     onReopenLastBookChange = { reopen = it; events += "reopen=$it" },
+                    onThemeModeChange = { theme = it; events += "theme=$it" },
                     onClearJournalClick = { confirming = true; events += "clear?" },
                     onClearJournalConfirm = { confirming = false; events += "clear!" },
                     onClearJournalDismiss = { confirming = false; events += "dismiss" },
@@ -69,6 +73,15 @@ class SettingsScreenTest {
         row.performClick()
         row.assertIsOff()
         assertThat(events).containsExactly("reopen=false")
+    }
+
+    @Test
+    fun themeSelectorSelectsTheChosenMode() {
+        show()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_auto)).assertIsSelected()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).performScrollTo().performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).assertIsSelected()
+        assertThat(events).containsExactly("theme=DARK")
     }
 
     @Test

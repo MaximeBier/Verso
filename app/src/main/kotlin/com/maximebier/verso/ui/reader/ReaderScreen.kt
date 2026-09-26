@@ -3,7 +3,6 @@ package com.maximebier.verso.ui.reader
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,7 +64,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
             ReaderSurface(
                 publication = publication,
                 initialLocator = state.initialLocator,
-                dark = isSystemInDarkTheme(),
+                dark = VersoTheme.isDark,
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,

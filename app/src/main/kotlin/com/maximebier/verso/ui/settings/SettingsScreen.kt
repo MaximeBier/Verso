@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,10 +19,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
+import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.ActionRow
 import com.maximebier.verso.ui.components.DangerButton
 import com.maximebier.verso.ui.components.DetailTopBar
@@ -31,8 +34,10 @@ import com.maximebier.verso.ui.components.SwitchRow
 import com.maximebier.verso.ui.components.ValueRow
 import com.maximebier.verso.ui.components.VersoDialog
 import com.maximebier.verso.ui.components.VersoIcons
+import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoTheme
+import com.maximebier.verso.ui.theme.VersoTypography
 
 /**
  * Point d'entrée de SettingsRoute (signature figée par 2.2, appelé par VersoNavHost) :
@@ -49,6 +54,7 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
         versionName = BuildConfig.VERSION_NAME,
         onBack = onBack,
         onReopenLastBookChange = viewModel::onReopenLastBookChange,
+        onThemeModeChange = viewModel::onThemeModeChange,
         onClearJournalClick = viewModel::onClearJournalClick,
         onClearJournalConfirm = viewModel::onClearJournalConfirm,
         onClearJournalDismiss = viewModel::onClearJournalDismiss,
@@ -77,6 +83,7 @@ fun SettingsScreen(
     versionName: String,
     onBack: () -> Unit,
     onReopenLastBookChange: (Boolean) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onClearJournalClick: () -> Unit,
     onClearJournalConfirm: () -> Unit,
     onClearJournalDismiss: () -> Unit,
@@ -102,6 +109,7 @@ fun SettingsScreen(
                 )
             }
             SettingsSection(title = stringResource(R.string.settings_section_display)) {
+                ThemeSelector(selected = state.themeMode, onSelect = onThemeModeChange)
                 SettingsParagraph(text = stringResource(R.string.settings_display_body))
             }
             SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
@@ -145,4 +153,28 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_clear_journal_dialog_body))
         }
     }
+}
+
+/** Thème Automatique / Clair / Sombre (dans l'ordre de ThemeMode.entries), le segmenté partagé du tri. */
+@Composable
+private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val modes = ThemeMode.entries
+    val label = stringResource(R.string.settings_theme)
+    Text(
+        text = label,
+        style = VersoTypography.rowTitle,
+        color = VersoTheme.colors.text,
+        modifier = Modifier.padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
+    )
+    VersoSegmentedButton(
+        options = listOf(
+            stringResource(R.string.settings_theme_auto),
+            stringResource(R.string.settings_theme_light),
+            stringResource(R.string.settings_theme_dark),
+        ),
+        selectedIndex = modes.indexOf(selected),
+        onSelect = { index -> onSelect(modes[index]) },
+        groupLabel = label,
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+    )
 }
