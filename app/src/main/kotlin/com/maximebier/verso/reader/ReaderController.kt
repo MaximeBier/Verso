@@ -25,4 +25,5 @@ interface ReaderController {
     suspend fun excerptLocator(): Locator?
 }
 
-data class GestureSignal(val timeMs: Long, val isFling: Boolean)
+/** `chapterTurn` : le glissé, commencé au bord, a ouvert le chapitre voisin (lecture, pas navigation). */
+data class GestureSignal(val timeMs: Long, val isFling: Boolean, val chapterTurn: Boolean = false)
