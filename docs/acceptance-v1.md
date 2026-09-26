@@ -92,7 +92,7 @@ Fichiers de test à copier sur le téléphone ou sur Drive : `app/src/test/resou
 
 ### 12C. Taille de police changée dans le code (Claude, sans réglage système)
 1. Ouvrir un livre au milieu d’un chapitre, capturer (`12a.png`).
-2. Dans `ReadingStyle.kt`, remplacer `READING_FONT_SIZE_SP = 19.0` par `19.0 * 1.25` (valeur par défaut de `VersoReadingPreferences.reflowableWeb`) ; `export JAVA_HOME="$LOCALAPPDATA/Programs/jdk17" && ./gradlew :app:installDebug` ; relancer Verso (réouverture automatique) ; capturer (`12b.png`).
+2. Dans `ReadingStyle.kt`, remplacer `READING_FONT_SIZE_SP = 19.0` par `19.0 * 1.25` (valeur par défaut de `VersoReadingPreferences.epub`) ; `export JAVA_HOME="$LOCALAPPDATA/Programs/jdk17" && ./gradlew :app:installDebug` ; relancer Verso (réouverture automatique) ; capturer (`12b.png`).
 3. Attendu : le paragraphe en haut de `12a.png` est visible en haut de `12b.png`.
 4. Remettre la valeur d’origine, réinstaller, **ne pas committer** la modification.
 
