@@ -8,11 +8,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
@@ -185,7 +188,7 @@ fun ReaderSurface(
             ReflowableWebRendition(
                 state = state,
                 modifier = Modifier.fillMaxSize(),
-                windowInsets = WindowInsets.safeDrawing,
+                windowInsets = readerContentInsets,
                 inputListener = inputListener,
                 hyperlinkListener = hyperlinkListener,
             )
@@ -195,6 +198,17 @@ fun ReaderSurface(
         Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(background))
     }
 }
+
+/**
+ * Insets donnés au navigateur : barres système **même masquées** et découpe de l’écran, donc constants.
+ * Readium en tire les marges de défilement du document ; `safeDrawing` suit la visibilité des barres
+ * système, et le mode immersif les rétablit avec la barre de lecture : le document changeait alors de
+ * hauteur, et la progression du haut de l’écran bougeait sans que le texte bouge (lue comme de la lecture).
+ * La barre de lecture et les barres système sont une surcouche : la mise en page du texte ne dépend pas d’elles.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+internal val readerContentInsets: WindowInsets
+    @Composable get() = WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout)
 
 /**
  * Observe chaque geste en passe `Initial` sans rien consommer : le navigateur reçoit tous les
@@ -209,17 +223,22 @@ private fun Modifier.observeGestures(controller: ReflowableReaderController): Mo
             velocityTracker.addPosition(down.uptimeMillis, down.position)
             var moved = false
             var upAt: Long? = null
-            while (true) {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                velocityTracker.addPosition(change.uptimeMillis, change.position)
-                if (!moved && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
-                    moved = true
+            try {
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    velocityTracker.addPosition(change.uptimeMillis, change.position)
+                    if (!moved && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                        moved = true
+                        controller.onDragStarted()
+                    }
+                    if (!change.pressed) {
+                        upAt = change.uptimeMillis
+                        break
+                    }
                 }
-                if (!change.pressed) {
-                    upAt = change.uptimeMillis
-                    break
-                }
+            } finally {
+                controller.onPointerUp()
             }
             val releasedAt = upAt ?: return@awaitEachGesture
             when {
@@ -298,6 +317,15 @@ internal class ReflowableReaderController(
     private var touchStoppedScroll = false
     private var tapToken: TapToken? = null
 
+    /** Saut vers un autre fichier en cours ([go]) : les positions affichées sont retenues, pas publiées. */
+    private var holding = false
+    private var held: Locator? = null
+    private var goGeneration = 0
+
+    /** Doigt posé (sans glissé) : la page n’est pas déclarée stable avant son lever ([pointerUpAt]). */
+    private var pointerDown = false
+    private var pointerUpAt: Long? = null
+
     override val displayed: StateFlow<Locator?> = displayedState.asStateFlow()
     override val gestures: Flow<GestureSignal> = gestureFlow.asSharedFlow()
     override var viewportHeightPx: Int = 0
@@ -315,14 +343,30 @@ internal class ReflowableReaderController(
 
     /** Nouvel état du navigateur : la position affichée est le haut réel de l’écran ([screenTop]). */
     fun onViewport(location: Locator, viewport: ReflowableWebViewport, pagerTop: PagerTop?) {
-        onDisplayed(screenTop(location, viewport, pagerTop, previous = displayedState.value))
+        val previous = if (holding) held ?: displayedState.value else displayedState.value
+        onDisplayed(screenTop(location, viewport, pagerTop, previous = previous))
     }
 
     fun onDisplayed(locator: Locator) {
         val filled = withTotalProgression(locator)
+        if (holding) {
+            if (filled == (held ?: displayedState.value)) return
+            lastDisplayedChangeAt = uptimeMs()
+            held = filled
+            return
+        }
         if (filled == displayedState.value) return
         lastDisplayedChangeAt = uptimeMs()
         displayedState.value = filled
+    }
+
+    /** Fin de la retenue d’un saut : la dernière position retenue devient la position affichée. */
+    private fun releaseHold() {
+        if (!holding) return
+        holding = false
+        val last = held ?: return
+        held = null
+        onDisplayed(last)
     }
 
     private fun withTotalProgression(locator: Locator): Locator =
@@ -332,6 +376,9 @@ internal class ReflowableReaderController(
     fun onPointerDown() {
         val now = uptimeMs()
         touchStoppedScroll = lastDisplayedChangeAt?.let { now - it < ReaderGestures.SETTLE_QUIET_MS } ?: false
+        // Pendant un saut, un simple appui (tap pour la barre) ne lève pas la retenue : il la suspend
+        // jusqu’au lever ; seul un glissé ([onDragStarted]) rend la main à l’utilisateur.
+        pointerDown = true
         flushPendingGesture()
         // Le tap précédent est clos : rattrapé tout de suite s’il attendait encore (le navigateur signale
         // un tap quelques millisecondes après le lâcher, jamais après l’appui suivant), écho oublié sinon.
@@ -343,8 +390,23 @@ internal class ReflowableReaderController(
         }
     }
 
+    /**
+     * Le doigt a glissé au-delà du seuil de toucher : l’utilisateur reprend la main pendant un saut, ce qui est
+     * affiché redevient la référence (retenue levée, pas de recalage).
+     */
+    fun onDragStarted() {
+        releaseHold()
+    }
+
+    /** Doigt levé (ou geste annulé), glissé ou non. */
+    fun onPointerUp() {
+        pointerDown = false
+        pointerUpAt = uptimeMs()
+    }
+
     /** Fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde (seul usage de ce seuil). */
     fun onGestureReleased(velocityYPxPerSecond: Float) {
+        releaseHold()
         val height = viewportHeightPx
         val isFling = height > 0 &&
             abs(velocityYPxPerSecond) / height >= thresholds.flingScreensPerSecond
@@ -421,10 +483,61 @@ internal class ReflowableReaderController(
         data object HandledByFallback : TapToken
     }
 
-    /** Saut sans animation ; le geste en cours, interrompu, envoie son signal avant le saut. */
+    /**
+     * Saut sans animation ; le geste en cours, interrompu, envoie son signal avant le saut.
+     *
+     * Vers une progression précise dans un **autre fichier** (« Revenir », journal), Readium atterrit juste,
+     * puis la WebView fraîchement chargée se remet en page et le haut de l’écran remonte de plusieurs écrans
+     * (anomalie F ; dans un même fichier, le saut est exact). Les positions affichées sont alors retenues
+     * jusqu’à ce que la page soit stable ([ReaderGestures.JUMP_SETTLE_QUIET_MS]) ; si elle s’est écartée de la
+     * cible, le saut est refait une fois (même fichier, désormais en page), puis seule la position finale est
+     * publiée : la machine à états ne voit jamais la position intermédiaire. Un glissé lève la retenue (sans
+     * recalage) ; un simple appui (tap pour la barre) la suspend jusqu’au lever, puis le recalage a lieu.
+     * Les cibles ancrées (sommaire, liens) ne sont pas concernées : leur progression n’est qu’estimée.
+     */
     override suspend fun go(locator: Locator) {
         flushPendingGesture()
-        navigate?.invoke(goLocationOf(locator))
+        releaseHold()
+        val generation = ++goGeneration
+        val target = goLocationOf(locator)
+        val progression = locator.locations.progression
+        val current = displayedState.value
+        if (progression == null || target.htmlId != null || current == null || sameResource(current.href, target.href)) {
+            navigate?.invoke(target)
+            return
+        }
+        holding = true
+        held = null
+        try {
+            navigate?.invoke(target)
+            if (!awaitJumpSettled(generation)) return
+            val arrived = held
+            val off = arrived == null || !sameResource(arrived.href, target.href) ||
+                (arrived.locations.progression?.let { abs(it - progression) > ReaderGestures.JUMP_REALIGN_TOLERANCE } ?: true)
+            if (off) {
+                navigate?.invoke(target)
+                awaitJumpSettled(generation)
+            }
+        } finally {
+            if (generation == goGeneration) releaseHold()
+        }
+    }
+
+    /**
+     * Attend que la page cible soit stable : [ReaderGestures.JUMP_SETTLE_QUIET_MS] sans nouvelle position ni doigt
+     * posé (compté depuis le lever), au plus [ReaderGestures.SETTLE_MAX_MS]. Faux si la retenue a été levée
+     * (glissé, autre saut).
+     */
+    private suspend fun awaitJumpSettled(generation: Int): Boolean {
+        val start = uptimeMs()
+        while (true) {
+            if (generation != goGeneration || !holding) return false
+            val now = uptimeMs()
+            val quietSince = maxOf(lastDisplayedChangeAt ?: start, pointerUpAt ?: start, start)
+            val quiet = !pointerDown && now - quietSince >= ReaderGestures.JUMP_SETTLE_QUIET_MS
+            if (quiet || now - start >= ReaderGestures.SETTLE_MAX_MS) return true
+            delay(ReaderGestures.SETTLE_POLL_MS)
+        }
     }
 
     /**

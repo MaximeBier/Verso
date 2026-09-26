@@ -6,8 +6,10 @@ import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.ProgressionScreenDistance
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.reader.FakeReaderController
+import com.maximebier.verso.reader.FakeReflowEngine
 import com.maximebier.verso.reader.GestureSignal
 import com.maximebier.verso.reader.ReaderController
+import com.maximebier.verso.reader.ReflowableReaderController
 import com.maximebier.verso.reader.testLocator
 import com.maximebier.verso.readium.Locators
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -274,5 +276,58 @@ class ReadingPositionCoordinatorTest {
         coordinator.onGoBack()
         runCurrent()
         assertThat(fake.goCalls.single().href.toString()).isEqualTo("chapitre-2.xhtml")
+    }
+
+    // --- Anomalie F : « Revenir » vers un autre fichier ---------------------------------------------
+
+    /**
+     * Rejoue la séquence du téléphone avec le vrai contrôleur : lecture dans le fichier 3 (Troisième partie,
+     * chap. XI), saut du sommaire au fichier 0, « Revenir ». Le navigateur atterrit juste, puis la WebView du
+     * fichier 3 se remet en page et remonte de [shift] ; 4 fichiers de 250 écrans (un écran = 0,004 de fichier).
+     */
+    private fun TestScope.goBackAcrossFiles(shift: Double) {
+        val engine = FakeReflowEngine(backgroundScope, files = 4, relayoutShift = shift)
+        val controller = ReflowableReaderController(
+            scope = backgroundScope,
+            readChapterHtml = { null },
+            onCenterTap = {},
+            uptimeMs = { testScheduler.currentTime },
+            wallClockMs = { testScheduler.currentTime },
+        ).apply {
+            viewportHeightPx = 2_000
+            bind { engine.navigate(it) }
+        }
+        engine.controller = controller
+        val reading = engine.at(3, 0.8759)
+        engine.open(file = 3, progression = 0.8759)
+        val coordinator = coordinatorAt(reading)
+        coordinator.attach(controller)
+        runCurrent()
+        val effects = effectsOf(coordinator)
+
+        coordinator.onJump(engine.at(0, 0.0))
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertThat(coordinator.state.value.showReturnCard).isTrue()
+
+        coordinator.onGoBack()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertThat(coordinator.state.value.showReturnCard).isFalse()
+        assertThat(coordinator.state.value.reading).isEqualTo(Locators.toPosition(reading))
+        assertThat(controller.displayed.value!!.locations.progression).isEqualTo(0.8759)
+        assertThat(effects).isEmpty()
+        assertThat(saved).isEmpty()
+    }
+
+    @Test
+    fun goBackIntoAnotherFileLandsInOneTapWhenTheRelayoutMovesSeveralScreens() = runTest {
+        goBackAcrossFiles(shift = 0.011) // F1 : 2,75 écrans, la carte restait affichée
+    }
+
+    @Test
+    fun goBackIntoAnotherFileLandsInOneTapWhenTheRelayoutMovesLessThanAScreen() = runTest {
+        goBackAcrossFiles(shift = 0.0039) // F2 : un écran de moins, la carte disparaissait trop haut
     }
 }

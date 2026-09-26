@@ -61,5 +61,5 @@ internal fun screenTop(
     )
 }
 
-private fun sameResource(a: Url, b: Url): Boolean =
+internal fun sameResource(a: Url, b: Url): Boolean =
     a.removeFragment().toString() == b.removeFragment().toString()

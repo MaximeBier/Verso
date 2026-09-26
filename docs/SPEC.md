@@ -436,7 +436,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 - La sauvegarde de position doit passer par `onStop` en plus du debounce de scroll, sinon la fermeture brutale perd les dernières secondes.
 - Les réglages utilisateur Readium doivent l'emporter sur le CSS de l'éditeur (alignement à gauche, pas de césure, police et interligne de Verso).
 - La graisse allégée du thème sombre suppose des polices variables (axe `wght`) ou une graisse intermédiaire embarquée.
-- Tailles et interlignes en sp, tester avec le texte Android à 200 %. Gérer les insets de la barre d'état et de la barre de gestes, en particulier quand la barre de lecture s'affiche en mode immersif.
+- Tailles et interlignes en sp, tester avec le texte Android à 200 %. Gérer les insets de la barre d'état et de la barre de gestes, en particulier quand la barre de lecture s'affiche en mode immersif. Les barres (lecture et système) sont une surcouche : le texte reçoit des insets constants (barres système même masquées, découpe de l'écran), si bien que les afficher ou les masquer ne change jamais sa mise en page ni la position de lecture.
 - Tester avec des EPUB réels et imparfaits (Gutenberg en génère de très variés), pas seulement un fichier propre.
 - Le manifeste ne déclare pas `INTERNET`. Vérifier dans le manifeste fusionné qu'aucune dépendance ne l'ajoute, et la retirer avec `tools:node="remove"` si besoin.
 
@@ -500,3 +500,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-26 : conclusions du prototype Readium (étape 1) : navigateur Compose `readium-navigator-web-reflowable` retenu, seuil de fling 1,0 écran/s, points de vigilance 1 et 2 mis à jour.
 - 2026-09-26 (étape 5) : deux seuils de vitesse distincts : fling au relâchement du doigt (1,0 écran/s) et navigation entre deux positions affichées consécutives (4,0 écrans/s) ; un lien interne suivi dans le livre est un saut explicite.
 - 2026-09-26 (correctif A) : la confirmation « 25 secondes de lecture » compte la lecture effective (glissés sans fling près du point d'arrivée), depuis le premier glissé et non depuis l'arrivée ; une pause de plus de 15 secondes entre deux glissés (`confirmMaxIdleGapMs`) remet la fenêtre à zéro.
+- 2026-09-26 (correctif G) : insets constants pour la lecture (barres système même masquées, découpe de l'écran) ; la barre de lecture et les barres système se superposent au texte, les afficher ou les masquer ne change ni sa mise en page ni la position de lecture.
