@@ -8,6 +8,8 @@ import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.db.VersoDatabase
+import com.maximebier.verso.importer.EpubImporter
+import com.maximebier.verso.readium.ReadiumOpener
 import java.io.File
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -29,4 +31,8 @@ class AppContainer(context: Context) {
     val settings: SettingsRepository = SettingsRepository(appContext.settingsDataStore)
 
     val clock: () -> Long = System::currentTimeMillis
+
+    val readiumOpener: ReadiumOpener = ReadiumOpener(appContext)
+
+    val importer: EpubImporter = EpubImporter(appContext, books, readiumOpener, clock)
 }
