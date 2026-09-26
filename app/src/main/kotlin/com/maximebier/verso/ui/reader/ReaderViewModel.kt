@@ -1,11 +1,13 @@
 package com.maximebier.verso.ui.reader
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
+import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.text.TocNode
@@ -13,19 +15,29 @@ import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import java.io.File
+import java.time.ZoneId
 import kotlin.math.floor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Link
@@ -64,6 +76,7 @@ data class ReaderUiState(
 class ReaderViewModel(
     private val bookId: Long,
     private val books: BookRepository,
+    private val sessions: SessionRepository,
     private val openPublication: suspend (File) -> Result<Publication>,
     private val clock: () -> Long,
 ) : ViewModel() {
@@ -95,6 +108,27 @@ class ReaderViewModel(
     private var positions: ReadingOrderPositions? = null
     private var metrics: ReaderMetrics? = null
     private var appliedMetrics: ReaderMetrics? = null
+
+    // --- Journal de lecture (tâche 6.4) ---------------------------------------------------------
+    private var sessionCoordinator: SessionCoordinator? = null
+    private val sessionCurrent = MutableStateFlow<SessionRecord?>(null)
+    private var lastDisplayed: Locator? = null
+
+    /** État de la feuille « Journal de lecture » ; null tant que `uiState.journalVisible` est faux. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val journal: StateFlow<JournalUiState?> = _uiState
+        .map { it.journalVisible }
+        .distinctUntilChanged()
+        .flatMapLatest { visible ->
+            if (!visible) {
+                flowOf(null)
+            } else {
+                combine(sessions.observeSessions(bookId), sessionCurrent) { list, current ->
+                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), ::hrefOfLocatorJson)
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         viewModelScope.launch { load() }
@@ -148,6 +182,22 @@ class ReaderViewModel(
         viewModelScope.launch { created.state.collect(::onPositionState) }
         // Relais dans l’ordre d’émission ; lancé avant attach() (onReaderReady), donc aucun effet perdu.
         viewModelScope.launch { created.readingEffects.collect { readingEffectsFlow.emit(it) } }
+        startSessions(book.totalWords, initialPosition)
+    }
+
+    private fun startSessions(totalWords: Long, initial: BookPosition) {
+        if (sessionCoordinator != null) return
+        val coordinator = SessionCoordinator(
+            bookId = bookId,
+            totalWords = totalWords,
+            upsert = sessions::upsert,
+            clock = clock,
+        )
+        sessionCoordinator = coordinator
+        viewModelScope.launch { coordinator.current.collect { sessionCurrent.value = it } }
+        viewModelScope.launch { readingEffects.collect(coordinator::onTrackerEffect) }
+        coordinator.onOpened(initial)
+        coordinator.start()
     }
 
     fun onReaderReady(readerController: ReaderController) {
@@ -158,6 +208,9 @@ class ReaderViewModel(
         controllerJob?.cancel()
         controllerJob = viewModelScope.launch {
             readerController.displayed.filterNotNull().collect { locator ->
+                val previous = lastDisplayed
+                lastDisplayed = locator
+                if (previous != null && previous != locator) sessionCoordinator?.onInteraction()
                 // Reprise au même endroit si la surface est recréée (rotation, thème).
                 _uiState.update { it.copy(initialLocator = locator) }
                 refreshDistance()
@@ -179,6 +232,8 @@ class ReaderViewModel(
         controllerJob = null
         controller = null
         coordinator?.detach()
+        // Le premier locator de la prochaine surface est une arrivée, pas un scroll (journal, 6.4).
+        lastDisplayed = null
     }
 
     /** Échelle de police et densité de l’écran (envoyées par ReaderScreen). */
@@ -219,15 +274,36 @@ class ReaderViewModel(
         }
     }
 
-    fun toggleBars() = _uiState.update { it.copy(barsVisible = !it.barsVisible) }
+    fun toggleBars() {
+        sessionCoordinator?.onInteraction()
+        _uiState.update { it.copy(barsVisible = !it.barsVisible) }
+    }
 
     fun showToc() = _uiState.update { it.copy(tocVisible = true) }
 
     fun hideToc() = _uiState.update { it.copy(tocVisible = false) }
 
-    fun showJournal() = _uiState.update { it.copy(journalVisible = true) }
+    fun showJournal() {
+        sessionCoordinator?.onInteraction()
+        _uiState.update { it.copy(journalVisible = true) }
+    }
 
     fun hideJournal() = _uiState.update { it.copy(journalVisible = false) }
+
+    /**
+     * « Reprendre ici » (journal) : saut explicite à la fin de la session, par [jumpTo] (`ReaderEvent.Jumped`) :
+     * la position de lecture ne bouge pas, la carte « Revenir » apparaît si la cible est à plus d'un écran.
+     */
+    fun resumeFromJournal(target: BookPosition) {
+        hideJournal()
+        sessionCoordinator?.onInteraction()
+        Locators.fromJson(target.locatorJson)?.let(::jumpTo)
+    }
+
+    /** Premier plan (`ON_START`) : après une mise en arrière-plan, une nouvelle session commence. */
+    fun onStart() {
+        sessionCoordinator?.onStarted()
+    }
 
     /** Saut par le sommaire ; `index` = rang dans le préordre du sommaire (`preorder`, même parcours que `buildTocRows`). */
     fun jumpToTocEntry(index: Int) {
@@ -281,11 +357,26 @@ class ReaderViewModel(
 
     private data class PendingJump(val target: Locator, val closesToc: Boolean)
 
-    /** Mise en arrière-plan de l’écran (`ON_STOP`). */
-    fun onStop() = positionSaver.flush()
+    /**
+     * `ON_STOP` de l’écran. La position est toujours enregistrée. La session ne se termine que pour une vraie
+     * mise en arrière-plan : pendant un changement de configuration (rotation, thème du système), l’activité
+     * est recréée aussitôt et la session continue.
+     */
+    fun onStop(changingConfigurations: Boolean = false) {
+        positionSaver.flush()
+        if (!changingConfigurations) sessionCoordinator?.onBackgrounded()
+    }
 
     override fun onCleared() {
+        // Sortie du lecteur (retour à la bibliothèque = popBackStack) : dernière écriture de la session.
+        sessionCoordinator?.close()
         _uiState.value.publication?.close()
+    }
+
+    /** Attend la dernière écriture de la session après [onCleared] (tests : avant de fermer la base). */
+    @VisibleForTesting
+    internal suspend fun awaitSessionWrites() {
+        sessionCoordinator?.awaitClosed()
     }
 
     companion object {
@@ -295,6 +386,7 @@ class ReaderViewModel(
                 ReaderViewModel(
                     bookId = bookId,
                     books = container.books,
+                    sessions = container.sessions,
                     openPublication = container.readiumOpener::open,
                     clock = container.clock,
                 )

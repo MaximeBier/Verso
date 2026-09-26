@@ -9,8 +9,10 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.reader.FakeReaderController
@@ -21,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -28,6 +31,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -47,6 +51,9 @@ class ReaderViewModelTest {
     private lateinit var db: VersoDatabase
     private lateinit var books: BookRepository
 
+    /** ViewModels créés par [factory] : leurs dernières écritures de session sont attendues avant de fermer la base. */
+    private val viewModels = mutableListOf<ReaderViewModel>()
+
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -56,6 +63,7 @@ class ReaderViewModelTest {
 
     @After
     fun tearDown() {
+        runBlocking { withTimeout(5_000) { viewModels.forEach { it.awaitSessionWrites() } } }
         db.close()
         Dispatchers.resetMain()
     }
@@ -175,6 +183,66 @@ class ReaderViewModelTest {
     }
 
     @Test
+    fun journalShowsTheCurrentSessionAndResumeHereIsAJump() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        viewModel.onReaderReady(FakeReaderController(start))
+        runCurrent()
+
+        viewModel.toggleBars()   // un toucher : la session en cours existe désormais
+        viewModel.showJournal()
+        val journal = viewModel.journal.first { state -> state != null && !state.isEmpty }!!
+        assertThat(journal.days.single().sessions.single().inProgress).isTrue()
+
+        val earlier = testLocator(chapter = 1, progression = 0.1, total = 0.05)
+        viewModel.resumeFromJournal(BookPosition(Locators.toJson(earlier), 0.05))
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertThat(state.journalVisible).isFalse()
+        assertThat(state.returnCard).isNotNull()                         // saut explicite loin de la lecture
+        assertThat(state.readingProgression).isWithin(1e-9).of(0.30)     // la lecture n'a pas bougé
+        store.clear()
+    }
+
+    @Test
+    fun configurationChangeKeepsTheSessionInProgress() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        // Clear en finally : un échec ne laisse pas tourner le Tick du coordinateur (runTest ne finirait pas).
+        try {
+            viewModel.uiState.first { !it.loading }
+            viewModel.onReaderReady(FakeReaderController(start))
+            runCurrent()
+            viewModel.toggleBars()   // un toucher : la session en cours existe désormais
+
+            // Rotation ou thème du système : ON_STOP pendant le changement de configuration, puis ON_START.
+            viewModel.onStop(changingConfigurations = true)
+            viewModel.onReaderGone()
+            viewModel.onStart()
+            viewModel.onReaderReady(FakeReaderController(start))
+            runCurrent()
+            viewModel.toggleBars()
+
+            viewModel.showJournal()
+            val journal = viewModel.journal.first { state -> state != null && !state.isEmpty }!!
+            val session = journal.days.single().sessions.single()
+            assertThat(session.inProgress).isTrue()
+        } finally {
+            store.clear()
+        }
+        viewModel.awaitSessionWrites()
+        assertThat(db.sessionDao().observeForBook(id).first()).hasSize(1)
+    }
+
+    @Test
     fun internalLinkIsAnExplicitJump() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
@@ -232,9 +300,10 @@ class ReaderViewModelTest {
             ReaderViewModel(
                 bookId = bookId,
                 books = books,
+                sessions = SessionRepository(db.sessionDao()),
                 openPublication = { Result.success(testPublication()) },
                 clock = { testScheduler.currentTime },
-            )
+            ).also { viewModels += it }
         }
     }
 
