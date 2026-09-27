@@ -66,6 +66,24 @@ class SessionCoordinatorTest {
     }
 
     @Test
+    fun bookWithoutCountedWordsKeepsSessionsThatMoved() = runTest {
+        var now = 0L
+        val c = SessionCoordinator(
+            bookId = BOOK_ID,
+            totalWords = 0,
+            upsert = store::upsert,
+            clock = { now },
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
+
+        c.onOpened(position(0.10))
+        now = 30_000; c.readingMove(0.10, 0.20)
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows).hasSize(1)
+    }
+
+    @Test
     fun sessionWithOnlyJumpsIsNeverWritten() = runTest {
         var now = 0L
         val c = coordinator { now }

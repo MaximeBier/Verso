@@ -12,6 +12,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
+import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -101,10 +102,12 @@ class ReaderBarsTest {
         compose.setContent {
             VersoTheme(darkTheme = false) {
                 labels.clear()
-                labels += remainingTimeLabel(0)
-                labels += remainingTimeLabel(45)
-                labels += remainingTimeLabel(120)
-                labels += remainingTimeLabel(65)
+                labels += remainingTimeText(0)
+                labels += remainingTimeText(45)
+                labels += remainingTimeText(120)
+                labels += remainingTimeText(65)
+                labels += remainingTimeText(1)
+                labels += remainingTimeText(60)
             }
         }
         compose.waitForIdle()
@@ -114,6 +117,8 @@ class ReaderBarsTest {
             context.getString(R.string.common_time_remaining, context.getString(R.string.common_duration_minutes, 45)),
             context.getString(R.string.common_time_remaining, context.getString(R.string.common_duration_hours, 2)),
             context.getString(R.string.common_time_remaining, context.getString(R.string.common_duration_hours_minutes, 1, 5)),
+            context.getString(R.string.common_time_remaining_one, context.getString(R.string.common_duration_minutes, 1)),
+            context.getString(R.string.common_time_remaining_one, context.getString(R.string.common_duration_hours, 1)),
         ).inOrder()
     }
 }

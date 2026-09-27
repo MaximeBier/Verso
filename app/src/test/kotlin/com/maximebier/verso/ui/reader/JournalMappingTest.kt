@@ -4,16 +4,29 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.journal.DayGroup
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
+import com.maximebier.verso.core.text.LocationTexts
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.passageLabel
 import com.maximebier.verso.data.db.SessionEntity
+import com.maximebier.verso.ui.common.percentOf
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 class JournalMappingTest {
+
+    /** Gabarits français de `strings.xml` (tests JVM, sans ressources Android). */
+    private val french = LocationTexts(
+        part = { "Partie $it" },
+        chapter = { "chap. $it" },
+        chapterOnly = { "Chap. $it" },
+        join = { part, chapter -> "$part, $chapter" },
+        passage = { from, to -> "$from → $to" },
+    )
+
+    private fun passageLabel(start: List<String>, end: List<String>): String? = passageLabel(start, end, french)
 
     private val zone: ZoneId = ZoneId.of("Europe/Paris")
 
@@ -45,7 +58,7 @@ class JournalMappingTest {
 
     // Dans ce test, le « JSON » du locator est directement le href, sans progression dans le fichier.
     private fun map(sessions: List<SessionEntity>, current: SessionRecord?) =
-        journalUiState(sessions, current, toc, now, zone, positionOf = { ResourcePosition(it, null) })
+        journalUiState(sessions, current, toc, now, zone, french, positionOf = { ResourcePosition(it, null) })
 
     private val yesterday = entity(4, at(2026, 9, 22, 21, 5), at(2026, 9, 22, 21, 36), 31, "p1c6.xhtml", "p1c8.xhtml", 0.18, 0.25)
     private val mondayNoon = entity(3, at(2026, 9, 21, 12, 30), at(2026, 9, 21, 12, 48), 18, "p1c6.xhtml", "p1c6.xhtml", 0.15, 0.18)
@@ -125,7 +138,7 @@ class JournalMappingTest {
         // « JSON » du locator de ce test : « href@progression ».
         val session = entity(7, at(2026, 9, 22, 21, 5), at(2026, 9, 22, 21, 36), 31, "p1.xhtml@0.3", "p1.xhtml@0.7", 0.18, 0.25)
 
-        val state = journalUiState(listOf(session), null, anchored, now, zone) { json ->
+        val state = journalUiState(listOf(session), null, anchored, now, zone, french) { json ->
             ResourcePosition(json.substringBefore('@'), json.substringAfter('@').toDouble())
         }
 
@@ -134,7 +147,7 @@ class JournalMappingTest {
 
     @Test
     fun unknownHrefGivesNoPassageWithoutCrashing() {
-        val state = journalUiState(listOf(yesterday), null, emptyList(), now, zone, positionOf = { null })
+        val state = journalUiState(listOf(yesterday), null, emptyList(), now, zone, french, positionOf = { null })
 
         assertThat(state.days.single().sessions.single().passage)
             .isEqualTo(passageLabel(emptyList(), emptyList()))

@@ -11,6 +11,7 @@ import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
+import com.maximebier.verso.core.text.LocationTexts
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.calibrateAnchor
@@ -26,10 +27,11 @@ import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.TocAnchors
+import com.maximebier.verso.ui.common.locationTexts
+import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.ui.library.OpenFailures
 import java.io.File
 import java.time.ZoneId
-import kotlin.math.floor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -97,8 +99,8 @@ class ReaderViewModel(
     private val sessions: SessionRepository,
     private val openPublication: suspend (File) -> Result<Publication>,
     private val clock: () -> Long,
-    /** Gabarit `common_location_long` (« Deuxième partie, chapitre I »), lu dans les ressources. */
-    private val joinLocation: (part: String, chapter: String) -> String,
+    /** Gabarits des emplacements (« Partie II, chap. I », « Deuxième partie, chapitre I »), lus dans les ressources. */
+    private val locationTexts: LocationTexts,
     /** Livre impossible à ouvrir (fichier illisible, moteur qui le refuse) : titre signalé à la bibliothèque. */
     private val reportOpenFailure: (title: String) -> Unit = {},
 ) : ViewModel() {
@@ -151,7 +153,7 @@ class ReaderViewModel(
                 flowOf(null)
             } else {
                 combine(sessions.observeSessions(bookId), sessionCurrent) { list, current ->
-                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), ::positionOfLocatorJson)
+                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), locationTexts, ::positionOfLocatorJson)
                 }
             }
         }
@@ -314,8 +316,8 @@ class ReaderViewModel(
         val progression = position.reading.totalProgression
         _uiState.update { state ->
             val path = href?.let { chapterPathAt(state.toc, it, inFile) } ?: emptyList()
-            val location = shortLocation(path)
-            val percent = readingPercent(progression)
+            val location = shortLocation(path, locationTexts)
+            val percent = percentOf(progression)
             state.copy(
                 currentHref = href,
                 currentProgression = inFile,
@@ -331,7 +333,7 @@ class ReaderViewModel(
 
     /** Titre de chapitre d’une position, même règle que la barre de lecture ([chapterPathAt], ancres comprises). */
     private fun chapterTitleOf(locator: Locator): String? =
-        longLocation(chapterPathAt(_uiState.value.toc, Locators.hrefKey(locator), locator.locations.progression), joinLocation)
+        longLocation(chapterPathAt(_uiState.value.toc, Locators.hrefKey(locator), locator.locations.progression), locationTexts.join)
 
     /** Le moteur refuse le livre (mise en page fixe…) : retour à la bibliothèque, avec un message. */
     fun onEngineFailed() {
@@ -511,16 +513,13 @@ class ReaderViewModel(
                     sessions = container.sessions,
                     openPublication = container.readiumOpener::open,
                     clock = container.clock,
-                    joinLocation = { part, chapter -> app.getString(R.string.common_location_long, part, chapter) },
+                    locationTexts = app.resources.locationTexts(),
                     reportOpenFailure = OpenFailures::report,
                 )
             }
         }
     }
 }
-
-/** Pourcentage entier arrondi vers le bas (« 31 % lu »). */
-fun readingPercent(progression: Double): Int = floor(progression.coerceIn(0.0, 1.0) * 100).toInt()
 
 /**
  * Sommaire Readium → [TocNode]. `anchors` ([TocAnchors.load]) : début estimé de chaque lien ancré dans son

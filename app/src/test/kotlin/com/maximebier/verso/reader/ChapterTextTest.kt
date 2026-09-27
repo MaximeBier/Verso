@@ -16,6 +16,12 @@ class ChapterTextTest {
     }
 
     @Test
+    fun frenchNamedEntitiesAreDecodedOnce() {
+        assertThat(ChapterText.plainText("<p>l&rsquo;homme &eacute;tait l&agrave;&hellip; &amp;lt;</p>"))
+            .isEqualTo("l’homme était là… &lt;")
+    }
+
+    @Test
     fun excerptStartsAtNextWordAndIsBounded() {
         val text = "un deux trois quatre cinq six sept huit neuf dix"
 

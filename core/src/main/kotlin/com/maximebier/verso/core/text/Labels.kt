@@ -50,24 +50,35 @@ private fun flattenWithPaths(toc: List<TocNode>): List<TocEntry> {
 }
 
 /**
+ * Gabarits des emplacements, fournis par l’app (textes dans `strings.xml`) : [part] « Partie II », [chapter]
+ * « chap. I », [chapterOnly] « Chap. IV », [join] « Partie II, chap. I », [passage] « A → B ».
+ */
+class LocationTexts(
+    val part: (String) -> String,
+    val chapter: (String) -> String,
+    val chapterOnly: (String) -> String,
+    val join: (String, String) -> String,
+    val passage: (String, String) -> String,
+)
+
+/**
  * « Deuxième partie, Chapitre I » → forme courte affichée ; chemin vide → null.
  *
- * Forme courte identique aux gabarits `common_location_short` (« Partie II, chap. I ») et
- * `common_location_short_no_part` (« Chap. IV »). La partie est reconnue dans « Deuxième partie »,
- * « PREMIÈRE PARTIE », « Partie II », « Partie 3 » ; le chapitre dans « Chapitre I », « CHAPITRE XII. La noce »,
- * « Chapitre premier », « I », « 12. » (chiffres romains en capitales ou chiffres arabes). Sinon le titre
- * brut est gardé : « Préface », « Livre premier, chap. II », « Partie II, Le retour ».
+ * Forme courte bâtie avec [LocationTexts] (« Partie II, chap. I », « Chap. IV »). La partie est reconnue dans
+ * « Deuxième partie », « PREMIÈRE PARTIE », « Partie II », « Partie 3 » ; le chapitre dans « Chapitre I »,
+ * « CHAPITRE XII. La noce », « Chapitre premier », « I », « 12. » (chiffres romains en capitales ou chiffres
+ * arabes). Sinon le titre brut est gardé : « Préface », « Livre premier, chap. II », « Partie II, Le retour ».
  */
-fun shortLocation(path: List<String>): String? {
+fun shortLocation(path: List<String>, texts: LocationTexts): String? {
     val levels = cleanPath(path)
     if (levels.isEmpty()) return null
     val chapter = levels.last()
     val chapterNumber = chapterNumber(chapter)
-    if (levels.size == 1) return if (chapterNumber != null) "Chap. $chapterNumber" else chapter
+    if (levels.size == 1) return if (chapterNumber != null) texts.chapterOnly(chapterNumber) else chapter
     val part = levels.first()
-    val partLabel = partNumber(part)?.let { "Partie $it" } ?: part
-    val chapterLabel = chapterNumber?.let { "chap. $it" } ?: chapter
-    return "$partLabel, $chapterLabel"
+    val partLabel = partNumber(part)?.let(texts.part) ?: part
+    val chapterLabel = chapterNumber?.let(texts.chapter) ?: chapter
+    return texts.join(partLabel, chapterLabel)
 }
 
 /**
@@ -77,9 +88,9 @@ fun shortLocation(path: List<String>): String? {
  * emplacement au début et à la fin → un seul emplacement ; un côté vide → l'autre ; les deux vides → null.
  * La flèche est entourée d'espaces normales, comme `journal_passage`.
  */
-fun passageLabel(start: List<String>, end: List<String>): String? {
-    val from = shortLocation(start)
-    val to = shortLocation(end)
+fun passageLabel(start: List<String>, end: List<String>, texts: LocationTexts): String? {
+    val from = shortLocation(start, texts)
+    val to = shortLocation(end, texts)
     if (from == null) return to
     if (to == null) return from
     if (from == to) return from
@@ -88,7 +99,8 @@ fun passageLabel(start: List<String>, end: List<String>): String? {
     val sameParent = startLevels.size == endLevels.size && startLevels.dropLast(1) == endLevels.dropLast(1)
     val startNumber = chapterNumber(startLevels.last())
     val endNumber = chapterNumber(endLevels.last())
-    return if (sameParent && startNumber != null && endNumber != null) "$from → $endNumber" else "$from → $to"
+    val compactEnd = endNumber?.takeIf { sameParent && startNumber != null }
+    return texts.passage(from, compactEnd ?: to)
 }
 
 private fun normalizeHref(href: String): String = href.substringBefore('#').trim().removePrefix("/")

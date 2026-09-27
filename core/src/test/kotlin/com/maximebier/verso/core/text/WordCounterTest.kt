@@ -33,6 +33,9 @@ class WordCounterTest {
     @Test
     fun apostrophesKeepOneWord() {
         assertThat(countWordsInHtml("<p>L'homme qu'il aime</p>")).isEqualTo(3)
+        // Apostrophe typographique (Wikisource, Gutenberg FR) et lettre apostrophe.
+        assertThat(countWordsInHtml("<p>L’homme qu’il aime</p>")).isEqualTo(3)
+        assertThat(countWordsInHtml("lʼhomme")).isEqualTo(1)
     }
 
     @Test
@@ -53,6 +56,9 @@ class WordCounterTest {
         assertThat(countWordsInHtml("&#233;t&#xE9;")).isEqualTo(1)
         assertThat(countWordsInHtml("&laquo;&#160;Oui&#160;&raquo;")).isEqualTo(1)
         assertThat(countWordsInHtml("extra&shy;ordinaire")).isEqualTo(1)
+        assertThat(countWordsInHtml("<p>&ldquo;Oui&rdquo;</p>")).isEqualTo(1)
+        assertThat(countWordsInHtml("a&ldquo;b")).isEqualTo(2)
+        assertThat(countWordsInHtml("<p>&rdquo;</p>")).isEqualTo(0)
     }
 
     @Test

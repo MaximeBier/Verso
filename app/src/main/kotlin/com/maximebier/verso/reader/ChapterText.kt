@@ -1,6 +1,8 @@
 package com.maximebier.verso.reader
 
-/** Texte brut d’un chapitre XHTML, pour l’extrait de la carte Reprendre (Variante A). */
+import com.maximebier.verso.core.text.namedHtmlEntity
+
+/** Texte brut d’un chapitre XHTML, pour l’extrait de secours de la carte Reprendre (texte visible illisible). */
 internal object ChapterText {
 
     private val DROPPED_BLOCKS = Regex("(?is)<(head|script|style)\\b.*?</\\1>")
@@ -8,15 +10,7 @@ internal object ChapterText {
     private val NUMERIC_ENTITY = Regex("&#(x?)([0-9a-fA-F]+);")
     private val WHITESPACE = Regex("\\s+")
 
-    // « &amp; » en dernier, pour ne pas décoder deux fois « &amp;lt; ».
-    private val NAMED_ENTITIES = linkedMapOf(
-        "&nbsp;" to " ",
-        "&lt;" to "<",
-        "&gt;" to ">",
-        "&quot;" to "\"",
-        "&apos;" to "'",
-        "&amp;" to "&",
-    )
+    private val NAMED_ENTITY = Regex("&([A-Za-z][A-Za-z0-9]*);")
 
     fun plainText(html: String): String {
         var text = DROPPED_BLOCKS.replace(html, " ")
@@ -26,7 +20,8 @@ internal object ChapterText {
             val code = match.groupValues[2].toIntOrNull(radix)
             if (code != null && Character.isValidCodePoint(code)) String(Character.toChars(code)) else " "
         }
-        NAMED_ENTITIES.forEach { (entity, value) -> text = text.replace(entity, value) }
+        // Une seule passe : « &amp;lt; » donne « &lt; », jamais « < ». Même table que le compteur de mots.
+        text = NAMED_ENTITY.replace(text) { match -> namedHtmlEntity(match.groupValues[1]) ?: " " }
         return WHITESPACE.replace(text, " ").trim()
     }
 

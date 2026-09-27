@@ -536,4 +536,12 @@ class FragmentReaderControllerTest {
         assertThat(edgesOf(null)).isNull()
         assertThat(edgesOf("null")).isNull()
     }
+
+    @Test
+    fun topTextIsDecodedFromTheWebViewAnswer() {
+        assertThat(jsString("\"Emma descendit \\\"au\\\" jardin.\\n\"")).isEqualTo("Emma descendit \"au\" jardin.\n")
+        assertThat(jsString("null")).isNull()
+        assertThat(jsString(null)).isNull()
+        assertThat(jsString("{oops")).isNull()
+    }
 }

@@ -49,8 +49,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.maximebier.verso.R
-import com.maximebier.verso.core.text.durationOfMinutes
 import com.maximebier.verso.core.text.longLocation
+import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
 import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.VersoIconButton
@@ -181,7 +181,7 @@ private fun ReaderBottomBar(
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
-                    text = remainingTimeLabel(state.remainingMinutes),
+                    text = remainingTimeText(state.remainingMinutes),
                     style = VersoTypography.caption,
                     color = colors.textSecondary,
                     textAlign = TextAlign.End,
@@ -214,19 +214,6 @@ private fun ReaderBottomBar(
         }
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBarsIgnoringVisibility))
     }
-}
-
-/** « Environ 5 h 30 restantes » (durées de la référence §1). */
-@Composable
-fun remainingTimeLabel(minutes: Int): String {
-    if (minutes < 1) return stringResource(R.string.common_time_remaining_less_than_minute)
-    val parts = durationOfMinutes(minutes)
-    val duration = when {
-        parts.hours == 0 -> stringResource(R.string.common_duration_minutes, parts.minutes)
-        parts.minutes == 0 -> stringResource(R.string.common_duration_hours, parts.hours)
-        else -> stringResource(R.string.common_duration_hours_minutes, parts.hours, parts.minutes)
-    }
-    return stringResource(R.string.common_time_remaining, duration)
 }
 
 /** Forme longue « Deuxième partie, chapitre I » ([longLocation], gabarit `common_location_long`). */

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
@@ -154,7 +155,7 @@ class SessionCoordinator(
         // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.
         val id = try {
-            if (record.isEmpty) return
+            if (record.isEmpty && !movedWithoutWords(record)) return
             upsert(record.toEntity())
         } catch (e: CancellationException) {
             throw e
@@ -168,8 +169,14 @@ class SessionCoordinator(
         }
     }
 
+    /** Livre sans aucun mot compté (images, texte non reconnu) : la lecture se juge sur la progression. */
+    private fun movedWithoutWords(record: SessionRecord): Boolean =
+        totalWords == 0L && abs(record.end.totalProgression - record.start.totalProgression) > MIN_PROGRESSION_MOVE
+
     companion object {
         const val TICK_INTERVAL_MS: Long = 1_000
+        /** Écart de progression au-delà duquel une session d’un livre sans mots compte comme lecture. */
+        const val MIN_PROGRESSION_MOVE = 0.001
         private const val TAG = "SessionCoordinator"
     }
 }

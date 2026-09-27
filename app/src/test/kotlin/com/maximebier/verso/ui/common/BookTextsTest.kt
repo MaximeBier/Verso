@@ -11,6 +11,7 @@ class BookTextsTest {
     fun percentIsFlooredAndBounded() {
         assertThat(percentOf(0.0)).isEqualTo(0)
         assertThat(percentOf(0.319)).isEqualTo(31)
+        assertThat(percentOf(0.29)).isEqualTo(29) // 0,29 × 100 = 28,999…
         assertThat(percentOf(0.999)).isEqualTo(99)
         assertThat(percentOf(1.0)).isEqualTo(100)
         assertThat(percentOf(-0.2)).isEqualTo(0)

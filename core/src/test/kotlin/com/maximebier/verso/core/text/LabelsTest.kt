@@ -5,6 +5,19 @@ import org.junit.Test
 
 class LabelsTest {
 
+    /** Gabarits français de `strings.xml` (partie, chapitre, chapitre seul, jonction, passage). */
+    private val french = LocationTexts(
+        part = { "Partie $it" },
+        chapter = { "chap. $it" },
+        chapterOnly = { "Chap. $it" },
+        join = { part, chapter -> "$part, $chapter" },
+        passage = { from, to -> "$from → $to" },
+    )
+
+    private fun shortLocation(path: List<String>): String? = shortLocation(path, french)
+
+    private fun passageLabel(start: List<String>, end: List<String>): String? = passageLabel(start, end, french)
+
     /** Sommaire façon Gutenberg de Madame Bovary : parties sans numéro, chapitres « I », « II » ou « Chapitre I ». */
     private val bovary = listOf(
         TocNode(

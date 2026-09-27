@@ -24,6 +24,8 @@
     <string name="common_percent">%1$d %%</string>
     <!-- « Environ 5 h 30 restantes » ; %1$s = durée formatée (common_duration_*) -->
     <string name="common_time_remaining">Environ %1$s restantes</string>
+    <!-- Singulier : « Environ 1 min restante », « Environ 1 h restante » -->
+    <string name="common_time_remaining_one">Environ %1$s restante</string>
     <!-- PROPOSÉ : moins d’une minute restante -->
     <string name="common_time_remaining_less_than_minute">Moins d’une minute restante</string>
 
@@ -37,8 +39,9 @@
     <!-- Emplacement dans le livre -->
     <!-- Forme longue : « Deuxième partie, chapitre I » (partie + titre de chapitre, initiale du chapitre en minuscule) -->
     <string name="common_location_long">%1$s, %2$s</string>
-    <!-- Forme courte : « Partie II, chap. I » -->
-    <string name="common_location_short">Partie %1$s, chap. %2$s</string>
+    <!-- Forme courte : « Partie II, chap. I », bâtie de common_location_part, common_location_chapter et common_location_long -->
+    <string name="common_location_part">Partie %1$s</string>
+    <string name="common_location_chapter">chap. %1$s</string>
     <!-- PROPOSÉ : forme courte sans partie (livre sans parties) : « Chap. IV » -->
     <string name="common_location_short_no_part">Chap. %1$s</string>
     <!-- « Partie II, chap. I · 31 % » -->

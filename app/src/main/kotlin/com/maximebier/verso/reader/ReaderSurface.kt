@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONTokener
 import org.readium.r2.navigator.HyperlinkNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -79,6 +80,20 @@ private const val LOG_TAG = "VersoReader"
 private const val EDGES_SCRIPT =
     "JSON.stringify([window.scrollY <= 4, " +
         "window.scrollY + window.innerHeight >= document.scrollingElement.scrollHeight - 4])"
+
+/**
+ * Texte qui commence à la première ligne visible (premier caractère à 12 px sous le haut de l’écran, en partant de la gauche), sur environ
+ * 400 caractères : l’extrait de la carte Reprendre est le passage où l’on s’est arrêté, pas le début du paragraphe.
+ * Réponse : chaîne JSON, ou `null` si aucun texte sous ce point.
+ */
+private const val TOP_TEXT_SCRIPT =
+    "(function(){var r=null;for(var x=2;x<window.innerWidth;x+=8){" +
+        "r=document.caretRangeFromPoint(x,12);if(r&&r.startContainer.nodeType===3)break;r=null;}" +
+        "if(!r)return null;" +
+        "var n=r.startContainer,s=n.data.substring(r.startOffset);" +
+        "var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);w.currentNode=n;" +
+        "while(s.length<400&&w.nextNode())s+=' '+w.currentNode.data;" +
+        "return s;})()"
 
 /**
  * Navigateur EPUB classique de Readium (Fragment) : un chapitre à la fois, défilé nativement par la WebView ; un
@@ -182,7 +197,10 @@ fun ReaderSurface(
         controller.bind(
             navigate = { nav.go(it, animated = false) },
             probeEdges = { edgesOf(nav.evaluateJavascript(EDGES_SCRIPT)) },
-            visibleText = { nav.firstVisibleElementLocator()?.text?.highlight },
+            visibleText = {
+                jsString(nav.evaluateJavascript(TOP_TEXT_SCRIPT))?.takeIf { it.isNotBlank() }
+                    ?: nav.firstVisibleElementLocator()?.text?.highlight
+            },
         )
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
@@ -215,6 +233,10 @@ internal val readerContentInsets: WindowInsets
     @Composable get() = WindowInsets.systemBarsIgnoringVisibility
         .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         .union(WindowInsets.displayCutout)
+
+/** Chaîne rendue par `evaluateJavascript` (encodée en JSON : `"\"texte\""`) ; null si `null` ou illisible. */
+internal fun jsString(json: String?): String? =
+    json?.let { runCatching { JSONTokener(it).nextValue() as? String }.getOrNull() }
 
 /** Réponse de [EDGES_SCRIPT] (`"[true,false]"`, parfois entre guillemets) ; null si illisible. */
 internal fun edgesOf(json: String?): ChapterEdges? {
