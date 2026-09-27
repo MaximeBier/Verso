@@ -10,13 +10,13 @@ Une étape par commit (`Étape N : …`), à la suite de la V1, poussée et inst
 
 | # | Étape | Écrans | Critères V2 |
 | --- | --- | --- | --- |
-| 9 | Réglages de lecture et polices | — | 1, 2, 3 |
+| 9 | Réglages de lecture et polices | — | 1 |
 | 10 | Thèmes sépia et noir | 2.03, 2.04 | 4, 5 |
-| 11 | Barre de lecture V2 et feuille « Aa » | 2.01, 2.02 | 6, 7 |
-| 12 | Mode pages | 2.05 | 8, 9, 10 |
+| 11 | Barre de lecture V2 et feuille « Aa » | 2.01, 2.02 | 2, 3 |
+| 12 | Mode pages | 2.05 | 7, 8, 9, 10 |
 | 13 | États des livres, filtres, « Trier et afficher » | 2.07, 2.07b, 2.08 | 11, 12, 13 |
 | 14 | Statistiques et Paramètres V2 | 2.08, 2.09 | 14, 15, 16 |
-| 15 | Recherche plein texte | 2.06 | 17, 18 |
+| 15 | Recherche plein texte | 2.06 | 6, 17, 18 |
 | 16 | Passe d'acceptation V2 et README | toutes | toutes, plus 19 et 20 |
 
 ## Décisions
@@ -28,7 +28,7 @@ Une étape par commit (`Étape N : …`), à la suite de la V1, poussée et inst
 | Marges latérales | Étroites 16 dp / Normales 24 dp (défaut, valeur V1) / Larges 32 dp |
 | Police | Literata (défaut) / Atkinson Hyperlegible Next / police du système. Appliquée à toute l'app et au texte de lecture |
 | Portée des réglages | Police, taille, interligne, marges et thème sont globaux (feuille « Aa » et Paramètres écrivent les mêmes valeurs). Le défilement est mémorisé par livre ; les Paramètres fixent le défilement par défaut des livres sans choix propre |
-| Mode pages et position | Un tour de page est un geste de lecture (jamais un fling). La machine à états ne change pas : la fenêtre « 3 écrans en 5 s » fait d'un feuilletage rapide une navigation, avec la carte « Revenir » |
+| Mode pages et position | Un tour de page est un geste de lecture (jamais un fling). La machine à états garde ses règles : la fenêtre « 3 écrans en 5 s » fait d’un feuilletage rapide une navigation, avec la carte « Revenir ». Seuils propres au mode pages pour la confirmation (pause maximale 90 s, dérive 2,5 écrans), sinon une lecture page par page ne serait jamais confirmée |
 | État d'un livre | Calculé : « À lire » si jamais ouvert, « Terminé » à partir de 99 % (`LibraryRules.FINISHED_PROGRESSION`), « En cours » sinon. Un choix manuel dans la fiche l'emporte jusqu'au prochain choix manuel |
 | Vitesse de lecture | Somme des mots lus / somme du temps actif des sessions du livre. Sans session : 250 mots par minute, comme en V1 |
 | Recherche | Toucher un résultat est un saut explicite (comme le sommaire) : carte « Revenir ». Le mot trouvé est marqué dans le texte par un fond et un soulignement |
