@@ -12,8 +12,10 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -203,13 +205,16 @@ fun ReaderSurface(
 }
 
 /**
- * Insets donnés au texte : barres système **même masquées** et découpe de l’écran, donc constants. La barre de
- * lecture et les barres système sont une surcouche : les afficher ou les masquer ne change ni la mise en page du
- * texte ni la position de lecture (anomalie G).
+ * Insets donnés au texte : barre d’état et côtés des barres système **même masquées**, et découpe de l’écran, donc
+ * constants. Rien en bas : le texte va jusqu’au bas de l’écran (plein écran), sous la barre de navigation masquée.
+ * La barre de lecture et les barres système sont une surcouche : les afficher ou les masquer ne change ni la mise en
+ * page du texte ni la position de lecture (anomalie G).
  */
 @OptIn(ExperimentalLayoutApi::class)
 internal val readerContentInsets: WindowInsets
-    @Composable get() = WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout)
+    @Composable get() = WindowInsets.systemBarsIgnoringVisibility
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+        .union(WindowInsets.displayCutout)
 
 /** Réponse de [EDGES_SCRIPT] (`"[true,false]"`, parfois entre guillemets) ; null si illisible. */
 internal fun edgesOf(json: String?): ChapterEdges? {
