@@ -156,9 +156,9 @@ On y accède par la roue dentée dans l'en-tête de la bibliothèque.
 
 Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domaine public (par exemple un roman de Gutenberg ou Wikisource).
 
-- [ ] Au premier lancement, la bibliothèque vide propose un seul bouton « Importer un EPUB » et aucun choix de réglage.
+- [x] Au premier lancement, la bibliothèque vide propose un seul bouton « Importer un EPUB » et aucun choix de réglage.
 - [x] J'importe un EPUB depuis le sélecteur Android et il apparaît dans le catalogue avec titre, auteur et couverture en moins de 5 secondes.
-- [ ] J'ouvre un EPUB depuis Drive via « Ouvrir avec » et il est importé sans étape supplémentaire.
+- [x] J'ouvre un EPUB depuis Drive via « Ouvrir avec » et il est importé sans étape supplémentaire.
 - [x] Je lis un chapitre entier en scroll continu sans saccade visible ni saut de mise en page.
 - [x] Je ferme l'app brutalement (swipe depuis les récents) au milieu d'un paragraphe ; à la réouverture, le même paragraphe est à l'écran.
 - [x] Je redémarre le téléphone ; la position est intacte.
@@ -172,7 +172,7 @@ Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domai
 - [x] Un fichier non-EPUB refusé affiche un message et ne laisse aucune trace dans le catalogue.
 - [x] Le thème sombre du système est respecté sans zone blanche éblouissante.
 - [x] Avec la taille de texte Android à 200 %, aucun texte n'est coupé et aucune ligne ne demande de scroll horizontal.
-- [ ] Toutes les commandes font au moins 48 dp et tous les boutons à icône seule ont un intitulé lu par TalkBack.
+- [x] Toutes les commandes font au moins 48 dp et tous les boutons à icône seule ont un intitulé lu par TalkBack.
 - [x] Aucune permission demandée hormis l'accès aux fichiers via le sélecteur (pas de réseau, pas de contacts, rien).
 
 ## V2, V3 et V4
@@ -195,6 +195,43 @@ La V2 rend la lecture confortable pour moi ; la V3 ouvre aux formats et aux usag
 - **Statistiques** calculées à partir du journal, affichées dans la fiche : temps de lecture (« 2 h 28 en 5 sessions »), vitesse moyenne (mots par minute), « Temps restant estimé : environ 5 h 30 à votre rythme », et un bouton « Voir le journal de lecture ». Interrupteur « Afficher les statistiques » dans les Paramètres (le journal est toujours tenu ; seul l'affichage se désactive).
 - **Recherche plein texte** dans le livre ouvert : résultats affichés au fur et à mesure (« 3 résultats pour l'instant »), groupés par chapitre, le mot trouvé mis en évidence par un fond, du gras et un soulignement (jamais la couleur seule).
 - **Paramètres V2** : section Lecture avec le choix de police (boutons radio, chaque police montrée sur une phrase du livre), thème, taille et défilement par défaut. Phrase d'aide : « Pour tous les livres et toute l'application. Pendant la lecture, touchez « Aa » pour changer. »
+
+#### Réglages de la V2 (décidés le 2026-09-27)
+
+- Taille du texte : 20 sp par défaut, de 14 à 32 par pas de 1, multipliée par l'échelle de police d'Android.
+- Interligne : Serré 1,4 / Normal 1,6 (défaut) / Aéré 1,8. Marges : Étroites 16 dp / Normales 24 dp (défaut) / Larges 32 dp.
+- Police, taille, interligne, marges et thème sont communs à tous les livres ; la feuille « Aa » et les Paramètres écrivent les mêmes valeurs. Le défilement est mémorisé par livre ; les Paramètres fixent celui des livres sans choix propre.
+- Mode pages : un tour de page est un geste de lecture ; un feuilletage rapide (3 écrans en 5 s, seuil V1) est une navigation et affiche la carte « Revenir ».
+- État : « À lire » si jamais ouvert, « Terminé » à partir de 99 %, « En cours » sinon ; un choix manuel dans la fiche l'emporte jusqu'au choix manuel suivant.
+- Vitesse de lecture : mots lus / temps actif des sessions du livre ; 250 mots par minute tant qu'il n'y a aucune session.
+- Recherche : toucher un résultat est un saut explicite (carte « Revenir ») ; dans le texte, le mot trouvé est marqué par un fond et un soulignement.
+
+Design et découpage : `docs/superpowers/specs/2026-09-27-verso-v2-design.md`.
+
+#### Critères d'acceptation V2
+
+Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels de test.
+
+- [ ] Au premier lancement après la mise à jour, l'app et le texte de lecture sont en Literata ; la bibliothèque, les positions et le journal de la V1 sont intacts.
+- [ ] Je choisis Atkinson puis la police du système dans les Paramètres : toute l'app et le texte de lecture changent de police, et le choix survit à un redémarrage.
+- [ ] Je change la taille, l'interligne et les marges pendant la lecture : le texte change aussitôt et le même paragraphe reste à l'écran.
+- [ ] Les thèmes Sépia et Noir s'appliquent à toute l'app et au texte, sans zone d'une autre couleur ; Automatique suit le thème du téléphone.
+- [ ] Dans les cinq thèmes, tout texte a un contraste d'au moins 7:1 (captures vérifiées).
+- [ ] La barre de lecture montre Sommaire, Journal, Rechercher et Réglages, chacun avec son texte sous l'icône.
+- [ ] « Aa » ouvre la feuille à mi-hauteur sans voile ; le texte derrière reste visible et change en direct ; Interligne, Marges et Défilement apparaissent en faisant glisser la feuille.
+- [ ] En mode pages, je tourne les pages par swipe et par tap sur les côtés, aucune ligne n'est coupée en bas, et le pied de page affiche le chapitre et « Page x sur y ».
+- [ ] Je passe un livre en mode pages et un autre en continu : chacun rouvre dans son mode, et la position est gardée au changement de mode.
+- [ ] En mode pages, je feuillette vite plusieurs pages : la progression ne bouge pas et la carte « Revenir » me ramène à ma page en un tap ; en lisant page par page, la progression suit.
+- [ ] Un livre jamais ouvert est « À lire », un livre commencé « En cours », un livre lu à 99 % « Terminé » ; les filtres en pastilles n'affichent que les livres de l'état choisi.
+- [ ] Je change l'état d'un livre dans la fiche ; il est rangé sous ce filtre et le reste après un redémarrage, même si je le relis.
+- [ ] « Récents ▾ » ouvre « Trier et afficher » ; le tri et l'affichage choisis s'appliquent et survivent à un redémarrage.
+- [ ] Après deux sessions, la fiche affiche le temps de lecture, le nombre de sessions, la vitesse moyenne et le temps restant estimé à mon rythme ; « Voir le journal de lecture » ouvre le journal.
+- [ ] L'interrupteur « Afficher les statistiques » désactivé masque les statistiques de la fiche ; le journal continue d'être tenu.
+- [ ] Les Paramètres montrent la section Lecture de la maquette 2.09 : chaque police sur la phrase du livre, thème, taille et défilement par défaut.
+- [ ] Je cherche un mot : les résultats arrivent au fur et à mesure, groupés par chapitre, avec le mot marqué par un fond, du gras et un soulignement.
+- [ ] Je touche un résultat : le passage s'affiche avec le mot marqué, et la carte « Revenir » me ramène où j'étais.
+- [ ] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé, et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
+- [ ] Toujours aucune permission réseau ni autre permission.
 
 ### V3 — Formats et extras
 
@@ -518,3 +555,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-27 (relecture, lot 4) : comptage des mots corrigé (apostrophe typographique ’ dans un mot, guillemets en entités) ; un seul calcul de pourcentage ; les libellés d'emplacement (« Partie II, chap. I », « Chap. IV », « A → B ») viennent de `strings.xml` ; « Environ 1 min restante » au singulier ; l'extrait de la carte « Reprendre » commence à la première ligne visible ; les sessions d'un livre sans mots comptés se jugent sur la progression. Les livres déjà importés gardent leur total de mots jusqu'à un nouvel import.
 - 2026-09-27 (relecture, lot 5) : TalkBack annonce le libellé des champs de la fiche (« Auteur, zone d'édition ») ; lignes de livre et de sommaire annoncées comme boutons ; liens du texte à la couleur d'accent, visités compris (7:1 en clair et en sombre) ; le sélecteur « Importer » accepte aussi les fichiers déclarés `application/octet-stream` ; le livre de la carte « Reprendre » n'est plus répété dans la liste (le compteur les compte tous, maquette 1.02) ; marges latérales de 24 dp quelle que soit la largeur (gouttière de ReadiumCSS par paliers) ; la bascule liste / grille marque le mode choisi d'un trait en plus du fond ; voile de la barre de navigation (API 26 à 28) tiré des jetons.
 - 2026-09-27 (relecture, lot 6) : aucun avertissement lint (exceptions justifiées dans `app/lint.xml`) ; « Ouvrir avec » n'accepte que `content://` (sans permission de stockage, `file://` serait illisible) ; la CI contrôle aussi le manifeste release ; couvertures en JPEG ; `FragmentReaderController` dans son propre fichier ; un seul parcours du sommaire (`preorder`, `:core`) ; positions de l'ordre de lecture calculées une fois. Écartés ou reportés, avec leurs raisons, dans `.superpowers/sdd/2026-09-27-relecture/arbitrage.md`.
+- 2026-09-27 : critères V1 1, 3 et 17 vérifiés par Maxime, V1 terminée. V2 : valeurs des réglages, défilement par livre, tours de page comme lecture, état manuel prioritaire, vitesse mesurée, recherche comme saut explicite, critères d'acceptation V2 ; étapes 9 à 16 dans `docs/superpowers/specs/2026-09-27-verso-v2-design.md`.
