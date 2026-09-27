@@ -99,12 +99,17 @@ class MainActivity : FragmentActivity() {
         resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
 
-    /** Icônes des barres système lisibles sur le fond du thème affiché (même voile que le défaut d'AndroidX). */
+    /**
+     * Icônes des barres système lisibles sur le fond du thème affiché (même voile que le défaut d'AndroidX).
+     * La barre de navigation utilise `light`/`dark` (jamais `auto`) : avec `auto`, l'API 29+ force
+     * `isNavigationBarContrastEnforced` à vrai et remplace notre voile par celui, blanc ou noir, du système,
+     * quelle que soit la couleur passée — la barre n'était alors plus teintée en sépia ni en noir.
+     */
     private fun enableEdgeToEdge(theme: AppTheme) {
         val scrim = navigationScrim(theme)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { theme.isDark },
-            navigationBarStyle = SystemBarStyle.auto(scrim, scrim) { theme.isDark },
+            navigationBarStyle = if (theme.isDark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim),
         )
     }
 
