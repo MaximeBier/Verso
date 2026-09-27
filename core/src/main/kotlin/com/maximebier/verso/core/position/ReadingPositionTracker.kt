@@ -206,14 +206,16 @@ class ReadingPositionTracker(
             if (screens(position, target) <= thresholds.returnCardMinScreens) arriveAt(timeMs, position)
             return
         }
-        val previous = lastMotion
-        if (previous == null) {
+        if (lastMotion == null) {
             // Premier Displayed : arrivée à la position initiale.
             arriveAt(timeMs, position)
             return
         }
         if (position == displayed) return // Displayed stable : pas un mouvement.
-        val fast = speedScreensPerSecond(previous, timeMs, position) > thresholds.displayedSpeedNavigationScreensPerSecond
+        // Vitesse depuis l’instant où l’affiché a pris sa valeur, pas depuis la dernière fin de geste : le moteur peut
+        // rapporter la position d’un glissé juste après sa fin de geste, qui porte encore l’ancienne position.
+        val fast = speedScreensPerSecond(Stamped(displayedAtMs, displayed), timeMs, position) >
+            thresholds.displayedSpeedNavigationScreensPerSecond
         lastMotion = Stamped(timeMs, position)
         move(timeMs, position, forcedNavigation = fast, effects = effects)
     }

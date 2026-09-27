@@ -135,6 +135,26 @@ class ReadingPositionTrackerTest {
     }
 
     @Test
+    fun positionReportedJustAfterTheGestureEndIsStillReading() {
+        val tracker = tracker()
+        // Navigateur classique : le moteur rapporte la position ~260 ms après le lâcher, soit juste après la fin
+        // du geste (250 ms), qui porte encore l’ancienne position. Glissés de 0,33 écran toutes les 1,33 s.
+        val effects = tracker.feed(
+            Displayed(1_000, pos(10.33)),
+            GestureEnded(1_250, pos(10.33), isFling = false),
+            GestureEnded(2_580, pos(10.33), isFling = false),
+            Displayed(2_590, pos(10.66)),
+            GestureEnded(3_910, pos(10.66), isFling = false),
+            Displayed(3_920, pos(10.99)),
+            GestureEnded(5_240, pos(10.99), isFling = false),
+            Displayed(5_250, pos(11.32)),
+            Tick(6_000),
+        )
+        assertThat(tracker.state).isEqualTo(following(11.32))
+        assertThat(effects.last()).isEqualTo(ReadingMoved(pos(10.99), pos(11.32)))
+    }
+
+    @Test
     fun readingFollowsWhenDisplayedIsStableForTheRestDelay() {
         val tracker = tracker()
         tracker.onEvent(Displayed(1_000, pos(10.3)))
