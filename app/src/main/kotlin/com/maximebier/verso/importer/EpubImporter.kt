@@ -14,8 +14,11 @@ import com.maximebier.verso.readium.PHASE_WORDS
 import com.maximebier.verso.readium.ReadiumOpener
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -129,8 +132,12 @@ class EpubImporter(
                 val bookFile = File(booksDir, "${pending.sha256}$BOOK_EXTENSION")
                 val coverFile = File(coversDir, "${pending.sha256}$COVER_EXTENSION")
                 val info = opener.inspect(pending.tempFile).getOrNull()
-                moveInto(pending.tempFile, bookFile)
-                val coverPath = info?.cover?.let { writeCover(it, coverFile) } ?: existing.coverPath
+                // Même empreinte, donc même contenu et même chemin : le fichier en place est gardé tel quel (le
+                // supprimer puis le remplacer risquerait de perdre le livre si la copie échouait).
+                val sameFile = existing.filePath == bookFile.absolutePath && bookFile.exists()
+                if (!sameFile) moveInto(pending.tempFile, bookFile)
+                val sameCover = existing.coverPath == coverFile.absolutePath && coverFile.exists()
+                val coverPath = if (sameCover) existing.coverPath else info?.cover?.let { writeCover(it, coverFile) } ?: existing.coverPath
                 books.replaceFile(
                     id = existing.id,
                     filePath = bookFile.absolutePath,
@@ -193,6 +200,7 @@ class EpubImporter(
         val bookFile = File(booksDir, "$sha256$BOOK_EXTENSION")
         val coverFile = File(coversDir, "$sha256$COVER_EXTENSION")
         var moved = false
+        var inserted = false
         return try {
             val existing = books.findBySha256(sha256)
             if (existing != null) {
@@ -218,29 +226,31 @@ class EpubImporter(
             timings.coverMs += elapsedMs(coverWriteStart)
             val title = info.title ?: defaultTitle(originalName)
             val insertStart = System.nanoTime()
-            val id = books.insert(
-                BookEntity(
-                    title = title,
-                    author = info.author ?: "",
-                    filePath = bookFile.absolutePath,
-                    sha256 = sha256,
-                    coverPath = coverPath,
-                    sizeBytes = sizeBytes,
-                    originalFileName = originalName,
-                    importedAt = clock(),
-                    lastOpenedAt = null,
-                    readingLocatorJson = null,
-                    progression = 0.0,
-                    totalWords = info.totalWords,
-                ),
+            // Insertion menée à son terme même si l’import est annulé : une ligne validée garde ses fichiers.
+            val book = BookEntity(
+                title = title,
+                author = info.author ?: "",
+                filePath = bookFile.absolutePath,
+                sha256 = sha256,
+                coverPath = coverPath,
+                sizeBytes = sizeBytes,
+                originalFileName = originalName,
+                importedAt = clock(),
+                lastOpenedAt = null,
+                readingLocatorJson = null,
+                progression = 0.0,
+                totalWords = info.totalWords,
             )
+            // Marqué dans le bloc : `withContext` relève l’annulation à sa sortie, après l’insertion.
+            val id = withContext(NonCancellable) { books.insert(book).also { inserted = true } }
             timings.insertMs = elapsedMs(insertStart)
             logImportTimings(timings, elapsedMs(totalStart), "ajoute")
             ImportResult.Added(id, title)
         } catch (e: CancellationException) {
             // On ne remplace jamais une CancellationException : un échec de nettoyage est
             // journalisé (par deleteRetrying) mais ne doit pas empêcher l'annulation de se propager.
-            discard(temp, bookFile.takeIf { moved }, coverFile.takeIf { moved }, throwOnOrphanedBookFile = false)
+            val keep = inserted
+            discard(temp, bookFile.takeIf { moved && !keep }, coverFile.takeIf { moved && !keep }, throwOnOrphanedBookFile = false)
             throw e
         } catch (e: Exception) {
             // Ici en revanche, filesDir/books et filesDir/covers ne doivent jamais garder de trace
@@ -279,13 +289,19 @@ class EpubImporter(
     private fun defaultTitle(originalName: String): String =
         originalName.substringBeforeLast('.').trim().ifEmpty { originalName }
 
+    /** Remplacement atomique : la cible n’est jamais supprimée avant que la nouvelle version soit complète. */
     private fun moveInto(source: File, target: File) {
         target.parentFile?.mkdirs()
-        if (target.exists() && !deleteRetrying(target)) throw IOException("Impossible de remplacer ${target.name}")
-        if (!source.renameTo(target)) {
-            source.copyTo(target, overwrite = true)
-            deleteRetrying(source)
+        try {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            return
+        } catch (e: IOException) {
+            // Autre volume : copie complète à côté de la cible, puis renommage atomique.
         }
+        val staging = File(target.parentFile, "${target.name}$STAGING_SUFFIX")
+        source.copyTo(staging, overwrite = true)
+        Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        deleteRetrying(source)
     }
 
     /** PNG de la couverture ; null (vignette générée) si l'écriture échoue. */
@@ -315,6 +331,7 @@ class EpubImporter(
         const val BOOK_EXTENSION = ".epub"
         const val COVER_EXTENSION = ".png"
         const val PNG_QUALITY = 100
+        private const val STAGING_SUFFIX = ".part"
         const val STALE_TEMP_MS = 24L * 60 * 60 * 1000
     }
 }
