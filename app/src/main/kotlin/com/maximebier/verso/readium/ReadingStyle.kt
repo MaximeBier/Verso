@@ -2,6 +2,8 @@ package com.maximebier.verso.readium
 
 import androidx.annotation.ColorInt
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.sp
 import com.maximebier.verso.ui.theme.VersoPalette
 
 /** Couleurs passées à Readium, tirées des jetons (aucune couleur en dur). */
@@ -40,6 +42,13 @@ object ReadingStyle {
     const val NORMAL_FONT_WEIGHT = 400.0
     const val DARK_FONT_WEIGHT = 380.0
     const val DARK_LETTER_SPACING_EM = 0.01
+
+    /**
+     * Échelle du texte de lecture voulue par la taille de police d’Android : taille réelle de 19 sp (en dp) / 19.
+     * Passe par la conversion sp → dp du système, donc suit l’échelle non linéaire d’Android 14.
+     */
+    fun readingFontScale(density: Density): Double =
+        with(density) { READING_FONT_SIZE_SP.toFloat().sp.toDp().value } / READING_FONT_SIZE_SP
 
     /** 19 sp ⇒ 19 / 16 = 1,1875 (facteur de la racine CSS de 16 px). */
     fun fontSizeFactor(fontSizeSp: Double = READING_FONT_SIZE_SP): Double =

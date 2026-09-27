@@ -131,6 +131,7 @@ Règles :
   - elle se termine à la mise en arrière-plan, à la fermeture du livre ou après 5 minutes sans interaction ;
   - le temps actif exclut les intervalles de plus de 2 minutes sans scroll ni toucher ;
   - les mots lus ne comptent que les mouvements de lecture, pas les sauts.
+  - une session sans lecture (aucun mot lu : ouverture sans lire, sauts, « Rester ici ») n'est pas gardée : ouvrir un livre sans lire ne remplit pas le journal.
 - Accès : bouton « Journal » de la barre de lecture. Feuille « Journal de lecture », sous-titre « Touchez une session pour reprendre là où elle s'est arrêtée. »
 - Les sessions sont groupées par jour (« Aujourd'hui », « Hier », « Lundi 21 septembre »…). Chaque session affiche :
   - l'heure de début et de fin, et la durée ;
@@ -160,17 +161,17 @@ Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domai
 - [ ] J'ouvre un EPUB depuis Drive via « Ouvrir avec » et il est importé sans étape supplémentaire.
 - [x] Je lis un chapitre entier en scroll continu sans saccade visible ni saut de mise en page.
 - [x] Je ferme l'app brutalement (swipe depuis les récents) au milieu d'un paragraphe ; à la réouverture, le même paragraphe est à l'écran.
-- [ ] Je redémarre le téléphone ; la position est intacte.
+- [x] Je redémarre le téléphone ; la position est intacte.
 - [x] Je scrolle violemment par erreur de 30 pages : la progression ne bouge pas, et la carte « Revenir » me ramène à ma lecture en un tap.
 - [x] Je fais le même scroll accidentel, puis je ferme l'app sans toucher la carte ; à la réouverture, je suis à ma position de lecture.
 - [x] Je saute au début du livre par le sommaire ; la carte « Revenir » apparaît et me ramène au chapitre d'où je venais.
 - [x] Après 25 secondes de lecture réelle à un nouvel endroit, la carte disparaît et la progression suit.
 - [x] Après deux sessions de lecture, le journal les montre avec leur heure, leur durée et leur passage, et « Reprendre ici » mène à la fin de chacune.
 - [x] Je change la taille de police via la valeur par défaut du code (simulation V2) ; la position restaurée reste le même paragraphe.
-- [ ] Je corrige le titre d'un livre ; la correction survit à un redémarrage.
+- [x] Je corrige le titre d'un livre ; la correction survit à un redémarrage.
 - [x] Un fichier non-EPUB refusé affiche un message et ne laisse aucune trace dans le catalogue.
 - [x] Le thème sombre du système est respecté sans zone blanche éblouissante.
-- [ ] Avec la taille de texte Android à 200 %, aucun texte n'est coupé et aucune ligne ne demande de scroll horizontal.
+- [x] Avec la taille de texte Android à 200 %, aucun texte n'est coupé et aucune ligne ne demande de scroll horizontal.
 - [ ] Toutes les commandes font au moins 48 dp et tous les boutons à icône seule ont un intitulé lu par TalkBack.
 - [x] Aucune permission demandée hormis l'accès aux fichiers via le sélecteur (pas de réseau, pas de contacts, rien).
 
@@ -323,7 +324,7 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 
 - Contraste d'au moins 7:1 pour tout texte, dans tous les thèmes. Au moins 3:1 pour les barres, contours et icônes.
 - Cibles tactiles de 48 dp minimum.
-- Tailles de texte **et interlignes** en sp. L'app reste utilisable avec le texte Android à 200 % (mise à l'échelle non linéaire d'Android 14).
+- Tailles de texte **et interlignes** en sp. L'app reste utilisable avec le texte Android à 200 % (mise à l'échelle non linéaire d'Android 14). Le texte de lecture suit aussi la taille de police d'Android (19 sp convertis par le système) ; la V2 ajoutera son propre réglage « Taille du texte ».
 - Jamais la couleur seule pour porter une information : coches, texte (« Terminé », « À lire »), gras.
 - Tous les boutons à icône seule ont un intitulé (« Paramètres », « Options pour « Titre » », « Retour à la bibliothèque », « Fermer », etc.). Les interrupteurs, onglets et groupes de choix exposent leur rôle et leur état.
 - Le réglage Android « Supprimer les animations » est respecté.
@@ -509,3 +510,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-26 (retour utilisateur) : le choix du thème (Automatique / Clair / Sombre) passe de la V2 à la V1, dans Paramètres › Affichage ; sépia et noir restent en V2. Sur Android 12 et plus, le choix s’applique aussi à la fenêtre (`UiModeManager.setApplicationNightMode`), ce qui recrée l’activité au changement.
 - 2026-09-26 (retour utilisateur) : fling à 30 images/s avec le navigateur Compose de Readium ; passage au navigateur classique (Fragment, 60 images/s). Le défilement reste continu dans un chapitre, et on change de chapitre par un glissé de plus au bord, sans texte d’explication. Le changement de chapitre compte comme lecture (`GestureEnded.chapterTurn`), sauf s’il prolonge un scroll accidentel.
 - 2026-09-27 (retour utilisateur) : bande vide trop haute en haut du texte : Readium ajoutait la découpe de l'écran aux insets déjà posés par Verso (`shouldApplyInsetsPadding = false`). Le texte commence sous la barre d'état et finit au-dessus de la barre de navigation, même masquées (correctif G).
+- 2026-09-27 (retour utilisateur) : le texte de lecture suit la taille de police d'Android (échelle non linéaire d'Android 14), comme le reste de l'app ; le calcul des écrans utilise la même échelle. Les sessions sans lecture (aucun mot lu) ne sont plus gardées au journal ; celles déjà enregistrées sont retirées à l'ouverture d'un livre. Titres et auteurs abrégés par « … » à 200 % acceptés.

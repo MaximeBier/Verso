@@ -13,7 +13,14 @@ data class SessionRecord(
     val start: BookPosition,
     val end: BookPosition,
     val wordsRead: Long,
-)
+) {
+    /**
+     * Aucun mouvement de lecture (aucun mot lu) : ouverture sans lecture, sauts, « Rester ici ». Une telle session
+     * n’est pas gardée au journal. Les mots lus ne font que croître : une session écrite ne redevient jamais vide.
+     */
+    val isEmpty: Boolean
+        get() = wordsRead == 0L
+}
 
 /** Événements du lecteur utiles au journal ; le temps est fourni par l'événement. */
 sealed interface SessionEvent {

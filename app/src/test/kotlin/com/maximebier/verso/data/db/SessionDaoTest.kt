@@ -44,6 +44,21 @@ class SessionDaoTest {
     }
 
     @Test
+    fun deleteEmptyRemovesOnlySessionsWithoutReading() = runTest {
+        val bookId = db.bookDao().insert(testBook("b"))
+        val other = db.bookDao().insert(testBook("o"))
+        val empty = testSession(bookId, startedAt = 1_000).copy(wordsRead = 0)
+        db.sessionDao().upsert(empty)
+        db.sessionDao().upsert(testSession(bookId, startedAt = 2_000))
+        db.sessionDao().upsert(empty.copy(bookId = other))
+
+        db.sessionDao().deleteEmpty()
+
+        assertThat(db.sessionDao().observeForBook(bookId).first().map { it.startedAt }).containsExactly(2_000L)
+        assertThat(db.sessionDao().countForBook(other)).isEqualTo(0)
+    }
+
+    @Test
     fun upsertUpdatesAnExistingSession() = runTest {
         val bookId = db.bookDao().insert(testBook("b"))
         val id = db.sessionDao().upsert(testSession(bookId, startedAt = 1_000))

@@ -220,6 +220,7 @@ class ReaderViewModel(
             clock = clock,
         )
         sessionCoordinator = coordinator
+        viewModelScope.launch { sessions.deleteEmpty() }
         viewModelScope.launch { coordinator.current.collect { sessionCurrent.value = it } }
         viewModelScope.launch { readingEffects.collect(coordinator::onTrackerEffect) }
         coordinator.onOpened(initial)

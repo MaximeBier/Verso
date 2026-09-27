@@ -18,6 +18,10 @@ interface SessionDao {
     @Query("DELETE FROM sessions")
     suspend fun clearAll()
 
+    /** Sessions sans lecture (aucun mot lu), de tous les livres. */
+    @Query("DELETE FROM sessions WHERE wordsRead = 0")
+    suspend fun deleteEmpty()
+
     @Query("SELECT COUNT(*) FROM sessions WHERE bookId = :bookId")
     suspend fun countForBook(bookId: Long): Int
 }

@@ -16,14 +16,21 @@ object VersoReadingPreferences {
 
     val ATKINSON: FontFamily = FontFamily(ReadingStyle.FONT_FAMILY_NAME)
 
-    /** @param fontSizeSp taille de lecture ; paramètre pour la simulation « taille changée » (V2). */
-    fun epub(dark: Boolean, fontSizeSp: Double = ReadingStyle.READING_FONT_SIZE_SP): EpubPreferences {
+    /**
+     * @param fontSizeSp taille de lecture ; paramètre pour la simulation « taille changée » (V2).
+     * @param fontScale échelle de la taille de police d’Android ([ReadingStyle.readingFontScale]).
+     */
+    fun epub(
+        dark: Boolean,
+        fontSizeSp: Double = ReadingStyle.READING_FONT_SIZE_SP,
+        fontScale: Double = 1.0,
+    ): EpubPreferences {
         val colors = ReadingStyle.colors(dark)
         return EpubPreferences(
             backgroundColor = Color(colors.background),
             textColor = Color(colors.text),
             fontFamily = ATKINSON,
-            fontSize = ReadingStyle.fontSizeFactor(fontSizeSp),
+            fontSize = ReadingStyle.fontSizeFactor(fontSizeSp * fontScale),
             fontWeight = ReadingStyle.fontWeightFactor(dark),
             hyphens = false,
             letterSpacing = ReadingStyle.readiumLetterSpacing(dark),
