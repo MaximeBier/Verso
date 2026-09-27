@@ -159,6 +159,12 @@ class ReadingPositionCoordinator(
         _state.value = tracker.state.toPositionState()
     }
 
+    /** Seuils du mode de défilement courant (`ReadingThresholds.forScrollMode`). */
+    fun updateThresholds(thresholds: ReadingThresholds) {
+        tracker.updateThresholds(thresholds)
+        _state.value = tracker.state.toPositionState()
+    }
+
     private fun dispatch(event: ReaderEvent) {
         val effects = tracker.onEvent(event)
         _state.value = tracker.state.toPositionState()

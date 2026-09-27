@@ -32,6 +32,17 @@ class LabelsTest {
 
     private val flat = listOf(TocNode("Chapitre I", "c1.xhtml"), TocNode("Chapitre II", "c2.xhtml"))
 
+    @Test
+    fun chapterPathOfEntryFollowsThePreorderOfTheToc() {
+        val toc = listOf(
+            TocNode("Tome I", "t1.xhtml", listOf(TocNode("Deuxième partie", "p2.xhtml", listOf(TocNode("IX", "p2.xhtml"), TocNode("X", "p2.xhtml"))))),
+        )
+        assertThat(chapterPathOfEntry(toc, 3)).containsExactly("Deuxième partie", "X").inOrder()
+        assertThat(chapterPathOfEntry(toc, 0)).containsExactly("Tome I")
+        assertThat(chapterPathOfEntry(toc, 4)).isEmpty()
+        assertThat(chapterPathOfEntry(toc, -1)).isEmpty()
+    }
+
     // ---------- chapterPathAt ----------
 
     @Test

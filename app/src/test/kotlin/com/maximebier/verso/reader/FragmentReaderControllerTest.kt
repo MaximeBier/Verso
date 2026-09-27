@@ -52,6 +52,17 @@ class FragmentReaderControllerTest {
         var edges: ChapterEdges? = null
         var visible: String? = null
         var adjacent: Locator? = null
+        val turns = mutableListOf<Boolean>()
+        var pageCount: Int? = null
+
+        /** Pages où commencent les chapitres ancrés du fichier affiché (vide : un seul chapitre). */
+        var anchors: List<AnchorPage> = emptyList()
+
+        /** Page affichée lue dans la WebView ; null : la progression du locator sert. */
+        var currentPage: Int? = null
+
+        /** Réponse de Readium au tour de page (false : première page du livre, tour arrière sans effet). */
+        var turnAccepted = true
 
         /** Durée d’un déplacement du navigateur (0 : immédiat). */
         var navigateDelayMs = 0L
@@ -72,6 +83,8 @@ class FragmentReaderControllerTest {
                 },
                 probeEdges = { edges },
                 visibleText = { visible },
+                turnPage = { forward -> turns += forward; turnAccepted },
+                pageLayout = { pageCount?.let { PageLayout(it, anchors, currentPage) } },
             )
         }
     }
@@ -721,5 +734,253 @@ class FragmentReaderControllerTest {
         assertThat(jsString("null")).isNull()
         assertThat(jsString(null)).isNull()
         assertThat(jsString("{oops")).isNull()
+    }
+
+    // ---------- Mode pages ----------
+
+    private fun tap(h: Harness, xFraction: Float) {
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture(xFraction)
+        h.controller.onReadiumTap(xFraction)
+    }
+
+    @Test
+    fun inPagesModeSideTapsTurnPagesAndTheCenterTogglesTheBars() = runTest {
+        val h = Harness(this)
+        h.controller.setScrollMode(ScrollMode.PAGES)
+
+        tap(h, 0.9f)
+        tap(h, 0.1f)
+        tap(h, 0.5f)
+
+        assertThat(h.turns).containsExactly(true, false).inOrder()
+        assertThat(h.centerTaps).isEqualTo(1)
+    }
+
+    @Test
+    fun inContinuousModeSideTapsDoNothing() = runTest {
+        val h = Harness(this)
+        tap(h, 0.9f)
+        h.controller.turn(forward = true)
+        assertThat(h.turns).isEmpty()
+        assertThat(h.centerTaps).isEqualTo(0)
+    }
+
+    @Test
+    fun pageTurnSignalsAReadingGestureOnceTheNewPageIsShown() = runTest {
+        val h = Harness(this)
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.gestures.test {
+            tap(h, 0.9f)
+            advanceTimeBy(100)
+            h.controller.onDisplayed(at("ch1.xhtml", 0.2))
+            expectNoEvents()
+
+            advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS + ReaderGestures.SETTLE_POLL_MS + 1)
+            val signal = awaitItem()
+            assertThat(signal.isFling).isFalse()
+            assertThat(signal.chapterTurn).isFalse()
+        }
+    }
+
+    @Test
+    fun pageTurnSignalWaitsForALateNewPagePosition() = runTest {
+        val h = Harness(this)
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.9))
+        h.controller.gestures.test {
+            // Dernière page du chapitre : le suivant se charge, sa position arrive tard.
+            tap(h, 0.9f)
+            advanceTimeBy(ReaderGestures.POSITION_WAIT_MS + ReaderGestures.SETTLE_POLL_MS)
+            runCurrent()
+            expectNoEvents()
+
+            h.controller.onDisplayed(at("ch2.xhtml", 0.0))
+            advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS - ReaderGestures.SETTLE_POLL_MS)
+            runCurrent()
+            expectNoEvents()
+
+            advanceTimeBy(2 * ReaderGestures.SETTLE_POLL_MS + 1)
+            val signal = awaitItem()
+            assertThat(signal.isFling).isFalse()
+            assertThat(signal.chapterTurn).isFalse()
+        }
+    }
+
+    @Test
+    fun backwardTurnOnTheFirstPageOfTheBookSendsNoSignal() = runTest {
+        val h = Harness(this)
+        h.turnAccepted = false
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.0))
+        h.controller.gestures.test {
+            tap(h, 0.1f)
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS + ReaderGestures.SETTLE_POLL_MS)
+            runCurrent()
+            expectNoEvents()
+        }
+        assertThat(h.turns).containsExactly(false)
+    }
+
+    @Test
+    fun readiumEchoOfASideTapAlreadyHandledByTheFallbackTurnsOnce() = runTest {
+        val h = Harness(this)
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture(0.9f)
+        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS)
+        runCurrent()
+        h.controller.onReadiumTap(0.9f)
+
+        assertThat(h.turns).containsExactly(true)
+    }
+
+    @Test
+    fun touchThatAbandonsTheModeSwitchRelayoutStillCountsThePages() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.5))
+        h.pageCount = 10
+        h.controller.submit(ReadingSettings(), AppTheme.LIGHT, ScrollMode.PAGES)
+        h.controller.relayout(settleMs = ReaderGestures.MODE_SWITCH_SETTLE_MS) {}
+        runCurrent()
+
+        // Toucher avant toute position rapportée : rien à publier, mais le compte doit suivre le mode pages.
+        h.controller.onPointerDown()
+        runCurrent()
+
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 6, pageCount = 10))
+    }
+
+    @Test
+    fun inPagesModeAFastSwipeIsNeitherAFlingNorAChapterTurn() = runTest {
+        val h = Harness(this)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -20_000f, dragDyPx = -400f)
+            advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
+            val signal = awaitItem()
+            assertThat(signal.isFling).isFalse()
+            assertThat(signal.chapterTurn).isFalse()
+        }
+        assertThat(h.navigated).isEmpty()
+    }
+
+    @Test
+    fun pageInfoCountsThePagesOfTheDisplayedChapterAndDisappearsInContinuousMode() = runTest {
+        val h = Harness(this)
+        h.pageCount = 9
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onDisplayed(at("ch1.xhtml", 1.0 / 9))
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 2, pageCount = 9))
+
+        h.controller.setScrollMode(ScrollMode.CONTINUOUS)
+        assertThat(h.controller.pageInfo.value).isNull()
+    }
+
+    @Test
+    fun pageInfoCountsInsideTheChapterWhenTheFileHoldsSeveralChapters() = runTest {
+        val h = Harness(this)
+        // Une partie de 20 pages dans un seul fichier, chapitres aux pages 1, 5 et 12 (Madame Bovary de Gutenberg).
+        h.pageCount = 20
+        h.anchors = listOf(AnchorPage("c1", 1), AnchorPage("c2", 5), AnchorPage("c3", 12))
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onDisplayed(at("partie2.xhtml", 6.0 / 20))
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 3, pageCount = 7, chapterAnchor = "c2"))
+
+        h.controller.onDisplayed(at("partie2.xhtml", 11.0 / 20))
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 1, pageCount = 9, chapterAnchor = "c3"))
+    }
+
+    @Test
+    fun pageReadInTheWebViewWinsOverAProgressionJustBelowThePageStart() = runTest {
+        val h = Harness(this)
+        h.pageCount = 19
+        h.currentPage = 10
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        // Progression de Readium un peu sous le début de la page 10 : elle donnerait la page 9.
+        h.controller.onDisplayed(at("partie2.xhtml", 9.0 / 19 - 0.001))
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 10, pageCount = 19))
+    }
+
+    @Test
+    fun pageInfoIsRecountedOnceARelayoutHasBroughtTheTextBack() = runTest {
+        val h = Harness(this)
+        h.pageCount = 9
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        val anchor = at("ch1.xhtml", 1.0 / 9)
+        h.controller.onDisplayed(anchor)
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 2, pageCount = 9))
+
+        // Taille agrandie : le chapitre compte deux fois plus de pages, les positions rapportées ne sont pas publiées.
+        h.pageCount = 18
+        h.controller.relayout {}
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.3))
+        passRelayoutQuiet()
+        h.controller.onDisplayed(anchor)
+        passRelayoutQuiet()
+
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 3, pageCount = 18))
+    }
+
+    @Test
+    fun modeSwitchRelayoutWaitsForTheSettleDelayBeforeReturningToTheLocator() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.40)
+        h.controller.onDisplayed(anchor)
+
+        h.controller.relayout(settleMs = ReaderGestures.MODE_SWITCH_SETTLE_MS) {}
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.05))
+        advanceTimeBy(ReaderGestures.MODE_SWITCH_SETTLE_MS - 1)
+        runCurrent()
+        assertThat(h.navigated).isEmpty()
+
+        advanceTimeBy(ReaderGestures.SETTLE_POLL_MS)
+        runCurrent()
+        assertThat(h.navigated).containsExactly(anchor)
+        assertThat(h.controller.displayed.value).isEqualTo(anchor)
+    }
+
+    @Test
+    fun switchingToPagesCountsThePagesOnlyOnceTheRelayoutIsDone() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.5)
+        h.controller.onDisplayed(anchor)
+        h.pageCount = 1
+
+        // La surface soumet les préférences du mode pages dans une remise en page (changesLayout).
+        h.controller.submit(ReadingSettings(), AppTheme.LIGHT, ScrollMode.PAGES)
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isNull()
+
+        h.controller.relayout(settleMs = ReaderGestures.MODE_SWITCH_SETTLE_MS) { h.pageCount = 10 }
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.0))
+        advanceTimeBy(ReaderGestures.MODE_SWITCH_SETTLE_MS)
+        passRelayoutQuiet()
+        h.controller.onDisplayed(anchor)
+        passRelayoutQuiet()
+
+        assertThat(h.controller.pageInfo.value).isEqualTo(PageInfo(page = 6, pageCount = 10))
+    }
+
+    @Test
+    fun unreadablePageCountLeavesPageInfoEmpty() = runTest {
+        val h = Harness(this)
+        h.pageCount = null
+        h.controller.setScrollMode(ScrollMode.PAGES)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.5))
+        runCurrent()
+        assertThat(h.controller.pageInfo.value).isNull()
     }
 }

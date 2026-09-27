@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
@@ -87,6 +88,26 @@ class ReadingSettingsSheetTest {
             ),
         )
         compose.onNodeWithText("21").assertExists()
+    }
+
+    @Test
+    fun scrollModeRowSaysItIsForThisBook() {
+        var chosen: ScrollMode? = null
+        compose.setContent {
+            VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.LITERATA) {
+                ReadingSettingsContent(
+                    state = ReadingSettingsSheetState(ReadingSettings(), ThemeMode.AUTO, ScrollMode.CONTINUOUS),
+                    onFontSelected = {}, onSmaller = {}, onLarger = {}, onThemeSelected = {},
+                    onLineSpacingSelected = {}, onMarginsSelected = {}, onClose = {},
+                    scrollModeRow = { ScrollModeRow(selected = ScrollMode.CONTINUOUS, onSelect = { chosen = it }) },
+                )
+            }
+        }
+        compose.onNodeWithText(s(R.string.reader_settings_scroll)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(s(R.string.reader_settings_scroll_for_this_book)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(s(R.string.reader_settings_scroll_continuous)).performScrollTo().assertIsSelected()
+        compose.onNodeWithText(s(R.string.reader_settings_scroll_pages)).performScrollTo().assertHeightIsAtLeast(48.dp).performClick()
+        assertThat(chosen).isEqualTo(ScrollMode.PAGES)
     }
 
     @Test

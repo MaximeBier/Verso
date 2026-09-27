@@ -235,6 +235,21 @@ internal fun LabeledSegments(
     }
 }
 
+/** Rangée Défilement (2.02) : Continu / Pages, « Pour ce livre » à droite ; réglage propre au livre ouvert. */
+@Composable
+internal fun ScrollModeRow(selected: ScrollMode, onSelect: (ScrollMode) -> Unit) {
+    LabeledSegments(
+        label = stringResource(R.string.reader_settings_scroll),
+        trailing = stringResource(R.string.reader_settings_scroll_for_this_book),
+        options = listOf(
+            stringResource(R.string.reader_settings_scroll_continuous),
+            stringResource(R.string.reader_settings_scroll_pages),
+        ),
+        selectedIndex = ScrollMode.entries.indexOf(selected),
+        onSelect = { onSelect(ScrollMode.entries[it]) },
+    )
+}
+
 private val CardGap = 8.dp
 private val CardPadding = 8.dp
 

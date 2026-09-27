@@ -112,8 +112,10 @@ sealed interface TrackerEffect {
 class ReadingPositionTracker(
     initial: BookPosition,
     distance: ScreenDistance,
-    private val thresholds: ReadingThresholds = ReadingThresholds(),
+    thresholds: ReadingThresholds = ReadingThresholds(),
 ) {
+    private var thresholds: ReadingThresholds = thresholds
+
     /** Position horodatée. */
     private class Stamped(val timeMs: Long, val position: BookPosition)
 
@@ -186,6 +188,11 @@ class ReadingPositionTracker(
     /** Remplace la conversion en écrans (livre ou taille de texte changés). */
     fun updateDistance(distance: ScreenDistance) {
         screenDistance = distance
+    }
+
+    /** Remplace les seuils (bascule continu ↔ pages) ; l’état (lecture, carte, fenêtres) est gardé. */
+    fun updateThresholds(thresholds: ReadingThresholds) {
+        this.thresholds = thresholds
     }
 
     fun onEvent(event: ReaderEvent): List<TrackerEffect> {

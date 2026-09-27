@@ -28,6 +28,8 @@ import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
+import com.maximebier.verso.reader.PageInfo
+import com.maximebier.verso.reader.ReaderGestures
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.testLocator
 import com.maximebier.verso.readium.Locators
@@ -647,6 +649,200 @@ class ReaderViewModelTest {
         val first = viewModel.uiState.first { it.publication != null }
         assertThat(first.readingSettings.fontSizeSp).isEqualTo(26)
         store.clear()
+    }
+
+    @Test
+    fun switchingToPagesIsSavedForThisBookWithoutMovingTheReadingPosition() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onThemeChanged(AppTheme.LIGHT)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        viewModel.setScrollMode(ScrollMode.PAGES)
+        // Le mode affiché change au moment même où il est enregistré pour ce livre.
+        assertThat(viewModel.uiState.value.scrollMode).isEqualTo(ScrollMode.PAGES)
+        // Seul chemin vers le moteur : submit. La remise en page et le retour au texte sont ceux du contrôleur.
+        assertThat(fake.submitted.last().scrollMode).isEqualTo(ScrollMode.PAGES)
+        advanceTimeBy(ReaderGestures.MODE_SWITCH_SETTLE_MS + 1)
+        runCurrent()
+
+        assertThat(fake.goCalls).isEmpty()
+        assertThat(viewModel.uiState.value.returnCard).isNull()
+        assertThat(viewModel.uiState.value.readingPercent).isEqualTo(30)
+        books.observeBook(id).first { it?.scrollMode == "PAGES" }
+        assertThat(books.book(id)!!.progression).isEqualTo(0.30)
+
+        // Même mode : rien n’est renvoyé au moteur.
+        val submissions = fake.submitted.size
+        viewModel.setScrollMode(ScrollMode.PAGES)
+        assertThat(fake.submitted).hasSize(submissions)
+
+        viewModel.setScrollMode(ScrollMode.CONTINUOUS)
+        assertThat(viewModel.uiState.value.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        assertThat(fake.submitted.last().scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        books.observeBook(id).first { it?.scrollMode == "CONTINUOUS" }
+        store.clear()
+    }
+
+    @Test
+    fun pageInfoAndDisplayedChapterReachTheUiState() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30).copy(scrollMode = "PAGES"))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        fake.pageInfo.value = PageInfo(page = 2, pageCount = 9)
+        runCurrent()
+
+        assertThat(viewModel.uiState.value.pageInfo).isEqualTo(PageInfo(2, 9))
+        assertThat(viewModel.uiState.value.displayedChapterPath).containsExactly("Chapitre II")
+
+        // Le pied suit la position AFFICHÉE ; la barre garde celle de la lecture.
+        fake.displayed.value = testLocator(chapter = 1, progression = 0.5, total = 0.2)
+        runCurrent()
+        assertThat(viewModel.uiState.value.displayedChapterPath).containsExactly("Chapitre I")
+        store.clear()
+    }
+
+    @Test
+    fun footerChapterFollowsTheAnchorMeasuredInThePage() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        // Une partie dans un seul fichier, deux chapitres ancrés (Madame Bovary de Gutenberg).
+        val part = Link(href = Url("chapitre-2.xhtml")!!, mediaType = MediaType.XHTML)
+        val publication = Publication(
+            manifest = Manifest(
+                metadata = Metadata(localizedTitle = LocalizedString("Madame Bovary")),
+                readingOrder = listOf(part),
+                tableOfContents = listOf(
+                    Link(href = Url("chapitre-2.xhtml#c9")!!, mediaType = MediaType.XHTML, title = "IX"),
+                    Link(href = Url("chapitre-2.xhtml#c10")!!, mediaType = MediaType.XHTML, title = "X"),
+                ),
+            ),
+        )
+        val start = testLocator(chapter = 2, progression = 0.10, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30).copy(scrollMode = "PAGES"))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id, open = { Result.success(publication) }))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        // Ancre mesurée dans la page : chapitre X, quelle que soit l’estimation par la progression.
+        fake.pageInfo.value = PageInfo(page = 1, pageCount = 19, chapterAnchor = "c10")
+        runCurrent()
+        assertThat(viewModel.uiState.value.displayedChapterPath).containsExactly("X")
+
+        fake.pageInfo.value = PageInfo(page = 21, pageCount = 21, chapterAnchor = "c9")
+        runCurrent()
+        assertThat(viewModel.uiState.value.displayedChapterPath).containsExactly("IX")
+        store.clear()
+    }
+
+    @Test
+    fun turnPageAsksTheReader() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30).copy(scrollMode = "PAGES"))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onReaderReady(fake)
+
+        viewModel.turnPage(forward = true)
+        viewModel.turnPage(forward = false)
+
+        assertThat(fake.turns).containsExactly(true, false).inOrder()
+        store.clear()
+    }
+
+    @Test
+    fun bookOpenedInPagesUsesThePagesThresholds() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val (viewModel, fake, store) = openAt(bookMode = "PAGES")
+        assertThat(twoSlowPageTurnsConfirmAfterAJump(viewModel, fake)).isTrue()
+        assertThat(viewModel.uiState.value.readingPercent).isEqualTo(60)
+        store.clear()
+    }
+
+    @Test
+    fun bookOpenedInContinuousKeepsTheContinuousThresholds() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val (viewModel, fake, store) = openAt(bookMode = "CONTINUOUS")
+        // Une minute entre deux gestes dépasse la pause admise en continu : la carte reste.
+        assertThat(twoSlowPageTurnsConfirmAfterAJump(viewModel, fake)).isFalse()
+        assertThat(viewModel.uiState.value.readingPercent).isEqualTo(30)
+        store.clear()
+    }
+
+    @Test
+    fun switchingToPagesAppliesThePagesThresholds() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val (viewModel, fake, store) = openAt(bookMode = "CONTINUOUS")
+        viewModel.setScrollMode(ScrollMode.PAGES)
+        runCurrent()
+        assertThat(twoSlowPageTurnsConfirmAfterAJump(viewModel, fake)).isTrue()
+        store.clear()
+    }
+
+    @Test
+    fun switchingBackToContinuousRestoresTheContinuousThresholds() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val (viewModel, fake, store) = openAt(bookMode = "PAGES")
+        viewModel.setScrollMode(ScrollMode.CONTINUOUS)
+        runCurrent()
+        assertThat(twoSlowPageTurnsConfirmAfterAJump(viewModel, fake)).isFalse()
+        store.clear()
+    }
+
+    private data class OpenedReader(val viewModel: ReaderViewModel, val fake: FakeReaderController, val store: ViewModelStore)
+
+    /** Livre lu à 30 % (chapitre II, 40 %), de défilement [bookMode], surface factice branchée. */
+    private suspend fun TestScope.openAt(bookMode: String): OpenedReader {
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30).copy(scrollMode = bookMode))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onThemeChanged(AppTheme.LIGHT)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+        return OpenedReader(viewModel, fake, store)
+    }
+
+    /**
+     * Saut loin de la lecture (60 %), puis deux tours de page lents (une minute chacun, un écran environ : le livre de
+     * test compte à peu près 670 écrans). Vrai si la nouvelle position est confirmée (carte « Revenir » partie).
+     */
+    private suspend fun TestScope.twoSlowPageTurnsConfirmAfterAJump(viewModel: ReaderViewModel, fake: FakeReaderController): Boolean {
+        viewModel.jumpTo(testLocator(chapter = 2, progression = 0.80, total = 0.60))
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertThat(viewModel.uiState.value.returnCard).isNotNull()
+        listOf(0.6015, 0.6030).forEachIndexed { index, total ->
+            advanceTimeBy(60_000)
+            fake.displayed.value = testLocator(chapter = 2, progression = 0.81 + 0.01 * index, total = total)
+            runCurrent()
+            advanceTimeBy(100)
+            fake.gestures.emit(GestureSignal(testScheduler.currentTime, isFling = false))
+            runCurrent()
+        }
+        advanceTimeBy(1_000)
+        runCurrent()
+        return viewModel.uiState.value.returnCard == null
     }
 
     /** Ouvre un livre de défilement [bookMode] (`books.scrollMode`) avec [defaultMode] dans les Paramètres ; mode soumis au lecteur. */

@@ -1,5 +1,7 @@
 package com.maximebier.verso.core.position
 
+import com.maximebier.verso.core.settings.ScrollMode
+
 /**
  * Seuils de la distinction lecture / navigation (spec, « Marque-page et progression »).
  * Valeurs de départ, à ajuster à l'usage : tout seuil passe par ici, jamais en dur.
@@ -36,6 +38,7 @@ data class ReadingThresholds(
      * (5 à 10 s) ; 15 s couvre ces pauses avec marge. Rester nettement sous [confirmReadingMs] impose au
      * moins trois glissés pour confirmer : deux gestes isolés séparés par un temps mort ne suffisent jamais.
      * Un lecteur plus lent garde la carte, ce qui est l'erreur sans conséquence (il choisit lui-même).
+     * En mode pages : [PAGES_CONFIRM_MAX_IDLE_GAP_MS].
      */
     val confirmMaxIdleGapMs: Long = 15_000,
     /** Dérive maximale, en écrans, autour du point d'arrivée pendant la confirmation. */
@@ -55,4 +58,25 @@ data class ReadingThresholds(
      * (cible déjà à l’écran) et l’arrivée est la position affichée avant le saut.
      */
     val jumpArrivalMaxWaitMs: Long = 2_000,
-)
+) {
+    companion object {
+        /**
+         * Mode pages : on lit une page en 30 à 90 s, bien plus que la pause de 15 s du défilement continu, et chaque
+         * tour avance d’environ un écran. Après une navigation, deux tours de page au rythme de lecture (au moins
+         * [confirmReadingMs] d’écart, au plus 90 s) confirment la nouvelle position ; la dérive admise couvre deux pages.
+         */
+        const val PAGES_CONFIRM_MAX_IDLE_GAP_MS = 90_000L
+        const val PAGES_CONFIRM_MAX_DRIFT_SCREENS = 2.5
+
+        /** Seuils du mode pages : seules la pause et la dérive de la confirmation changent. */
+        fun forPages(): ReadingThresholds = ReadingThresholds(
+            confirmMaxIdleGapMs = PAGES_CONFIRM_MAX_IDLE_GAP_MS,
+            confirmMaxDriftScreens = PAGES_CONFIRM_MAX_DRIFT_SCREENS,
+        )
+
+        fun forScrollMode(mode: ScrollMode): ReadingThresholds = when (mode) {
+            ScrollMode.CONTINUOUS -> ReadingThresholds()
+            ScrollMode.PAGES -> forPages()
+        }
+    }
+}

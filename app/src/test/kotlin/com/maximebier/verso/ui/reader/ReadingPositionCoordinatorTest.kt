@@ -4,12 +4,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.ProgressionScreenDistance
+import com.maximebier.verso.core.position.ReadingThresholds
+import com.maximebier.verso.core.position.ScreenDistance
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
+import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.reader.testLocator
 import com.maximebier.verso.readium.Locators
@@ -281,11 +284,13 @@ class ReadingPositionCoordinatorTest {
             override val displayed = MutableStateFlow<Locator?>(start)
             override val gestures = MutableSharedFlow<GestureSignal>()
             override val viewportHeightPx = 2_000
+            override val pageInfo = MutableStateFlow<PageInfo?>(null)
             override suspend fun go(locator: Locator) {
                 displayed.value = anchor
             }
             override suspend fun excerptLocator(): Locator? = displayed.value
             override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) = Unit
+            override fun turn(forward: Boolean) = Unit
         }
         val coordinator = coordinatorAt(start)
         coordinator.attach(engine)
@@ -301,6 +306,38 @@ class ReadingPositionCoordinatorTest {
         runCurrent()
 
         assertThat(saved).containsExactly(Locators.toPosition(anchor))
+    }
+
+    @Test
+    fun updateThresholdsReachesTheTracker() = runTest {
+        // Même scénario que inPagesModeTwoPagesReadAtTheNewPlaceConfirmIt, à travers le coordinateur.
+        val coordinator = ReadingPositionCoordinator(
+            initial = Locators.toPosition(testLocator(chapter = 1, progression = 0.1, total = 0.10)),
+            distance = ScreenDistance { a, b -> kotlin.math.abs(a.totalProgression - b.totalProgression) * 100.0 },
+            scope = backgroundScope,
+            clock = { testScheduler.currentTime },
+            onSave = {},
+        )
+        val fake = FakeReaderController(testLocator(chapter = 1, progression = 0.1, total = 0.10))
+        coordinator.attach(fake)
+        runCurrent()
+        coordinator.updateThresholds(ReadingThresholds.forPages())
+
+        val away = testLocator(chapter = 2, progression = 0.30, total = 0.30)
+        coordinator.onJump(away)
+        advanceTimeBy(1_000); runCurrent()
+        assertThat(coordinator.state.value.showReturnCard).isTrue()
+
+        advanceTimeBy(39_000)
+        fake.displayed.value = testLocator(chapter = 2, progression = 0.31, total = 0.31); runCurrent()
+        fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false)); runCurrent()
+        advanceTimeBy(60_000)
+        fake.displayed.value = testLocator(chapter = 2, progression = 0.32, total = 0.32); runCurrent()
+        fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false)); runCurrent()
+
+        assertThat(coordinator.state.value.showReturnCard).isFalse()
+        assertThat(coordinator.state.value.reading.totalProgression).isWithin(1e-9).of(0.32)
+        coordinator.detach()
     }
 
     @Test

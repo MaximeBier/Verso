@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,11 +22,15 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.data.ThemeMode
+import com.maximebier.verso.reader.PageInfo
+import com.maximebier.verso.ui.reader.PageFooter
+import com.maximebier.verso.ui.reader.pageFooterReserve
 import com.maximebier.verso.ui.reader.ReaderBars
 import com.maximebier.verso.ui.reader.ReaderBarsState
 import com.maximebier.verso.ui.reader.ReadingSettingsSheet
 import com.maximebier.verso.ui.reader.ReadingSettingsSheetState
 import com.maximebier.verso.ui.reader.ReturnCard
+import com.maximebier.verso.ui.reader.ScrollModeRow
 import com.maximebier.verso.ui.reader.TocSheet
 import com.maximebier.verso.ui.reader.buildTocRows
 import com.maximebier.verso.ui.reader.tocSummary
@@ -104,7 +109,22 @@ internal fun ReadingSettingsSheetSample() {
         onLineSpacingSelected = {},
         onMarginsSelected = {},
         onDismiss = {},
+        scrollModeRow = { ScrollModeRow(selected = ScrollMode.CONTINUOUS, onSelect = {}) },
     )
+}
+
+/** 2.05 : page de texte (imitée, Literata 20 sp) et pied de page « Page 2 sur 9 ». */
+@Composable
+internal fun PagesModeSample() {
+    Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
+        // Comme ReaderScreen : le texte s’arrête au-dessus du pied (pageFooterReserve).
+        Box(Modifier.fillMaxSize().padding(bottom = pageFooterReserve()).clipToBounds()) { SampleReadingText() }
+        PageFooter(
+            chapter = "Deuxième partie, chapitre I",
+            pageInfo = PageInfo(page = 2, pageCount = 9),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 /** 1.14 : carte « Revenir » en bas de l'écran de lecture. */

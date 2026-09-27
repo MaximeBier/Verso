@@ -10,6 +10,7 @@ import com.maximebier.verso.R
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
+import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
@@ -18,6 +19,7 @@ import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.calibrateAnchor
 import com.maximebier.verso.core.text.chapterPathAt
+import com.maximebier.verso.core.text.chapterPathOfEntry
 import com.maximebier.verso.core.text.longLocation
 import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.core.text.remainingMinutes
@@ -28,7 +30,9 @@ import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.data.db.BookEntity
+import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderController
+import com.maximebier.verso.reader.ReaderGestures
 import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
@@ -101,6 +105,10 @@ data class ReaderUiState(
     val settingsVisible: Boolean = false,
     /** Défilement de ce livre (`books.scrollMode`), à défaut celui des Paramètres (`defaultScrollMode`). */
     val scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
+    /** Mode pages : « Page 2 sur 9 » du chapitre affiché ; null en continu ou avant le premier compte. */
+    val pageInfo: PageInfo? = null,
+    /** Chapitre de la position AFFICHÉE (pied de page du mode pages) ; la barre montre celui de la lecture. */
+    val displayedChapterPath: List<String> = emptyList(),
     /** Carte « Revenir » ; jamais persistée. */
     val returnCard: ReturnCardState? = null,
     /** Réglages de lecture courants (police, taille, interligne, marges). */
@@ -234,19 +242,21 @@ class ReaderViewModel(
             fail(book.title)
             return
         }
+        // Réglages lus avant de publier `publication` : la surface naît avec eux, sans relayout à la première image.
+        val reading = settings.readingSettings.first()
+        // Lu une fois à l’ouverture ; ensuite, seul setScrollMode le change (même moment que l’écriture en base).
+        val scrollMode = book.scrollMode?.let { stored -> ScrollMode.entries.firstOrNull { it.name == stored } }
+            ?: reading.defaultScrollMode
         val created = ReadingPositionCoordinator(
             initial = initialPosition,
             distance = ReaderScreenDistance.fallbackDistance(book.totalWords),
             scope = viewModelScope,
             clock = clock,
             onSave = positionSaver::requestSave,
+            thresholds = ReadingThresholds.forScrollMode(scrollMode),
         )
         coordinator = created
         if (stopped) created.onStopped()
-        // Réglages lus avant de publier `publication` : la surface naît avec eux, sans relayout à la première image.
-        val reading = settings.readingSettings.first()
-        val scrollMode = book.scrollMode?.let { stored -> ScrollMode.entries.firstOrNull { it.name == stored } }
-            ?: reading.defaultScrollMode
         _uiState.update {
             it.copy(
                 publication = publication,
@@ -299,12 +309,28 @@ class ReaderViewModel(
         controllerJob = viewModelScope.launch {
             // Un geste de l’utilisateur : la position affichée n’est plus celle d’une ancre visée par un saut.
             launch { readerController.gestures.collect { cancelCalibration() } }
+            launch {
+                readerController.pageInfo.collect { info ->
+                    _uiState.update { state ->
+                        val shown = lastDisplayed
+                        state.copy(
+                            pageInfo = info,
+                            displayedChapterPath = if (shown != null) displayedChapterPath(state.toc, shown, info) else state.displayedChapterPath,
+                        )
+                    }
+                }
+            }
             readerController.displayed.filterNotNull().collect { locator ->
                 val previous = lastDisplayed
                 lastDisplayed = locator
                 if (previous != null && previous != locator) sessionCoordinator?.onInteraction()
-                // Reprise au même endroit si la surface est recréée (rotation, thème).
-                _uiState.update { it.copy(initialLocator = locator) }
+                // Reprise au même endroit si la surface est recréée (rotation, thème) ; chapitre du pied de page.
+                _uiState.update { state ->
+                    state.copy(
+                        initialLocator = locator,
+                        displayedChapterPath = displayedChapterPath(state.toc, locator, readerController.pageInfo.value),
+                    )
+                }
                 refreshDistance()
             }
         }
@@ -389,6 +415,20 @@ class ReaderViewModel(
         }
     }
 
+    /**
+     * Chapitre du pied de page : en mode pages, celui dont l’ancre a été mesurée dans la page ([PageInfo.chapterAnchor],
+     * le même découpage que « Page x sur y ») ; sinon, ou sans ancre, l’estimation par la progression ([chapterPathAt]).
+     */
+    private fun displayedChapterPath(toc: List<TocNode>, locator: Locator, info: PageInfo?): List<String> {
+        val anchor = info?.chapterAnchor
+        if (anchor != null) {
+            val index = preorder(tocLinks) { it.children }
+                .indexOfFirst { it.url().fragment == anchor && sameResource(it.url(), locator.href) }
+            if (index >= 0) return chapterPathOfEntry(toc, index)
+        }
+        return chapterPathAt(toc, Locators.hrefKey(locator), locator.locations.progression)
+    }
+
     /** Titre de chapitre d’une position, même règle que la barre de lecture ([chapterPathAt], ancres comprises). */
     private fun chapterTitleOf(locator: Locator): String? =
         longLocation(chapterPathAt(_uiState.value.toc, Locators.hrefKey(locator), locator.locations.progression), locationTexts.join)
@@ -439,6 +479,26 @@ class ReaderViewModel(
     fun setThemeMode(mode: ThemeMode) {
         sessionCoordinator?.onInteraction()
         viewModelScope.launch { settings.setThemeMode(mode) }
+    }
+
+    /**
+     * Défilement de ce livre (feuille « Aa ») : mémorisé pour ce livre seulement, et `uiState.scrollMode` changé au
+     * même moment. Les seuils de la machine à états suivent le mode ; le passage au moteur reste [submitStyle], dont
+     * la remise en page ramène le texte affiché (`FragmentReaderController.relayout`, [ReaderGestures.MODE_SWITCH_SETTLE_MS]) :
+     * ni saut ni geste pour la machine à états, la position de lecture ne bouge pas.
+     */
+    fun setScrollMode(mode: ScrollMode) {
+        if (_uiState.value.scrollMode == mode) return
+        sessionCoordinator?.onInteraction()
+        coordinator?.updateThresholds(ReadingThresholds.forScrollMode(mode))
+        _uiState.update { it.copy(scrollMode = mode, pageInfo = if (mode == ScrollMode.PAGES) it.pageInfo else null) }
+        viewModelScope.launch { books.setScrollMode(bookId, mode) }
+        submitStyle()
+    }
+
+    /** Page suivante ou précédente (actions TalkBack du pied de page) ; sans effet en continu. */
+    fun turnPage(forward: Boolean) {
+        controller?.turn(forward)
     }
 
     /**

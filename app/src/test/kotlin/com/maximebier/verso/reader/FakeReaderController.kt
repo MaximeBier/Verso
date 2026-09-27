@@ -16,6 +16,7 @@ class FakeReaderController(initial: Locator?) : ReaderController {
     override val displayed = MutableStateFlow(initial)
     override val gestures = MutableSharedFlow<GestureSignal>(extraBufferCapacity = 64)
     override var viewportHeightPx: Int = 2_000
+    override val pageInfo = MutableStateFlow<PageInfo?>(null)
 
     /** Locators reçus par `go()`, dans l’ordre. */
     val goCalls = mutableListOf<Locator>()
@@ -33,6 +34,13 @@ class FakeReaderController(initial: Locator?) : ReaderController {
 
     override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) {
         submitted += ReaderStyle(settings, theme, scrollMode)
+    }
+
+    /** Tours de page demandés par `turn()` (vrai = page suivante), dans l’ordre. */
+    val turns = mutableListOf<Boolean>()
+
+    override fun turn(forward: Boolean) {
+        turns += forward
     }
 
     /** Extrait qui répond après ce délai ; null : jamais (WebView détruite pendant l’appel JavaScript, non annulable). */

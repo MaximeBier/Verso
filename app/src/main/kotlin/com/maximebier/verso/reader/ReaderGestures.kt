@@ -45,4 +45,10 @@ object ReaderGestures {
      * (prototype : le premier tap après une restauration peut être absorbé par un pré-défilement interne).
      */
     const val TAP_FALLBACK_DELAY_MS = 400L
+
+    /**
+     * Bascule continu ↔ pages : délai laissé à Readium pour remettre le chapitre en page avant de revenir au texte
+     * qui était affiché. À revoir sur le téléphone si le retour tombe à côté.
+     */
+    const val MODE_SWITCH_SETTLE_MS = 300L
 }
