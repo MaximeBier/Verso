@@ -96,4 +96,15 @@ class BookDaoTest {
         assertThat(dao.byId(id)).isNull()
         assertThat(dao.observeById(id).first()).isNull()
     }
+
+    @Test
+    fun scrollModeAndStateOverrideDefaultToNullAndAreWritable() = runTest {
+        val id = dao.insert(testBook("ddd", title = "Nana"))
+        assertThat(dao.byId(id)!!.scrollMode).isNull()
+        assertThat(dao.byId(id)!!.stateOverride).isNull()
+        dao.setScrollMode(id, "PAGES")
+        dao.setStateOverride(id, "TO_READ")
+        assertThat(dao.byId(id)!!.scrollMode).isEqualTo("PAGES")
+        assertThat(dao.byId(id)!!.stateOverride).isEqualTo("TO_READ")
+    }
 }

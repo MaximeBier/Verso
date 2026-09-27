@@ -7,13 +7,21 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.maximebier.verso.core.settings.LineSpacing
+import com.maximebier.verso.core.settings.Margins
+import com.maximebier.verso.core.settings.ReadingFont
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ReadingSettingsLimits
+import com.maximebier.verso.core.settings.ScrollMode
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-/** Réglages V1 (DataStore). Une valeur illisible ou inconnue revient à la valeur par défaut. */
+/** Réglages de l'app (DataStore). Une valeur illisible ou inconnue revient à la valeur par défaut. */
 class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
     private val preferences: Flow<Preferences> = dataStore.data.catch { error ->
@@ -54,6 +62,33 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         save { it[THEME_MODE] = value.name }
     }
 
+    /** Réglages de lecture V2 (spec, « Réglages de la V2 ») ; valeur inconnue → défaut, taille bornée. */
+    val readingSettings: Flow<ReadingSettings> = preferences.map(::readingSettingsOf).distinctUntilChanged()
+
+    /** Lit, transforme et réécrit les réglages dans la même transaction DataStore. */
+    suspend fun updateReadingSettings(transform: (ReadingSettings) -> ReadingSettings) {
+        save { prefs ->
+            val next = transform(readingSettingsOf(prefs))
+            prefs[READING_FONT] = next.font.name
+            prefs[READING_FONT_SIZE] = next.fontSizeSp
+            prefs[READING_LINE_SPACING] = next.lineSpacing.name
+            prefs[READING_MARGINS] = next.margins.name
+            prefs[DEFAULT_SCROLL_MODE] = next.defaultScrollMode.name
+        }
+    }
+
+    private fun readingSettingsOf(prefs: Preferences): ReadingSettings = ReadingSettings(
+        font = enumOrDefault(prefs[READING_FONT], ReadingFont.LITERATA),
+        fontSizeSp = (prefs[READING_FONT_SIZE] ?: ReadingSettingsLimits.DEFAULT_FONT_SIZE_SP)
+            .coerceIn(ReadingSettingsLimits.MIN_FONT_SIZE_SP, ReadingSettingsLimits.MAX_FONT_SIZE_SP),
+        lineSpacing = enumOrDefault(prefs[READING_LINE_SPACING], LineSpacing.NORMAL),
+        margins = enumOrDefault(prefs[READING_MARGINS], Margins.NORMAL),
+        defaultScrollMode = enumOrDefault(prefs[DEFAULT_SCROLL_MODE], ScrollMode.CONTINUOUS),
+    )
+
+    private inline fun <reified E : Enum<E>> enumOrDefault(stored: String?, default: E): E =
+        stored?.let { value -> enumValues<E>().firstOrNull { it.name == value } } ?: default
+
     /** Écriture ratée (disque plein) : journalisée, le réglage garde sa valeur précédente ; jamais de plantage. */
     private suspend fun save(change: (MutablePreferences) -> Unit) {
         try {
@@ -68,6 +103,11 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val LIBRARY_SORT = stringPreferencesKey("library_sort")
         val LIBRARY_VIEW_MODE = stringPreferencesKey("library_view_mode")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val READING_FONT = stringPreferencesKey("reading_font")
+        val READING_FONT_SIZE = intPreferencesKey("reading_font_size")
+        val READING_LINE_SPACING = stringPreferencesKey("reading_line_spacing")
+        val READING_MARGINS = stringPreferencesKey("reading_margins")
+        val DEFAULT_SCROLL_MODE = stringPreferencesKey("default_scroll_mode")
         const val TAG = "SettingsRepository"
     }
 }

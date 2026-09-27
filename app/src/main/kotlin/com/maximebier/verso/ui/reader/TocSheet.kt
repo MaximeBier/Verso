@@ -35,7 +35,6 @@ import com.maximebier.verso.ui.components.VersoBottomSheet
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 enum class ChapterStatus { READ, CURRENT, UNREAD }
 
@@ -182,7 +181,7 @@ private fun tocSubtitle(bookTitle: String, summary: TocSummary): String {
 private fun PartHeaderRow(title: String) {
     Text(
         text = title,
-        style = VersoTypography.captionBold,
+        style = VersoTheme.typography.captionBold,
         color = VersoTheme.colors.textSecondary,
         modifier = Modifier
             .fillMaxWidth()
@@ -211,18 +210,18 @@ private fun ChapterRow(row: TocRow.Chapter, readingPercent: Int, onClick: () -> 
         ) {
             Text(
                 text = row.title,
-                style = if (current) VersoTypography.bodyStrong else VersoTypography.body,
+                style = if (current) VersoTheme.typography.bodyStrong else VersoTheme.typography.body,
                 color = if (current) colors.onSelection else colors.text,
                 modifier = Modifier.weight(1f),
             )
             when (row.status) {
                 ChapterStatus.READ -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(VersoIcons.Check, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.toc_chapter_read), style = VersoTypography.caption, color = colors.textSecondary)
+                    Text(stringResource(R.string.toc_chapter_read), style = VersoTheme.typography.caption, color = colors.textSecondary)
                 }
                 ChapterStatus.CURRENT -> Text(
                     text = stringResource(R.string.toc_chapter_current, readingPercent),
-                    style = VersoTypography.captionBold,
+                    style = VersoTheme.typography.captionBold,
                     color = colors.onSelection,
                 )
                 ChapterStatus.UNREAD -> Unit

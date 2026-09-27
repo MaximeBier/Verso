@@ -30,7 +30,6 @@ import com.maximebier.verso.ui.components.LibraryTopBar
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Premier lancement : barre sans « Importer », un seul bouton principal de 56 dp. */
 @Composable
@@ -67,13 +66,13 @@ fun EmptyLibraryContent(onImport: () -> Unit, modifier: Modifier = Modifier) {
             )
             Text(
                 text = stringResource(R.string.library_empty_title),
-                style = VersoTypography.display,
+                style = VersoTheme.typography.display,
                 color = colors.text,
                 modifier = Modifier.semantics { heading() },
             )
             Text(
                 text = stringResource(R.string.library_empty_body),
-                style = VersoTypography.emptyBody,
+                style = VersoTheme.typography.emptyBody,
                 color = colors.textSecondary,
             )
             PrimaryButton(
@@ -85,7 +84,7 @@ fun EmptyLibraryContent(onImport: () -> Unit, modifier: Modifier = Modifier) {
             )
             Text(
                 text = stringResource(R.string.library_empty_open_with_hint),
-                style = VersoTypography.emptyHint,
+                style = VersoTheme.typography.emptyHint,
                 color = colors.textSecondary,
             )
         }

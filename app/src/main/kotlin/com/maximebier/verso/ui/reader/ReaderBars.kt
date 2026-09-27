@@ -58,7 +58,6 @@ import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoProgressBar
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 import java.util.Locale
 
 data class ReaderBarsState(
@@ -135,7 +134,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
                 Text(
                     text = title,
                     // 18 sp 700, interligne 1,25 (référence 1.11).
-                    style = VersoTypography.bookTitleStrong.copy(lineHeight = 22.5.sp),
+                    style = VersoTheme.typography.bookTitleStrong.copy(lineHeight = 22.5.sp),
                     color = colors.text,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -144,7 +143,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
                     Text(
                         text = chapter,
                         // 14 sp, interligne 1,3 (référence 1.11).
-                        style = VersoTypography.caption.copy(lineHeight = 18.2.sp),
+                        style = VersoTheme.typography.caption.copy(lineHeight = 18.2.sp),
                         color = colors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -176,13 +175,13 @@ private fun ReaderBottomBar(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(R.string.common_percent_read, state.readingPercent),
-                    style = VersoTypography.bodyStrong,
+                    style = VersoTheme.typography.bodyStrong,
                     color = colors.text,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
                     text = remainingTimeText(state.remainingMinutes),
-                    style = VersoTypography.caption,
+                    style = VersoTheme.typography.caption,
                     color = colors.textSecondary,
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(1f).alignByBaseline(),

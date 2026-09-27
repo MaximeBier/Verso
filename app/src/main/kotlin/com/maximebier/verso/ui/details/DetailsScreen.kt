@@ -41,7 +41,6 @@ import com.maximebier.verso.ui.components.DetailTopBar
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 import java.util.Locale
 
 /** Taille affichée : `megabytes` = true → « 1,2 Mo », sinon « 850 ko ». */
@@ -49,9 +48,6 @@ data class SizeParts(val megabytes: Boolean, val value: String)
 
 private const val BYTES_PER_KB = 1_000L
 private const val BYTES_PER_MB = 1_000_000L
-
-/** 16 sp, interligne 1,45 (pourcentage et temps restant sous la couverture). */
-private val MetaStyle = VersoTypography.body.copy(lineHeight = 23.2.sp)
 
 /** Moins de 1 Mo : ko entier arrondi (1 à 999) ; sinon Mo à une décimale, virgule française. */
 fun sizeParts(bytes: Long): SizeParts =
@@ -119,6 +115,8 @@ data class DetailsActions(
 @Composable
 fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
+    /** 16 sp, interligne 1,45 (pourcentage et temps restant sous la couverture). */
+    val metaStyle = VersoTheme.typography.body.copy(lineHeight = 23.2.sp)
     var titleFocused by remember { mutableStateOf(false) }
     var authorFocused by remember { mutableStateOf(false) }
 
@@ -148,8 +146,8 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
                     )
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column {
-                            Text(stringResource(R.string.common_percent_read, state.percent), style = MetaStyle, color = colors.textSecondary)
-                            Text(remainingTimeText(state.remainingMinutes), style = MetaStyle, color = colors.textSecondary)
+                            Text(stringResource(R.string.common_percent_read, state.percent), style = metaStyle, color = colors.textSecondary)
+                            Text(remainingTimeText(state.remainingMinutes), style = metaStyle, color = colors.textSecondary)
                         }
                         PrimaryButton(
                             text = stringResource(if (state.hasStarted) R.string.common_resume else R.string.common_start),

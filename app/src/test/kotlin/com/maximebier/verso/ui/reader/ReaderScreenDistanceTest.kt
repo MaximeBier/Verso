@@ -56,6 +56,22 @@ class ReaderScreenDistanceTest {
     }
 
     @Test
+    fun largerTextAndLineSpacingMeanMoreScreens() {
+        val base = ReaderScreenDistance.bookScreens(60_000, phone)
+        assertThat(ReaderScreenDistance.bookScreens(60_000, phone.copy(fontSizeSp = 26.0))).isGreaterThan(base)
+        assertThat(ReaderScreenDistance.bookScreens(60_000, phone.copy(lineHeight = 1.8))).isGreaterThan(base)
+        assertThat(ReaderScreenDistance.bookScreens(60_000, phone.copy(marginDp = 32.0))).isGreaterThan(base)
+        assertThat(ReaderScreenDistance.bookScreens(60_000, phone.copy(marginDp = 16.0))).isLessThan(base)
+    }
+
+    @Test
+    fun wordsPerLineShrinkWithSizeAndMargins() {
+        assertThat(ReaderScreenDistance.wordsPerLine(fontScale = 1f)).isWithin(1e-9).of(6.0)
+        assertThat(ReaderScreenDistance.wordsPerLine(fontScale = 1f, fontSizeSp = 38.0)).isWithin(1e-9).of(3.0)
+        assertThat(ReaderScreenDistance.wordsPerLine(fontScale = 1f, marginDp = 32.0)).isLessThan(6.0)
+    }
+
+    @Test
     fun fallbackUsesReferencePhone() {
         val a = BookPosition("{}", 0.10)
         val b = BookPosition("{}", 0.20)

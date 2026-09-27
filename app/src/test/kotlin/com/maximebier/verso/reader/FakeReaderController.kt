@@ -1,5 +1,8 @@
 package com.maximebier.verso.reader
 
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,6 +26,13 @@ class FakeReaderController(initial: Locator?) : ReaderController {
     override suspend fun go(locator: Locator) {
         goCalls += locator
         displayed.value = locator
+    }
+
+    /** Réglages reçus par `submit()`, dans l’ordre. */
+    val submitted = mutableListOf<ReaderStyle>()
+
+    override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) {
+        submitted += ReaderStyle(settings, theme, scrollMode)
     }
 
     /** Extrait qui répond après ce délai ; null : jamais (WebView détruite pendant l’appel JavaScript, non annulable). */

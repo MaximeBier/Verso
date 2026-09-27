@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,14 +51,6 @@ import com.maximebier.verso.ui.components.VersoProgressBar
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
-
-/** 16 sp, interligne 1,4 (auteur et chapitre de la carte). */
-private val CardSecondaryStyle = VersoTypography.body.copy(lineHeight = 22.4.sp)
-
-/** 14 sp, interligne 1,35 (pied de la carte). */
-private val CardFooterStyle = VersoTypography.caption.copy(lineHeight = 18.9.sp)
-private val CardFooterStrongStyle = VersoTypography.captionBold.copy(lineHeight = 18.9.sp)
 
 /**
  * Carte « Reprendre », variante A complète (§3.3), utilisée en liste **et** en grille (la spec prime sur la maquette 1.03).
@@ -79,6 +73,12 @@ fun ResumeCard(
 ) {
     val colors = VersoTheme.colors
     val label = contentDescription
+    val typography = VersoTheme.typography
+    /** 16 sp, interligne 1,4 (auteur et chapitre de la carte). */
+    val cardSecondaryStyle = remember(typography) { typography.body.copy(lineHeight = 22.4.sp) }
+    /** 14 sp, interligne 1,35 (pied de la carte). */
+    val cardFooterStyle = remember(typography) { typography.caption.copy(lineHeight = 18.9.sp) }
+    val cardFooterStrongStyle = remember(typography) { typography.captionBold.copy(lineHeight = 18.9.sp) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -92,39 +92,46 @@ fun ResumeCard(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
             BookCover(title = title, coverPath = coverPath, seed = seed, size = CoverSize.RESUME)
             Column(Modifier.weight(1f).padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(stringResource(R.string.resume_card_label), style = VersoTypography.captionBold, color = colors.accent)
+                Text(stringResource(R.string.resume_card_label), style = VersoTheme.typography.captionBold, color = colors.accent)
                 Text(
                     text = title,
-                    style = VersoTypography.screenTitle,
+                    style = VersoTheme.typography.screenTitle,
                     color = colors.text,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 if (author.isNotEmpty()) {
-                    Text(author, style = CardSecondaryStyle, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(author, style = cardSecondaryStyle, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 if (chapter != null) {
-                    Text(chapter, style = CardSecondaryStyle, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(chapter, style = cardSecondaryStyle, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
         if (excerpt != null) {
-            Text(excerpt, style = VersoTypography.body, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(excerpt, style = VersoTheme.typography.body, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         VersoProgressBar(fraction = progression, current = true)
-        Row(
+        // FlowRow plutôt que Row : à grande taille de texte système, le pseudo-bouton passe sous le pourcentage et
+        // le temps restant au lieu de compresser leur colonne sous la largeur d'un mot (contrainte « texte à 200 %
+        // sans coupure »).
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(percentText, style = CardFooterStrongStyle, color = colors.text)
-                Text(remainingText, style = CardFooterStyle, color = colors.textSecondary)
+            Column(
+                Modifier.weight(1f).align(Alignment.CenterVertically),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(percentText, style = cardFooterStrongStyle, color = colors.text)
+                Text(remainingText, style = cardFooterStyle, color = colors.textSecondary)
             }
             // Pseudo-bouton : décor du bouton unique qu'est la carte (padding 18 / 22 de la maquette, flèche à droite).
             Row(
                 modifier = Modifier
+                    .align(Alignment.CenterVertically)
                     .heightIn(min = VersoDimens.controlMin)
                     .clip(VersoShapes.pill)
                     .background(colors.accent)
@@ -132,7 +139,7 @@ fun ResumeCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(stringResource(R.string.resume_card_button), style = VersoTypography.button, color = colors.onAccent)
+                Text(stringResource(R.string.resume_card_button), style = VersoTheme.typography.button, color = colors.onAccent)
                 Icon(VersoIcons.ArrowRight, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
             }
         }
@@ -152,7 +159,7 @@ fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, 
             VersoProgressBar(fraction = progression, current = false, modifier = Modifier.weight(1f))
             Text(
                 text = percentText,
-                style = VersoTypography.captionSemiBold.copy(fontFeatureSettings = "tnum"),
+                style = VersoTheme.typography.captionSemiBold.copy(fontFeatureSettings = "tnum"),
                 color = colors.textSecondary,
                 textAlign = TextAlign.End,
                 modifier = Modifier.widthIn(min = 44.dp),
@@ -164,10 +171,10 @@ fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(VersoIcons.Check, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
-            Text(stringResource(R.string.library_state_finished), style = VersoTypography.captionSemiBold, color = colors.textSecondary)
+            Text(stringResource(R.string.library_state_finished), style = VersoTheme.typography.captionSemiBold, color = colors.textSecondary)
         }
         BookStatus.NEW -> Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.library_state_new), style = VersoTypography.captionSemiBold, color = colors.textSecondary)
+            Text(stringResource(R.string.library_state_new), style = VersoTheme.typography.captionSemiBold, color = colors.textSecondary)
         }
     }
 }
@@ -251,7 +258,7 @@ fun BookOptionsMenu(expanded: Boolean, onDismissRequest: () -> Unit, content: @C
 fun BookOptionsMenuItem(text: String, icon: ImageVector, onClick: () -> Unit, destructive: Boolean = false) {
     val color = if (destructive) VersoTheme.colors.danger else VersoTheme.colors.text
     DropdownMenuItem(
-        text = { Text(text, style = VersoTypography.segment, color = color) },
+        text = { Text(text, style = VersoTheme.typography.segment, color = color) },
         onClick = onClick,
         leadingIcon = { Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(VersoDimens.iconSmall)) },
         modifier = Modifier.heightIn(min = VersoDimens.controlMin),

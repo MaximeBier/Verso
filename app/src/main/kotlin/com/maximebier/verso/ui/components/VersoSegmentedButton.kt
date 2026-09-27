@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 private val SegmentPadding = 6.dp
 private val CheckSize = 18.dp
@@ -62,7 +61,7 @@ fun VersoSegmentedButton(
         val segmentWidth = (maxWidth - SeparatorWidth * (options.size - 1)) / options.size
         val labelRoomPx = with(density) { (segmentWidth - SegmentPadding * 2 - CheckSize - CheckGap).toPx() }
         val sideBySide = options.all { label ->
-            measurer.measure(label, VersoTypography.segmentSelected, maxLines = 1).size.width <= labelRoomPx
+            measurer.measure(label, VersoTheme.typography.segmentSelected, maxLines = 1).size.width <= labelRoomPx
         }
         val group = Modifier
             .fillMaxWidth()
@@ -105,7 +104,7 @@ private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modif
         }
         Text(
             text = label,
-            style = if (selected) VersoTypography.segmentSelected else VersoTypography.segment,
+            style = if (selected) VersoTheme.typography.segmentSelected else VersoTheme.typography.segment,
             color = if (selected) colors.onSelection else colors.text,
             textAlign = TextAlign.Center,
         )

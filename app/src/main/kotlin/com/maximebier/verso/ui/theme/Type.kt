@@ -1,53 +1,35 @@
-@file:OptIn(ExperimentalTextApi::class)
-
 package com.maximebier.verso.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.maximebier.verso.R
-
-private fun atkinson(weight: Int, style: FontStyle = FontStyle.Normal): Font = Font(
-    resId = if (style == FontStyle.Italic) R.font.atkinson_hyperlegible_next_italic else R.font.atkinson_hyperlegible_next,
-    weight = FontWeight(weight),
-    style = style,
-    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
-)
-
-/** Atkinson Hyperlegible Next, police variable : une instance par graisse utilisée (380 = lecture en thème sombre). */
-val AtkinsonFamily: FontFamily = FontFamily(
-    atkinson(380),
-    atkinson(400),
-    atkinson(500),
-    atkinson(600),
-    atkinson(700),
-    atkinson(400, FontStyle.Italic),
-)
+import com.maximebier.verso.core.settings.ReadingFont
 
 private val CenteredLineHeight = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.None,
 )
 
-/** Style Atkinson ; interligne en sp (suit l'agrandissement du texte système). */
-private fun verso(sizeSp: Float, weight: Int, lineHeightSp: Float? = null): TextStyle = TextStyle(
-    fontFamily = AtkinsonFamily,
-    fontWeight = FontWeight(weight),
-    fontSize = sizeSp.sp,
-    lineHeight = lineHeightSp?.sp ?: androidx.compose.ui.unit.TextUnit.Unspecified,
-    lineHeightStyle = CenteredLineHeight,
-)
+/**
+ * Échelle de v1-ui-reference §3.19 (14 / 16 / 18 / 22 / 28 sp), dans la police choisie (spec, « Police V2 » : la
+ * police s'applique à toute l'app). Interlignes en sp (suivent l'agrandissement du texte système).
+ */
+class VersoTypography(private val family: FontFamily) {
 
-/** Échelle de v1-ui-reference §3.19 : 14 / 16 / 18 / 22 / 28 sp. */
-object VersoTypography {
+    private fun verso(sizeSp: Float, weight: Int, lineHeightSp: Float? = null): TextStyle = TextStyle(
+        fontFamily = family,
+        fontWeight = FontWeight(weight),
+        fontSize = sizeSp.sp,
+        lineHeight = lineHeightSp?.sp ?: TextUnit.Unspecified,
+        lineHeightStyle = CenteredLineHeight,
+    )
+
     val logo: TextStyle = verso(28f, 700).copy(letterSpacing = (-0.01).em)
     val display: TextStyle = verso(28f, 700, 35f)
     val screenTitle: TextStyle = verso(22f, 700, 27.5f)
@@ -81,4 +63,20 @@ object VersoTypography {
         labelMedium = captionBold,
         labelSmall = caption,
     )
+
+    companion object {
+        private val Literata = VersoTypography(LiterataFamily)
+        private val Atkinson = VersoTypography(AtkinsonFamily)
+        private val System = VersoTypography(FontFamily.Default)
+
+        /** Une instance par police (les styles ne sont pas recréés à chaque composition). */
+        fun of(font: ReadingFont): VersoTypography = when (font) {
+            ReadingFont.LITERATA -> Literata
+            ReadingFont.ATKINSON -> Atkinson
+            ReadingFont.SYSTEM -> System
+        }
+    }
 }
+
+/** Typographie du thème courant (police choisie dans les réglages). */
+val LocalVersoTypography = staticCompositionLocalOf { VersoTypography.of(ReadingFont.LITERATA) }

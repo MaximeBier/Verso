@@ -20,4 +20,6 @@ data class BookEntity(
     val readingLocatorJson: String?,    // null = jamais ouvert
     val progression: Double = 0.0,      // totalProgression de la position de lecture
     val totalWords: Long,
+    val scrollMode: String? = null,     // ScrollMode.name ; null = défilement par défaut des Paramètres (V2)
+    val stateOverride: String? = null,  // BookStatus.name choisi dans la fiche ; null = état calculé (V2)
 )

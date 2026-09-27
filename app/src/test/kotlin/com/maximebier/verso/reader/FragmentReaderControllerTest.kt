@@ -6,6 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.position.ReadingThresholds
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.readium.ReadingOrderPositions
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -49,6 +52,9 @@ class FragmentReaderControllerTest {
         var edges: ChapterEdges? = null
         var visible: String? = null
         var adjacent: Locator? = null
+
+        /** Durée d’un déplacement du navigateur (0 : immédiat). */
+        var navigateDelayMs = 0L
         val controller = FragmentReaderController(
             scope = scope.backgroundScope,
             readChapterHtml = { "<html><body><p>un deux trois quatre cinq six sept huit neuf dix</p></body></html>" },
@@ -59,8 +65,180 @@ class FragmentReaderControllerTest {
             wallClockMs = { scope.testScheduler.currentTime },
         ).apply {
             viewportHeightPx = 2_000
-            bind(navigate = { navigated += it }, probeEdges = { edges }, visibleText = { visible })
+            bind(
+                navigate = {
+                    navigated += it
+                    delay(navigateDelayMs)
+                },
+                probeEdges = { edges },
+                visibleText = { visible },
+            )
         }
+    }
+
+    @Test
+    fun submitPublishesTheLatestStyle() = runTest {
+        val controller = Harness(this).controller
+        assertThat(controller.style.value).isNull()
+        controller.submit(ReadingSettings(fontSizeSp = 22), AppTheme.SEPIA, ScrollMode.CONTINUOUS)
+        assertThat(controller.style.value)
+            .isEqualTo(ReaderStyle(ReadingSettings(fontSizeSp = 22), AppTheme.SEPIA, ScrollMode.CONTINUOUS))
+    }
+
+    /** Laisse passer le délai de calme qui suit une position rapportée pendant une remise en page. */
+    private fun TestScope.passRelayoutQuiet() {
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS + ReaderGestures.SETTLE_POLL_MS)
+        runCurrent()
+    }
+
+    @Test
+    fun relayoutBringsTheTextBackWithoutPublishingTheShiftedPositions() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.40)
+        h.controller.onDisplayed(anchor)
+        val published = mutableListOf<Locator?>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { h.controller.displayed.collect { published += it } }
+        var applied = 0
+
+        h.controller.relayout { applied++ }
+        runCurrent()
+        assertThat(applied).isEqualTo(1)
+        // Readium garde le défilement en pixels : la nouvelle mise en page décale la progression.
+        h.controller.onDisplayed(at("ch1.xhtml", 0.47))
+        passRelayoutQuiet()
+        assertThat(h.navigated).containsExactly(anchor)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.4002))
+        passRelayoutQuiet()
+
+        assertThat(published).containsExactly(anchor)
+        assertThat(h.controller.displayed.value).isEqualTo(anchor)
+        // Remise en page terminée : un vrai défilement est de nouveau publié.
+        h.controller.onDisplayed(at("ch1.xhtml", 0.45))
+        assertThat(h.controller.displayed.value).isEqualTo(at("ch1.xhtml", 0.45))
+    }
+
+    @Test
+    fun rapidRelayoutsReturnToTheLocatorShownBeforeTheFirst() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.40)
+        h.controller.onDisplayed(anchor)
+        var applied = 0
+
+        h.controller.relayout { applied++ }
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.43))
+        h.controller.relayout { applied++ }
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.46))
+        passRelayoutQuiet()
+
+        assertThat(applied).isEqualTo(2)
+        assertThat(h.navigated).containsExactly(anchor)
+        assertThat(h.controller.displayed.value).isEqualTo(anchor)
+    }
+
+    @Test
+    fun relayoutWithoutReportedPositionStillReturnsAfterTheWait() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.40)
+        h.controller.onDisplayed(anchor)
+
+        h.controller.relayout {}
+        advanceTimeBy(ReaderGestures.RELAYOUT_REPORT_MAX_MS + ReaderGestures.SETTLE_POLL_MS)
+        runCurrent()
+
+        assertThat(h.navigated).containsExactly(anchor)
+    }
+
+    @Test
+    fun relayoutBeforeAnyPositionOnlyApplies() = runTest {
+        val h = Harness(this)
+        var applied = 0
+
+        h.controller.relayout { applied++ }
+        advanceTimeBy(2 * ReaderGestures.RELAYOUT_REPORT_MAX_MS)
+        runCurrent()
+
+        assertThat(applied).isEqualTo(1)
+        assertThat(h.navigated).isEmpty()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.2))
+        assertThat(h.controller.displayed.value).isEqualTo(at("ch1.xhtml", 0.2))
+    }
+
+    @Test
+    fun jumpDuringRelayoutWinsOverTheReturn() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.40))
+        val target = at("ch2.xhtml", 0.0)
+
+        h.controller.relayout {}
+        runCurrent()
+        h.controller.go(target)
+        advanceTimeBy(2 * ReaderGestures.RELAYOUT_REPORT_MAX_MS)
+        runCurrent()
+
+        assertThat(h.navigated).containsExactly(target)
+        h.controller.onDisplayed(target)
+        assertThat(h.controller.displayed.value).isEqualTo(target)
+    }
+
+    @Test
+    fun touchDuringRelayoutKeepsTheUsersScrollAndPublishesTheScreen() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.40))
+
+        h.controller.relayout {}
+        runCurrent()
+        val shifted = at("ch1.xhtml", 0.47)
+        h.controller.onDisplayed(shifted)
+        // Feuille « Aa » sans voile : l’utilisateur fait défiler le texte aussitôt.
+        h.controller.onPointerDown()
+        advanceTimeBy(2 * ReaderGestures.RELAYOUT_REPORT_MAX_MS)
+        runCurrent()
+
+        assertThat(h.navigated).isEmpty()
+        assertThat(h.controller.displayed.value).isEqualTo(shifted)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.52))
+        assertThat(h.controller.displayed.value).isEqualTo(at("ch1.xhtml", 0.52))
+    }
+
+    @Test
+    fun touchBeforeTheNewLayoutIsReportedLetsItsPositionThrough() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.40))
+
+        h.controller.relayout {}
+        runCurrent()
+        h.controller.onPointerDown()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.47))
+        advanceTimeBy(2 * ReaderGestures.RELAYOUT_REPORT_MAX_MS)
+        runCurrent()
+
+        assertThat(h.navigated).isEmpty()
+        assertThat(h.controller.displayed.value).isEqualTo(at("ch1.xhtml", 0.47))
+    }
+
+    @Test
+    fun jumpWhileReturningToTheLocatorWins() = runTest {
+        val h = Harness(this)
+        val anchor = at("ch1.xhtml", 0.40)
+        h.controller.onDisplayed(anchor)
+        h.navigateDelayMs = 500
+        val target = at("ch2.xhtml", 0.0)
+
+        h.controller.relayout {}
+        runCurrent()
+        h.controller.onDisplayed(at("ch1.xhtml", 0.47))
+        passRelayoutQuiet()
+        // Phase 2 : le retour au locator est en cours dans le navigateur quand le saut arrive.
+        assertThat(h.navigated).containsExactly(anchor)
+        h.controller.go(target)
+        advanceTimeBy(2 * ReaderGestures.RELAYOUT_REPORT_MAX_MS)
+        runCurrent()
+
+        assertThat(h.navigated).containsExactly(anchor, target).inOrder()
+        h.controller.onDisplayed(target)
+        assertThat(h.controller.displayed.value).isEqualTo(target)
     }
 
     @Test

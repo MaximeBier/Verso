@@ -44,7 +44,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /**
  * Fenêtre de dialogue Verso. Le voile (scrim) est dessiné avec le jeton du thème et non par la plateforme ;
@@ -105,14 +104,14 @@ fun VersoDialog(
                     }
                     Text(
                         text = title,
-                        style = VersoTypography.sheetTitle,
+                        style = VersoTheme.typography.sheetTitle,
                         color = colors.text,
                         textAlign = if (icon != null) TextAlign.Center else TextAlign.Start,
                         modifier = Modifier.fillMaxWidth().semantics { heading() },
                     )
                     CompositionLocalProvider(
                         LocalContentColor provides colors.textSecondary,
-                        LocalTextStyle provides VersoTypography.body,
+                        LocalTextStyle provides VersoTheme.typography.body,
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = body)
                     }

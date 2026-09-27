@@ -56,4 +56,10 @@ interface BookDao {
 
     @Query("DELETE FROM books WHERE id = :id")
     suspend fun deleteById(id: Long): Int
+
+    @Query("UPDATE books SET scrollMode = :scrollMode WHERE id = :id")
+    suspend fun setScrollMode(id: Long, scrollMode: String?)
+
+    @Query("UPDATE books SET stateOverride = :stateOverride WHERE id = :id")
+    suspend fun setStateOverride(id: Long, stateOverride: String?)
 }

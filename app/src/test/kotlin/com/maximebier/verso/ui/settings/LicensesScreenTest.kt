@@ -25,7 +25,7 @@ class LicensesScreenTest {
 
     @Test
     fun everyLicenseTextIsBundledAndNotBlank() {
-        assertThat(OpenSourceLicenses.entries).hasSize(11)
+        assertThat(OpenSourceLicenses.entries).hasSize(12)
         OpenSourceLicenses.entries.forEach { entry ->
             val text = ctx.resources.openRawResource(entry.text).bufferedReader().use { it.readText() }
             assertThat(text.trim()).isNotEmpty()

@@ -41,7 +41,6 @@ import com.maximebier.verso.ui.components.VersoBottomSheet
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -209,7 +208,7 @@ fun JournalSheetContent(
             Text(
                 text = stringResource(R.string.journal_empty),
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 14.dp),
-                style = JournalBody,
+                style = journalBody(),
                 color = colors.textSecondary,
             )
         } else {
@@ -243,7 +242,7 @@ private fun DayHeader(day: JournalDay) {
         modifier = Modifier
             .padding(start = 12.dp, end = 12.dp, top = 14.dp, bottom = 4.dp)
             .semantics { heading() },
-        style = VersoTypography.captionBold,
+        style = VersoTheme.typography.captionBold,
         color = VersoTheme.colors.textSecondary,
     )
 }
@@ -267,11 +266,11 @@ private fun SessionCard(item: JournalSessionItem, onResume: (BookPosition) -> Un
 
     Column(container.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(timeLabel, Modifier.weight(1f), style = JournalStrong, color = colors.text)
-            Text(durationLabel(item.durationMinutes), style = JournalStrong, color = colors.text)
+            Text(timeLabel, Modifier.weight(1f), style = journalStrong(), color = colors.text)
+            Text(durationLabel(item.durationMinutes), style = journalStrong(), color = colors.text)
         }
         item.passage?.let { passage ->
-            Text(passage, style = JournalBody, color = colors.text)
+            Text(passage, style = journalBody(), color = colors.text)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -281,18 +280,18 @@ private fun SessionCard(item: JournalSessionItem, onResume: (BookPosition) -> Un
             Text(
                 text = stringResource(R.string.journal_percent_range, item.startPercent, item.endPercent),
                 modifier = Modifier.weight(1f),
-                style = VersoTypography.caption,
+                style = VersoTheme.typography.caption,
                 color = colors.textSecondary,
             )
             if (item.inProgress) {
                 Text(
                     text = stringResource(R.string.journal_in_progress),
-                    style = VersoTypography.captionBold,
+                    style = VersoTheme.typography.captionBold,
                     color = colors.textSecondary,
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(resumeLabel, style = VersoTypography.captionBold, color = colors.textSecondary)
+                    Text(resumeLabel, style = VersoTheme.typography.captionBold, color = colors.textSecondary)
                     Icon(VersoIcons.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
                 }
             }
@@ -315,6 +314,9 @@ private fun durationLabel(minutes: Int): String {
 }
 
 // Styles de v1-ui-reference 1.13 : 16 sp 700 lh 22 (heures, durée), 16 sp lh 1,4 (passage) ;
-// 14 sp (pourcentages, actions) = VersoTypography.caption / captionBold tels quels.
-private val JournalStrong: TextStyle = VersoTypography.bodyStrong.copy(lineHeight = 22.sp)
-private val JournalBody: TextStyle = VersoTypography.body.copy(lineHeight = 22.4.sp)
+// 14 sp (pourcentages, actions) = VersoTheme.typography.caption / captionBold tels quels.
+@Composable
+private fun journalStrong(): TextStyle = VersoTheme.typography.bodyStrong.copy(lineHeight = 22.sp)
+
+@Composable
+private fun journalBody(): TextStyle = VersoTheme.typography.body.copy(lineHeight = 22.4.sp)

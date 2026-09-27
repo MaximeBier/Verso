@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 private fun paddingFor(icon: ImageVector?): PaddingValues =
     if (icon != null) PaddingValues(start = 18.dp, end = 22.dp) else PaddingValues(horizontal = 24.dp)
@@ -51,7 +50,7 @@ fun PrimaryButton(
         contentPadding = paddingFor(icon),
     ) {
         ButtonIcon(icon)
-        Text(text = text, style = VersoTypography.button)
+        Text(text = text, style = VersoTheme.typography.button)
     }
 }
 
@@ -73,7 +72,7 @@ fun OutlinedPillButton(
         contentPadding = if (icon != null) PaddingValues(start = 18.dp, end = 22.dp) else PaddingValues(horizontal = 22.dp),
     ) {
         ButtonIcon(icon)
-        Text(text = text, style = VersoTypography.buttonOutlined)
+        Text(text = text, style = VersoTheme.typography.buttonOutlined)
     }
 }
 
@@ -95,7 +94,7 @@ fun DangerOutlinedButton(
         contentPadding = paddingFor(icon),
     ) {
         ButtonIcon(icon)
-        Text(text = text, style = VersoTypography.buttonOutlined)
+        Text(text = text, style = VersoTheme.typography.buttonOutlined)
     }
 }
 
@@ -110,7 +109,7 @@ fun DangerButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifie
         colors = ButtonDefaults.buttonColors(containerColor = colors.danger, contentColor = colors.onDanger),
         contentPadding = PaddingValues(horizontal = 24.dp),
     ) {
-        Text(text = text, style = VersoTypography.button)
+        Text(text = text, style = VersoTheme.typography.button)
     }
 }
 
@@ -130,6 +129,6 @@ fun VersoTextButton(
         colors = ButtonDefaults.textButtonColors(contentColor = color),
         contentPadding = PaddingValues(horizontal = horizontalPadding),
     ) {
-        Text(text = text, style = VersoTypography.button)
+        Text(text = text, style = VersoTheme.typography.button)
     }
 }

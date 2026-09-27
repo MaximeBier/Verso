@@ -22,6 +22,12 @@ object ReaderGestures {
      */
     const val POSITION_WAIT_MS = 600L
 
+    /**
+     * Remise en page (réglage changé) : attente maximale d’une position rapportée par le navigateur, après
+     * l’application des préférences puis après le retour au locator (aucune si la position ne change pas).
+     */
+    const val RELAYOUT_REPORT_MAX_MS = 1_000L
+
     /** Un toucher moins de ce délai après une image de défilement arrête un défilement en cours. */
     const val SCROLL_ACTIVE_MS = 100L
 
