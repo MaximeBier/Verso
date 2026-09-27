@@ -135,6 +135,39 @@ class ReadingPositionTrackerTest {
     }
 
     @Test
+    fun flingWhosePositionArrivesAfterTheRestDelayIsANavigation() {
+        val tracker = tracker()
+        // Navigateur classique : aucune position pendant l’inertie ; celle d’arrivée vient 1,3 s après la fin du geste.
+        val effects = tracker.feed(
+            GestureEnded(1_000, pos(10.0), isFling = true),
+            Tick(1_650),
+            Tick(2_000),
+            Displayed(2_300, pos(12.0)),
+            Tick(3_000),
+        )
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 12.0))
+        assertThat(effects).isEmpty()
+    }
+
+    @Test
+    fun flingWhosePositionNeverArrivesEndsAfterTheMaximumWait() {
+        val tracker = tracker()
+        tracker.feed(GestureEnded(1_000, pos(10.0), isFling = true))
+        tracker.onEvent(Tick(1_000 + ReadingThresholds().flingPositionMaxWaitMs))
+        // Navigation close ; la position suivante, lente, est de la lecture ordinaire.
+        tracker.feed(Displayed(6_000, pos(10.3)), Tick(7_000))
+        assertThat(tracker.state).isEqualTo(following(10.3))
+    }
+
+    @Test
+    fun restEventSettlesAPendingReadingMove() {
+        val tracker = tracker()
+        tracker.onEvent(Displayed(1_000, pos(10.3)))
+        val effects = tracker.onEvent(ReaderEvent.Rest(1_100))
+        assertThat(effects).containsExactly(SaveReading(pos(10.3)), ReadingMoved(pos(10.0), pos(10.3))).inOrder()
+    }
+
+    @Test
     fun positionReportedJustAfterTheGestureEndIsStillReading() {
         val tracker = tracker()
         // Navigateur classique : le moteur rapporte la position ~260 ms après le lâcher, soit juste après la fin
@@ -303,6 +336,25 @@ class ReadingPositionTrackerTest {
     }
 
     // ---------- Sauts (sommaire, journal) ----------
+
+    @Test
+    fun approximateJumpThatNeverMovesArrivesWhereTheTextStands() {
+        val tracker = tracker()
+        // Lien vers une note déjà à l’écran : le moteur ne rapporte aucune nouvelle position.
+        tracker.onEvent(Jumped(1_000, pos(50.0), approximate = true))
+        assertThat(tracker.state.showReturnCard).isTrue()
+        tracker.onEvent(Tick(1_000 + ReadingThresholds().jumpArrivalMaxWaitMs))
+        assertThat(tracker.state).isEqualTo(following(10.0))
+    }
+
+    @Test
+    fun stayHereBeforeAnApproximateJumpMovedKeepsTheReading() {
+        val tracker = tracker()
+        tracker.onEvent(Jumped(1_000, pos(50.0), approximate = true))
+        val effects = tracker.onEvent(StayHere(1_200))
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(following(10.0))
+    }
 
     @Test
     fun jumpToCurrentChapterWithinOneScreenKeepsReadingAndShowsNoCard() {
