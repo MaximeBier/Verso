@@ -306,19 +306,19 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 | Rôle | Clair | Sombre | Sépia (V2) | Noir (V2) |
 | --- | --- | --- | --- | --- |
 | Fond | `#F5F1E8` | `#171513` | `#EFE3CC` | `#000000` |
-| Surface (cartes, barres, feuilles) | `#ECE5D9` | `#22201D` | `#E6D8BD` | `#141312` |
+| Surface (cartes, barres, feuilles) | `#ECE5D9` | `#22201D` | `#ECE1CB` | `#141312` |
 | Surface haute | `#E4DCCE` | `#2B2825` | `#DDCDAF` | `#1E1C1A` |
 | Texte | `#1F1B16` (15,2:1) | `#E8E2D8` (14,1:1) | `#2E2419` (12:1) | `#D9D3C9` (14,1:1) |
-| Texte secondaire | `#4A433B` (8,6:1) | `#CFC7BB` (10,9:1) | `#4C3E2A` (8,1:1) | `#B8B0A4` (9,8:1) |
+| Texte secondaire | `#4A433B` (8,6:1) | `#CFC7BB` (10,9:1) | `#443826` (7,3:1) | `#B8B0A4` (9,8:1) |
 | Accent | `#7A3021` (8,2:1) | `#E8C48E` (11:1) | `#7A3021` | `#E8C48E` |
 | Texte sur accent | `#FFFFFF` (9,2:1) | `#1B1510` (11:1) | `#FFFFFF` | `#1B1510` |
 | Piste des barres | `#DDD4C5` | `#3A3530` | `#D8C7A8` | `#2E2B28` |
 | Contour | `#7D7366` | `#8E857A` | `#7A6A52` | `#857D72` |
 | Séparateur | `#D3CABB` | `#3A3530` | `#D3C2A2` | `#2E2B28` |
 | Sélection (fond / texte) | `#EBD7C6` / `#2B170C` | `#463727` / `#F2E3D0` | `#E2C9AE` / `#2B170C` | `#3E3122` / `#F2E3D0` |
-| Danger | `#8A2318` | `#F2A99E` | `#8A2318` | `#F2A99E` |
+| Danger | `#8A2318` | `#F2A99E` | `#7C2016` | `#F2A99E` |
 | Inverse (snackbar, carte de retour) | `#2E2A25` / `#F5F1E8` | `#E8E2D8` / `#1F1B16` | `#3A2E22` / `#EFE3CC` | `#D9D3C9` / `#141312` |
-| Accent sur inverse | `#F0C9A0` | `#7A3021` | `#F0C9A0` | `#7A3021` |
+| Accent sur inverse | `#F0C9A0` | `#7A3021` | `#F0C9A0` | `#68291C` |
 | Surlignage (V2/V3) | `#F3D9A4` | `#5A4520` | `#E9C98C` | `#4A3A1C` |
 
 - Le fond clair n'est pas du blanc pur (environ 12 % de lumière en moins), et le fond sombre n'est pas du noir pur.
@@ -557,3 +557,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-27 (relecture, lot 6) : aucun avertissement lint (exceptions justifiées dans `app/lint.xml`) ; « Ouvrir avec » n'accepte que `content://` (sans permission de stockage, `file://` serait illisible) ; la CI contrôle aussi le manifeste release ; couvertures en JPEG ; `FragmentReaderController` dans son propre fichier ; un seul parcours du sommaire (`preorder`, `:core`) ; positions de l'ordre de lecture calculées une fois. Écartés ou reportés, avec leurs raisons, dans `.superpowers/sdd/2026-09-27-relecture/arbitrage.md`.
 - 2026-09-27 : critères V1 1, 3 et 17 vérifiés par Maxime, V1 terminée. V2 : valeurs des réglages, défilement par livre, tours de page comme lecture, état manuel prioritaire, vitesse mesurée, recherche comme saut explicite, critères d'acceptation V2 ; étapes 9 à 16 dans `docs/superpowers/specs/2026-09-27-verso-v2-design.md`.
 - 2026-09-27 (étape 9) : réglages de lecture et polices — migration Room 1 → 2, remise en page (`relayout`) qui garde le même locator au changement de réglage, Row passant en FlowRow à 200 % pour l'accessibilité, Literata par défaut appliquée à toute l'app et au texte de lecture. Critère d'acceptation V2 1 vérifié.
+- 2026-09-27 (étape 10) : thèmes sépia et noir, quatre palettes vérifiées à 7:1 (texte) et 3:1 (non-texte) par `PaletteContrastTest`. Trois jetons ajustés pour tenir 7:1 sans casser le partage de couleur imposé par `ReaderController.submit` (même accent en clair/sépia et en sombre/noir, sans recréer le fragment) : sépia `textSecondary` `#4C3E2A` → `#443826`, sépia `surface` `#E6D8BD` → `#ECE1CB` (accent/surface tenait à 6,6:1 avec l'ancienne valeur), sépia `danger` `#8A2318` → `#7C2016` ; noir `inverseAccent` (carte « Revenir », snackbar) `#7A3021` → `#68291C`. Captures V2 dans `V2ScreenCatalog` / `V2ScreenshotTest` (24 PNG, `build/outputs/roborazzi/v2/`).

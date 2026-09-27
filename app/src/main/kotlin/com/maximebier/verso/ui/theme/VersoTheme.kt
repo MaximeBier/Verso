@@ -13,25 +13,27 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.maximebier.verso.core.settings.ReadingFont
+import com.maximebier.verso.data.AppTheme
 
-/** Thème Verso : clair ou sombre, dans la police choisie (réglages). Couleurs générées depuis tokens.json. */
+/** Thème Verso : une des quatre palettes de tokens.json, dans la police choisie. */
 @Composable
 fun VersoTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    theme: AppTheme = if (isSystemInDarkTheme()) AppTheme.DARK else AppTheme.LIGHT,
     font: ReadingFont = ReadingFont.LITERATA,
     content: @Composable () -> Unit,
 ) {
-    val colors = if (darkTheme) VersoPalette.Dark else VersoPalette.Light
-    val covers = if (darkTheme) VersoPalette.CoverDark else VersoPalette.CoverLight
+    val colors = paletteOf(theme)
+    val covers = if (theme.isDark) VersoPalette.CoverDark else VersoPalette.CoverLight
     val typography = VersoTypography.of(font)
     CompositionLocalProvider(
         LocalVersoColors provides colors,
         LocalCoverPalette provides covers,
-        LocalVersoDarkTheme provides darkTheme,
+        LocalVersoDarkTheme provides theme.isDark,
+        LocalVersoTheme provides theme,
         LocalVersoTypography provides typography,
     ) {
         MaterialTheme(
-            colorScheme = colorSchemeFor(colors, darkTheme),
+            colorScheme = colorSchemeFor(colors, theme.isDark),
             typography = typography.material,
             shapes = Shapes(
                 extraSmall = VersoShapes.cover,
@@ -59,9 +61,20 @@ object VersoTheme {
     /** Thème sombre affiché : à utiliser à la place de isSystemInDarkTheme(). */
     val isDark: Boolean
         @Composable @ReadOnlyComposable get() = LocalVersoDarkTheme.current
+    /** Palette affichée. */
+    val theme: AppTheme
+        @Composable @ReadOnlyComposable get() = LocalVersoTheme.current
     /** Styles de texte dans la police choisie : VersoTheme.typography.body… */
     val typography: VersoTypography
         @Composable @ReadOnlyComposable get() = LocalVersoTypography.current
+}
+
+/** Palette de tokens.json pour un thème. */
+fun paletteOf(theme: AppTheme): VersoColors = when (theme) {
+    AppTheme.LIGHT -> VersoPalette.Light
+    AppTheme.SEPIA -> VersoPalette.Sepia
+    AppTheme.DARK -> VersoPalette.Dark
+    AppTheme.BLACK -> VersoPalette.Black
 }
 
 /** Traduction vers Material 3 pour les composants M3 (Switch, ModalBottomSheet, Snackbar…). */

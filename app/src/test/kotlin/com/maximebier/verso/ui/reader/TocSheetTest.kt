@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.reader
 
+import com.maximebier.verso.data.AppTheme
 import android.content.Context
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
@@ -170,7 +171,7 @@ class TocSheetTest {
     fun sheetShowsTitleAndSubtitleAndClosesWithTalkBackLabel() {
         var closed = 0
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 TocSheet(
                     bookTitle = "Madame Bovary",
                     summary = tocSummary(toc),
@@ -194,7 +195,7 @@ class TocSheetTest {
 
     private fun show(rows: List<TocRow>, onChapterClick: (Int) -> Unit = {}) {
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 TocChapterList(
                     rows = rows,
                     readingPercent = 31,

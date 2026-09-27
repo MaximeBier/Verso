@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.reader
 
+import com.maximebier.verso.data.AppTheme
 import android.content.Context
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
@@ -36,7 +37,7 @@ class ReaderBarsTest {
 
     private fun show(visible: Boolean, onBack: () -> Unit = {}, onToc: () -> Unit = {}, onJournal: () -> Unit = {}) {
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 ReaderBars(visible = visible, state = state, onBack = onBack, onTocClick = onToc, onJournalClick = onJournal)
             }
         }
@@ -83,7 +84,7 @@ class ReaderBarsTest {
         var roman: String? = null
         var alone: String? = null
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 withWord = chapterLongLabel(listOf("Deuxième partie", "Chapitre I"))
                 roman = chapterLongLabel(listOf("Deuxième partie", "IV"))
                 alone = chapterLongLabel(listOf("Préface"))
@@ -100,7 +101,7 @@ class ReaderBarsTest {
     fun remainingTimeUsesFrenchDurations() {
         val labels = mutableListOf<String>()
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 labels.clear()
                 labels += remainingTimeText(0)
                 labels += remainingTimeText(45)

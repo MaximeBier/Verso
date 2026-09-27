@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.details
 
+import com.maximebier.verso.data.AppTheme
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -19,7 +20,7 @@ class DetailsFieldsTest {
     @Test
     fun emptyFieldIsAnnouncedWithItsLabel() {
         compose.setContent {
-            VersoTheme(darkTheme = false) { DetailsTextField(value = "", onValueChange = {}, label = "Auteur") }
+            VersoTheme(theme = AppTheme.LIGHT) { DetailsTextField(value = "", onValueChange = {}, label = "Auteur") }
         }
 
         compose.onNode(hasSetTextAction() and hasContentDescription("Auteur")).assertExists()

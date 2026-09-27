@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.library
 
+import com.maximebier.verso.data.AppTheme
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
@@ -26,7 +27,7 @@ class EmptyLibraryScreenTest {
     fun showsASingle56dpImportButtonAndNoHeaderImport() {
         var imports = 0
         compose.setContent {
-            VersoTheme(darkTheme = false) { EmptyLibraryScreen(onOpenSettings = {}, onImport = { imports++ }) }
+            VersoTheme(theme = AppTheme.LIGHT) { EmptyLibraryScreen(onOpenSettings = {}, onImport = { imports++ }) }
         }
         compose.onNodeWithText("Votre bibliothèque est vide").assertIsDisplayed()
         compose.onNode(hasText("Importer un EPUB") and hasClickAction())
@@ -40,7 +41,7 @@ class EmptyLibraryScreenTest {
     fun settingsButtonIsLabelledAndClickable() {
         var settings = 0
         compose.setContent {
-            VersoTheme(darkTheme = false) { EmptyLibraryScreen(onOpenSettings = { settings++ }, onImport = {}) }
+            VersoTheme(theme = AppTheme.LIGHT) { EmptyLibraryScreen(onOpenSettings = { settings++ }, onImport = {}) }
         }
         compose.onNodeWithContentDescription("Paramètres").performClick()
         assertThat(settings).isEqualTo(1)

@@ -66,7 +66,7 @@ class SettingsRepositoryTest {
     @Test
     fun unknownThemeFallsBackToAuto() = runTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "theme.preferences_pb") })
-        store.edit { it[stringPreferencesKey("theme_mode")] = "SEPIA" }
+        store.edit { it[stringPreferencesKey("theme_mode")] = "PURPLE" }
         assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.AUTO)
     }
 

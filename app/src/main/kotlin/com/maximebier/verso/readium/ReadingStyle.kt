@@ -6,7 +6,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.ui.theme.VersoColors
-import com.maximebier.verso.ui.theme.VersoPalette
+import com.maximebier.verso.ui.theme.paletteOf
 
 /** Couleurs passées à Readium, tirées des jetons (aucune couleur en dur). */
 data class ReadingColors(
@@ -80,12 +80,7 @@ object ReadingStyle {
         }
     }
 
-    fun palette(theme: AppTheme): VersoColors = when (theme) {
-        AppTheme.LIGHT -> VersoPalette.Light
-        AppTheme.SEPIA -> VersoPalette.Sepia
-        AppTheme.DARK -> VersoPalette.Dark
-        AppTheme.BLACK -> VersoPalette.Black
-    }
+    fun palette(theme: AppTheme): VersoColors = paletteOf(theme)
 
     fun colors(theme: AppTheme): ReadingColors {
         val palette = palette(theme)

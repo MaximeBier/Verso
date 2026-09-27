@@ -26,7 +26,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.core.settings.ScrollMode
-import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
@@ -52,7 +51,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onStop(changingConfigurations = activity?.isChangingConfigurations == true)
     }
-    val theme = if (VersoTheme.isDark) AppTheme.DARK else AppTheme.LIGHT // remplacé par VersoTheme.theme en 10.1
+    val theme = VersoTheme.theme
     LaunchedEffect(theme) { viewModel.onThemeChanged(theme) }
     // Le texte de lecture suit la taille de police d’Android ; la distance en écrans utilise la même échelle.
     val readingFontScale = remember(density, state.readingSettings.fontSizeSp) {
