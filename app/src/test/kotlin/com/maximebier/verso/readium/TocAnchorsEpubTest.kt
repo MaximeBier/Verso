@@ -6,11 +6,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.chapterPathAt
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.importer.EpubFixtures
-import com.maximebier.verso.ui.reader.buildTocRows
 import com.maximebier.verso.ui.reader.ChapterStatus
 import com.maximebier.verso.ui.reader.TocRow
-import com.maximebier.verso.ui.reader.preorder
+import com.maximebier.verso.ui.reader.buildTocRows
 import com.maximebier.verso.ui.reader.toTocNodes
 import java.io.File
 import kotlinx.coroutines.test.runTest

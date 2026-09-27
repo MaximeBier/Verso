@@ -1,6 +1,5 @@
 package com.maximebier.verso.ui.reader
 
-import com.maximebier.verso.R
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -10,20 +9,22 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.text.TocProgress
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
+import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
 import com.maximebier.verso.reader.testLocator
-import com.maximebier.verso.ui.common.locationTexts
-import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadiumOpener
+import com.maximebier.verso.ui.common.locationTexts
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,8 +48,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.LocalizedString
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Manifest
 import org.readium.r2.shared.publication.Metadata
 import org.readium.r2.shared.publication.Publication

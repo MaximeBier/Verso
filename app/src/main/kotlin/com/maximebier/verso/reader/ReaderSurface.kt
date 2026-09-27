@@ -2,7 +2,6 @@
 
 package com.maximebier.verso.reader
 
-import android.os.SystemClock
 import android.util.Log
 import android.view.ViewTreeObserver
 import androidx.activity.compose.LocalActivity
@@ -35,31 +34,15 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.compose.AndroidFragment
-import com.maximebier.verso.core.position.ReadingThresholds
-import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.VersoReadingPreferences
 import com.maximebier.verso.readium.VersoReadingPreferences.applyVerso
-import kotlin.math.abs
-import kotlin.math.max
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONTokener
 import org.readium.r2.navigator.HyperlinkNavigator
@@ -100,8 +83,9 @@ private const val TOP_TEXT_SCRIPT =
  * Navigateur EPUB classique de Readium (Fragment) : un chapitre à la fois, défilé nativement par la WebView ; un
  * glissé commencé au bord ouvre le chapitre voisin ([chapterChain]). `initialLocator` n’est lu qu’à la création
  * (clé : la publication). `onInternalLink` : lien interne touché (ordre de lecture), appelé juste avant que Readium
- * ne le suive. `fontScale` : échelle de la taille de police d’Android appliquée au texte. `onFailed` : le moteur
- * refuse le livre (mise en page fixe, hors V1) ; appelé une fois, surface unie.
+ * ne le suive. `fontScale` : échelle de la taille de police d’Android appliquée au texte. `positions` : positions
+ * de l’ordre de lecture déjà calculées (progression totale fine). `onFailed` : le moteur refuse le livre (mise en
+ * page fixe, hors V1) ; appelé une fois, surface unie.
  */
 @Composable
 fun ReaderSurface(
@@ -112,6 +96,7 @@ fun ReaderSurface(
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
     fontScale: Double = 1.0,
+    positions: ReadingOrderPositions? = null,
     onInternalLink: (Url) -> Unit = {},
     onFailed: () -> Unit = {},
 ) {
@@ -168,8 +153,8 @@ fun ReaderSurface(
     }
     // Posée à chaque composition, donc avant que AndroidFragment instancie le fragment.
     activity.supportFragmentManager.fragmentFactory = fragmentFactory
-    LaunchedEffect(controller) {
-        controller.setPositions(ReadingOrderPositions.load(publication))
+    LaunchedEffect(controller, positions) {
+        controller.setPositions(positions)
     }
 
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
@@ -309,290 +294,3 @@ internal suspend fun readChapterHtml(publication: Publication, href: Url): Strin
             resource.close()
         }
     }
-
-internal class FragmentReaderController(
-    private val scope: CoroutineScope,
-    private val readChapterHtml: suspend (Url) -> String?,
-    private val onCenterTap: () -> Unit,
-    private val adjacentChapter: (current: Locator, next: Boolean) -> Locator?,
-    private val thresholds: ReadingThresholds = ReadingThresholds(),
-    private val uptimeMs: () -> Long = SystemClock::uptimeMillis,
-    private val wallClockMs: () -> Long = System::currentTimeMillis,
-    /** Extraction du texte brut d’un chapitre (regex sur tout le fichier) : jamais sur le fil principal. */
-    private val textDispatcher: CoroutineDispatcher = Dispatchers.Default,
-) : ReaderController {
-
-    private val displayedState = MutableStateFlow<Locator?>(null)
-    private val gestureFlow = MutableSharedFlow<GestureSignal>(extraBufferCapacity = 16)
-    private val chapterTexts = HashMap<String, String>()
-    private var navigate: (suspend (Locator) -> Unit)? = null
-    private var probeEdges: (suspend () -> ChapterEdges?)? = null
-    private var visibleText: (suspend () -> String?)? = null
-    private var positions: ReadingOrderPositions? = null
-    private var lastDisplayedChangeAt: Long? = null
-
-    /** Dernière image de défilement natif de la WebView ([onScrolled]) ; null si la surface ne la signale pas. */
-    private var lastScrollAt: Long? = null
-    private var gestureDownAt: Long = Long.MIN_VALUE
-
-    /** Geste lâché dont le signal attend la fin du défilement. */
-    private var pending: PendingGesture? = null
-
-    /** Changement de chapitre interrompu par un toucher : son signal part dès que le chapitre visé s’affiche. */
-    private var detachedTurn: PendingGesture? = null
-
-    private var touchStoppedScroll = false
-    private var tapToken: TapToken? = null
-
-    /** Bords du chapitre à l’appui du doigt en cours ; null tant qu’ils ne sont pas lus. */
-    private var edgesAtDown: ChapterEdges? = null
-    private var edgesJob: Job? = null
-
-    /** Glissé minimal (px) qui, commencé au bord, ouvre le chapitre voisin. */
-    var chainThresholdPx: Float = ReaderGestures.CHAPTER_CHAIN_DRAG_DP
-
-    override val displayed: StateFlow<Locator?> = displayedState.asStateFlow()
-    override val gestures: Flow<GestureSignal> = gestureFlow.asSharedFlow()
-    override var viewportHeightPx: Int = 0
-        internal set
-
-    fun bind(
-        navigate: suspend (Locator) -> Unit,
-        probeEdges: suspend () -> ChapterEdges?,
-        visibleText: suspend () -> String?,
-    ) {
-        this.navigate = navigate
-        this.probeEdges = probeEdges
-        this.visibleText = visibleText
-    }
-
-    /** Progression totale fine ; recalcule le locator affiché s’il est déjà là (ce n’est pas un mouvement). */
-    fun setPositions(positions: ReadingOrderPositions?) {
-        this.positions = positions
-        displayedState.value = displayedState.value?.let(::withTotalProgression)
-    }
-
-    fun onDisplayed(locator: Locator) {
-        val filled = withTotalProgression(locator)
-        if (filled == displayedState.value) return
-        lastDisplayedChangeAt = uptimeMs()
-        displayedState.value = filled
-    }
-
-    private fun withTotalProgression(locator: Locator): Locator =
-        positions?.withTotalProgression(locator) ?: locator
-
-    /** Image de défilement natif (le navigateur ne rapporte la position qu’après 100 ms sans défilement). */
-    fun onScrolled() {
-        lastScrollAt = uptimeMs()
-    }
-
-    /** Un défilement est en cours : dernière image de défilement il y a moins de [ReaderGestures.SCROLL_ACTIVE_MS]. */
-    private fun scrolling(now: Long): Boolean {
-        val lastScroll = lastScrollAt
-            ?: return lastDisplayedChangeAt?.let { now - it < ReaderGestures.SETTLE_QUIET_MS } ?: false
-        return now - lastScroll < ReaderGestures.SCROLL_ACTIVE_MS
-    }
-
-    /** Doigt posé : il arrête tout défilement en cours, dont le signal part aussitôt ; les bords sont relus. */
-    fun onPointerDown() {
-        val now = uptimeMs()
-        touchStoppedScroll = scrolling(now)
-        gestureDownAt = now
-        flushPendingGesture()
-        edgesJob?.cancel()
-        edgesAtDown = null
-        // Un doigt qui arrête un défilement en cours ne part pas d’un bord : pas de changement de chapitre.
-        if (!touchStoppedScroll) {
-            edgesJob = scope.launch {
-                val edges = probeEdges?.invoke()
-                // La lecture JavaScript ne s’annule pas : un appui plus récent a pu la remplacer entre-temps.
-                ensureActive()
-                edgesAtDown = edges
-            }
-        }
-        // Le tap précédent est clos : rattrapé tout de suite s’il attendait encore (le navigateur signale
-        // un tap quelques millisecondes après le lâcher, jamais après l’appui suivant), écho oublié sinon.
-        val previous = tapToken
-        tapToken = null
-        if (previous is TapToken.Pending) {
-            previous.fallback.cancel()
-            handleTap(previous.xFraction)
-        }
-    }
-
-    /**
-     * Fin d’un glissé. Commencé au bord et assez long ([chapterChain]) : ouvre le chapitre voisin et le signale
-     * (`chapterTurn`). Sinon : fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde.
-     */
-    fun onGestureReleased(velocityYPxPerSecond: Float, dragDyPx: Float) {
-        val height = viewportHeightPx
-        val chain = chapterChain(edgesAtDown, dragDyPx, chainThresholdPx)
-        val target = displayedState.value?.takeIf { chain != ChapterChain.NONE }
-            ?.let { adjacentChapter(it, chain == ChapterChain.NEXT) }
-        val chapterTurn = target != null
-        val isFling = !chapterTurn && height > 0 &&
-            abs(velocityYPxPerSecond) / height >= thresholds.flingScreensPerSecond
-        val releasedAt = uptimeMs()
-        pending?.job?.cancel()
-        val gesture = PendingGesture(isFling = isFling, chapterTurn = chapterTurn, target = target)
-        pending = gesture
-        gesture.job = scope.launch {
-            if (target != null) {
-                navigate?.invoke(target)
-                // Chapitre pas encore chargé : le signal attend qu’il soit affiché, sinon le tracker verrait son
-                // arrivée comme une navigation (bond d’un écran), après la fin du geste.
-                awaitDisplayedIn(target, releasedAt)
-            }
-            if (!gesture.detached) awaitSettled(releasedAt)
-            if (pending === gesture) pending = null
-            if (detachedTurn === gesture) detachedTurn = null
-            gestureFlow.emit(gesture.signal())
-        }
-    }
-
-    /**
-     * Nouveau toucher : le geste précédent envoie son signal tout de suite. Sauf un changement de chapitre dont le
-     * chapitre visé n’est pas encore affiché : son arrivée serait prise pour une navigation ; il signale à l’affichage.
-     */
-    private fun flushPendingGesture() {
-        val gesture = pending ?: return
-        pending = null
-        val target = gesture.target
-        if (target != null && !isDisplayedIn(target)) {
-            gesture.detached = true
-            detachedTurn = gesture
-            return
-        }
-        gesture.job?.cancel()
-        gestureFlow.tryEmit(gesture.signal())
-    }
-
-    /** Saut : le geste en attente n’est pas signalé (il arriverait après le saut et le brouillerait). */
-    private fun dropPendingGesture() {
-        pending?.job?.cancel()
-        pending = null
-        detachedTurn?.job?.cancel()
-        detachedTurn = null
-    }
-
-    private fun isDisplayedIn(target: Locator): Boolean =
-        displayedState.value?.let { sameResource(it.href, target.href) } == true
-
-    private fun PendingGesture.signal() =
-        GestureSignal(timeMs = wallClockMs(), isFling = isFling, chapterTurn = chapterTurn)
-
-    private class PendingGesture(val isFling: Boolean, val chapterTurn: Boolean, val target: Locator?) {
-        var job: Job? = null
-        var detached = false
-    }
-
-    private suspend fun awaitDisplayedIn(target: Locator, releasedAt: Long) {
-        while (!isDisplayedIn(target)) {
-            if (uptimeMs() - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
-            delay(ReaderGestures.SETTLE_POLL_MS)
-        }
-    }
-
-    /**
-     * Fin réelle du défilement. Avec les images de défilement natif : plus d’image depuis
-     * [ReaderGestures.SCROLL_QUIET_MS], puis une position rapportée après la dernière image (au plus
-     * [ReaderGestures.POSITION_WAIT_MS] après elle). Sans elles : aucune nouvelle position depuis
-     * [ReaderGestures.SETTLE_QUIET_MS]. Jamais plus de [ReaderGestures.SETTLE_MAX_MS] après le lâcher.
-     */
-    private suspend fun awaitSettled(releasedAt: Long) {
-        while (true) {
-            val now = uptimeMs()
-            if (now - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
-            val lastScroll = lastScrollAt?.takeIf { it >= gestureDownAt }
-            val settled = if (lastScroll == null) {
-                now - max(lastDisplayedChangeAt ?: releasedAt, releasedAt) >= ReaderGestures.SETTLE_QUIET_MS
-            } else {
-                val positionAfterScroll = (lastDisplayedChangeAt ?: Long.MIN_VALUE) > lastScroll
-                now - lastScroll >= ReaderGestures.SCROLL_QUIET_MS &&
-                    (positionAfterScroll || now - lastScroll >= ReaderGestures.POSITION_WAIT_MS)
-            }
-            if (settled) return
-            delay(ReaderGestures.SETTLE_POLL_MS)
-        }
-    }
-
-    /**
-     * Appui bref sans glissement vu par l’app, au lâcher (toujours avant le signal du navigateur).
-     * Normalement, Readium signale aussi ce tap ([onReadiumTap]) ; s’il ne le fait pas à temps, l’app le
-     * traite elle-même. Un jeton par tap physique évite de le compter deux fois. Un appui qui arrête un
-     * défilement n’est pas un tap.
-     */
-    fun onTapLikeGesture(xFraction: Float) {
-        if (touchStoppedScroll) return
-        (tapToken as? TapToken.Pending)?.fallback?.cancel()
-        val fallback = scope.launch {
-            delay(ReaderGestures.TAP_FALLBACK_DELAY_MS)
-            tapToken = TapToken.HandledByFallback
-            handleTap(xFraction)
-        }
-        tapToken = TapToken.Pending(xFraction, fallback)
-    }
-
-    fun onReadiumTap(xFraction: Float) {
-        val token = tapToken
-        tapToken = null
-        when (token) {
-            is TapToken.Pending -> {
-                token.fallback.cancel()
-                handleTap(xFraction)
-            }
-            // Écho tardif d’un tap déjà rattrapé par l’app.
-            TapToken.HandledByFallback -> Unit
-            // Tap que l’app n’a pas pris pour un tap (appui long, appui qui arrêtait un défilement) : Readium décide.
-            null -> handleTap(xFraction)
-        }
-    }
-
-    fun onLinkActivated() {
-        (tapToken as? TapToken.Pending)?.fallback?.cancel()
-        tapToken = null
-    }
-
-    private fun handleTap(xFraction: Float) {
-        if (xFraction in ReaderGestures.CENTER_TAP_RANGE) onCenterTap()
-    }
-
-    /** Suivi d’un tap physique entre l’observateur de l’app et le signal du navigateur. */
-    private sealed interface TapToken {
-        class Pending(val xFraction: Float, val fallback: Job) : TapToken
-        data object HandledByFallback : TapToken
-    }
-
-    /** Saut sans animation ; le geste en attente est abandonné sans signal ([dropPendingGesture]). */
-    override suspend fun go(locator: Locator) {
-        dropPendingGesture()
-        navigate?.invoke(locator)
-    }
-
-    /**
-     * Texte réellement visible en haut de l’écran (premier élément visible), rangé dans `text.after` : il sert à
-     * la carte Reprendre mais ne devient jamais une ancre de restauration. À défaut, extrait approché par la
-     * progression dans le texte brut du chapitre.
-     */
-    override suspend fun excerptLocator(): Locator? {
-        val current = displayedState.value ?: return null
-        val visible = visibleText?.invoke()
-            ?.replace(Regex("\\s+"), " ")?.trim()
-            ?.take(ReaderGestures.EXCERPT_MAX_CHARS)
-            ?.takeIf { it.isNotEmpty() }
-        if (visible != null) return current.copy(text = Locator.Text(after = visible))
-        val key = Locators.hrefKey(current)
-        val text = chapterTexts[key]
-            ?: readChapterHtml(current.href.removeFragment())
-                ?.let { html -> withContext(textDispatcher) { ChapterText.plainText(html) } }
-                ?.also { chapterTexts[key] = it }
-            ?: return current
-        val excerpt = ChapterText.excerptAt(
-            text = text,
-            progression = current.locations.progression ?: 0.0,
-            maxChars = ReaderGestures.EXCERPT_MAX_CHARS,
-        ) ?: return current
-        return current.copy(text = Locator.Text(after = excerpt))
-    }
-}

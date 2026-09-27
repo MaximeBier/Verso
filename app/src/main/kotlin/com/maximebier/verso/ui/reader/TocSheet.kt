@@ -18,10 +18,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.currentInFile
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.ui.components.VersoBottomSheet
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoShapes
@@ -50,11 +51,9 @@ data class TocSummary(val parts: Int, val chapters: Int)
 /** Lignes montrées avant le chapitre en cours à l’ouverture (maquette : 3). */
 private const val CURRENT_ROW_CONTEXT = 3
 
-fun <T> preorder(roots: List<T>, children: (T) -> List<T>): List<T> =
-    roots.flatMap { listOf(it) + preorder(children(it), children) }
-
 private data class FlatNode(val index: Int, val depth: Int, val node: TocNode)
 
+/** Même ordre que [preorder], avec la profondeur de chaque entrée. */
 private fun flatten(toc: List<TocNode>): List<FlatNode> {
     val result = mutableListOf<FlatNode>()
     fun visit(nodes: List<TocNode>, depth: Int) {

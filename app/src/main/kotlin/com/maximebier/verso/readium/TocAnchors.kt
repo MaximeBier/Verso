@@ -1,6 +1,7 @@
 package com.maximebier.verso.readium
 
 import com.maximebier.verso.core.text.anchorProgression
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.reader.ChapterText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,5 +80,5 @@ object TocAnchors {
         }
     }
 
-    private fun flatten(links: List<Link>): List<Link> = links.flatMap { listOf(it) + flatten(it.children) }
+    private fun flatten(links: List<Link>): List<Link> = preorder(links) { it.children }
 }

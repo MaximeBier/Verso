@@ -93,4 +93,4 @@ fun calibrateAnchor(toc: List<TocNode>, index: Int, observed: Double): List<TocN
     return calibrated(toc)
 }
 
-private fun flattenNodes(toc: List<TocNode>): List<TocNode> = toc.flatMap { listOf(it) + flattenNodes(it.children) }
+private fun flattenNodes(toc: List<TocNode>): List<TocNode> = preorder(toc) { it.children }
