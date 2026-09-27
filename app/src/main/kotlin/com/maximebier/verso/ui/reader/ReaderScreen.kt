@@ -31,13 +31,13 @@ import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
 @Composable
-fun ReaderDestination(bookId: Long, onBack: () -> Unit) {
+fun ReaderDestination(bookId: Long, onBack: () -> Unit, onOpenFailed: () -> Unit = onBack) {
     val viewModel: ReaderViewModel = viewModel(key = "reader-$bookId", factory = ReaderViewModel.factory(bookId))
-    ReaderScreen(viewModel = viewModel, onBackToLibrary = onBack)
+    ReaderScreen(viewModel = viewModel, onBackToLibrary = onBack, onOpenFailed = onOpenFailed)
 }
 
 @Composable
-fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
+fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpenFailed: () -> Unit = onBackToLibrary) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val journal by viewModel.journal.collectAsStateWithLifecycle()
     val density = LocalDensity.current
@@ -58,7 +58,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
     ImmersiveSystemBars(showSystemBars = state.barsVisible)
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
     if (state.failed) {
-        LaunchedEffect(Unit) { onBackToLibrary() }
+        LaunchedEffect(Unit) { onOpenFailed() }
     }
 
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {

@@ -1,5 +1,8 @@
 package com.maximebier.verso.ui.nav
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -7,74 +10,85 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.ui.details.DetailsDestination
 import com.maximebier.verso.ui.library.LibraryDestination
 import com.maximebier.verso.ui.reader.ReaderDestination
 import com.maximebier.verso.ui.settings.LicensesDestination
 import com.maximebier.verso.ui.settings.SettingsDestination
-import kotlinx.coroutines.flow.first
+import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Les 5 routes de la V1. Chaque destination délègue à un point d'entrée du fichier de sa fonctionnalité. */
 @Composable
 fun VersoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    allowAutoReopen: Boolean = false,
+    reopenBookId: Long? = null,
 ) {
+    // Ouverture automatique du dernier livre (spec, « Ouverture au lancement ») : une seule fois par lancement,
+    // jamais si un fichier reçu attend son import. La bibliothèque reste dessous dans la pile arrière, mais n’est pas
+    // dessinée avant : le lancement montre directement le livre.
+    var autoReopenHandled by rememberSaveable { mutableStateOf(reopenBookId == null) }
     NavHost(navController = navController, startDestination = LibraryRoute, modifier = modifier) {
-        composable<LibraryRoute> {
+        composable<LibraryRoute> { entry ->
+            if (!autoReopenHandled) {
+                Box(Modifier.fillMaxSize().background(VersoTheme.colors.background))
+                return@composable
+            }
             LibraryDestination(
-                onOpenSettings = { navController.navigate(SettingsRoute) },
-                onOpenDetails = { bookId -> navController.navigate(DetailsRoute(bookId)) },
-                onOpenReader = { bookId -> navController.navigate(ReaderRoute(bookId)) },
+                onOpenSettings = { if (entry.resumed()) navController.navigate(SettingsRoute) },
+                onOpenDetails = { bookId -> if (entry.resumed()) navController.navigate(DetailsRoute(bookId)) },
+                onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
             )
         }
         composable<DetailsRoute> { entry ->
             val route = entry.toRoute<DetailsRoute>()
             DetailsDestination(
                 bookId = route.bookId,
-                onBack = { navController.popBackStack() },
-                onOpenReader = { bookId -> navController.navigate(ReaderRoute(bookId)) },
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
             )
         }
         composable<ReaderRoute> { entry ->
             val route = entry.toRoute<ReaderRoute>()
-            ReaderDestination(bookId = route.bookId, onBack = { navController.popBackStack() })
-        }
-        composable<SettingsRoute> {
-            SettingsDestination(
-                onBack = { navController.popBackStack() },
-                onOpenLicenses = { navController.navigate(LicensesRoute) },
+            ReaderDestination(
+                bookId = route.bookId,
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                // Échec d’ouverture : toujours la bibliothèque, qui affiche le message (même ouvert depuis la fiche).
+                onOpenFailed = { navController.popBackStack<LibraryRoute>(inclusive = false) },
             )
         }
-        composable<LicensesRoute> {
-            LicensesDestination(onBack = { navController.popBackStack() })
+        composable<SettingsRoute> { entry ->
+            SettingsDestination(
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                onOpenLicenses = { if (entry.resumed()) navController.navigate(LicensesRoute) },
+            )
+        }
+        composable<LicensesRoute> { entry ->
+            LicensesDestination(onBack = { if (entry.resumed()) navController.popBackStack() })
         }
     }
 
-    // Ouverture automatique du dernier livre (spec, « Ouverture au lancement ») : une seule fois par lancement,
-    // jamais si un fichier reçu attend son import. La bibliothèque reste dessous dans la pile arrière.
-    val context = LocalContext.current
-    var autoReopenHandled by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(allowAutoReopen) {
-        if (!allowAutoReopen || autoReopenHandled) return@LaunchedEffect
+    LaunchedEffect(Unit) {
+        if (autoReopenHandled) return@LaunchedEffect
+        // Revérifié ici : un « Ouvrir avec » peut être arrivé (onNewIntent) depuis la décision.
+        if (reopenBookId != null && !IncomingImports.hasPending()) navController.openReader(reopenBookId)
         autoReopenHandled = true
-        val container = (context.applicationContext as VersoApplication).container
-        val bookId = StartDestination.bookToReopen(
-            lastOpened = container.books.lastOpened(),
-            reopenEnabled = container.settings.reopenLastBook.first(),
-            now = container.clock(),
-            // Revérifié ici : un « Ouvrir avec » peut arriver (onNewIntent) pendant la lecture de la base.
-            hasIncomingImport = IncomingImports.hasPending(),
-        )
-        if (bookId != null) navController.navigate(ReaderRoute(bookId))
     }
 }
+
+/**
+ * Écran au premier plan : un second tap pendant une transition (retour ou ouverture déjà en cours) est ignoré,
+ * sinon il dépilerait la bibliothèque elle-même (écran vide) ou empilerait un second écran.
+ */
+private fun NavBackStackEntry.resumed(): Boolean = lifecycle.currentState == Lifecycle.State.RESUMED
+
+/** Un seul lecteur à la fois en haut de la pile. */
+private fun NavHostController.openReader(bookId: Long) = navigate(ReaderRoute(bookId)) { launchSingleTop = true }

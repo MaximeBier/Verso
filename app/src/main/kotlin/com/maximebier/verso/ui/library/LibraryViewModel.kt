@@ -200,8 +200,9 @@ class LibraryViewModel(
         transient.update { it.copy(openFailed = next) }
     }
 
-    fun onSnackbarShown() {
-        transient.update { it.copy(snackbar = null) }
+    /** Efface ce message seulement : un nouveau, arrivé pendant l’affichage, reste à montrer. */
+    fun onSnackbarShown(shown: ImportSnackbar) {
+        transient.update { if (it.snackbar == shown) it.copy(snackbar = null) else it }
     }
 
     fun onDuplicateReplace() {

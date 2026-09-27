@@ -127,7 +127,7 @@ data class LibraryActions(
     val onDuplicateIgnore: () -> Unit = {},
     val onRejectedDismiss: () -> Unit = {},
     val onSnackbarAction: (Long) -> Unit = {},
-    val onSnackbarShown: () -> Unit = {},
+    val onSnackbarShown: (ImportSnackbar) -> Unit = {},
     val onOpenFailedShown: () -> Unit = {},
 )
 
@@ -140,22 +140,29 @@ fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Mod
     if (snackbar != null) {
         val message = stringResource(R.string.import_success, snackbar.title)
         val actionLabel = stringResource(R.string.import_success_action)
+        // Consommé même si l’écran est quitté pendant l’affichage : il ne réapparaît pas au retour.
         LaunchedEffect(snackbar) {
-            val result = snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = actionLabel,
-                duration = SnackbarDuration.Long,
-            )
-            if (result == SnackbarResult.ActionPerformed) actions.onSnackbarAction(snackbar.bookId)
-            actions.onSnackbarShown()
+            try {
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = actionLabel,
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) actions.onSnackbarAction(snackbar.bookId)
+            } finally {
+                actions.onSnackbarShown(snackbar)
+            }
         }
     }
     val openFailed = state.openFailed
     if (openFailed != null) {
         val message = stringResource(R.string.library_open_failed, openFailed)
         LaunchedEffect(openFailed) {
-            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
-            actions.onOpenFailedShown()
+            try {
+                snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+            } finally {
+                actions.onOpenFailedShown()
+            }
         }
     }
 

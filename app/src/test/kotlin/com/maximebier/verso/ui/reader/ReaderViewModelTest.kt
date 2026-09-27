@@ -44,6 +44,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.LocalizedString
@@ -263,6 +264,23 @@ class ReaderViewModelTest {
 
         assertThat(viewModel.uiState.first { !it.loading }.failed).isTrue()
         assertThat(openFailures).containsExactly("Madame Bovary")
+        store.clear()
+    }
+
+    @Test
+    fun fixedLayoutBookFailsWithoutBecomingTheLastOpenedBook() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val fixed = testPublication().let { p ->
+            Publication(manifest = p.manifest.copy(metadata = p.metadata.copy(layout = Layout.FIXED)))
+        }
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id, open = { Result.success(fixed) }))[ReaderViewModel::class]
+
+        assertThat(viewModel.uiState.first { !it.loading }.failed).isTrue()
+        assertThat(openFailures).containsExactly("Madame Bovary")
+        // Sinon il serait rouvert (et raté) à chaque lancement pendant 24 h, à la place du vrai dernier livre.
+        assertThat(books.book(id)!!.lastOpenedAt).isNull()
         store.clear()
     }
 
