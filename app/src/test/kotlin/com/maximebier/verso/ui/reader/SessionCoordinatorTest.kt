@@ -5,6 +5,7 @@ import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.data.db.SessionEntity
 import java.io.IOException
+import kotlin.math.roundToLong
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -50,6 +51,32 @@ class SessionCoordinatorTest {
         clock = clock,
         dispatcher = StandardTestDispatcher(testScheduler),
     )
+
+    @Test
+    fun sessionWithoutReadingIsNeverWritten() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 30_000; c.onInteraction()
+        now = 60_000; c.onInteraction()
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows).isEmpty()
+    }
+
+    @Test
+    fun sessionWithOnlyJumpsIsNeverWritten() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        // Saut puis « Rester ici » : la lecture change sans mouvement de lecture, aucun mot lu.
+        now = 30_000; c.onTrackerEffect(saved(0.50))
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows).isEmpty()
+    }
 
     @Test
     fun firstUpsertAssignsIdAndLaterUpsertsReuseIt() = runTest {
@@ -99,12 +126,12 @@ class SessionCoordinatorTest {
         c.start()                                       // Tick chaque seconde
 
         c.onOpened(position(0.20))
-        advanceTimeBy(60_000); c.onInteraction()
+        advanceTimeBy(60_000); c.readingMove(0.20, 0.21)
         advanceTimeBy(6 * 60_000L)                      // plus de 5 min sans interaction : la session se ferme
         runCurrent()
         assertThat(c.current.value).isNull()
 
-        c.onInteraction()                               // reprise : nouvelle session
+        c.readingMove(0.21, 0.22)                     // reprise : nouvelle session
         runCurrent()
         assertThat(c.current.value).isNotNull()
 
@@ -158,6 +185,7 @@ class SessionCoordinatorTest {
         val c = coordinator { now }
 
         c.onOpened(position(0.10))
+        now = 5_000; c.readingMove(0.10, 0.12)                                // un peu de lecture : session gardée
         now = 10_000; c.onTrackerEffect(saved(0.30))                          // « Rester ici » : la lecture passe à 30 %
         now = 20_000; c.onTrackerEffect(TrackerEffect.ScrollTo(position(0.10))) // « Revenir » : déplacement de l'affiché seul
         now = 30_000; c.close()
@@ -165,7 +193,7 @@ class SessionCoordinatorTest {
 
         val row = store.rows.values.single()
         assertThat(row.endProgression).isWithin(1e-9).of(0.30)
-        assertThat(row.wordsRead).isEqualTo(0L)
+        assertThat(row.wordsRead).isEqualTo((0.02 * TOTAL_WORDS).roundToLong())   // « Rester ici » n'ajoute aucun mot
         assertThat(row.endedAt).isEqualTo(10_000L)                            // ScrollTo n'est pas une interaction
         assertThat(row.activeMs).isEqualTo(10_000L)
     }
@@ -176,7 +204,7 @@ class SessionCoordinatorTest {
         val c = coordinator { now }
 
         c.onOpened(position(0.10))
-        now = 10_000; c.onInteraction()
+        now = 10_000; c.readingMove(0.10, 0.12)
         now = 20_000; c.onBackgrounded()
         now = 21_000; c.onTrackerEffect(saved(0.15))    // repos constaté après onStop : aucune session fantôme
         advanceUntilIdle()
@@ -184,7 +212,7 @@ class SessionCoordinatorTest {
         assertThat(store.rows).hasSize(1)
 
         now = 600_000; c.onStarted()
-        now = 610_000; c.onInteraction()
+        now = 610_000; c.readingMove(0.15, 0.16)
         now = 620_000; c.close()
         advanceUntilIdle()
 
@@ -221,10 +249,10 @@ class SessionCoordinatorTest {
         )
 
         c.onOpened(position(0.10))
-        now = 10_000; c.onInteraction()                 // écriture ratée : signalée, la lecture continue
+        now = 10_000; c.readingMove(0.10, 0.11)         // écriture ratée : signalée, la lecture continue
         advanceUntilIdle()
         failing = false
-        now = 20_000; c.onInteraction()                 // l'écriture suivante crée la ligne
+        now = 20_000; c.readingMove(0.11, 0.12)         // l'écriture suivante crée la ligne
         now = 30_000; c.close()
         advanceUntilIdle()
 

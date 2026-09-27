@@ -16,4 +16,7 @@ class SessionRepository(private val dao: SessionDao) {
     }
 
     suspend fun clearAll() = dao.clearAll()
+
+    /** Retire du journal les sessions sans lecture (dont celles écrites avant cette règle). */
+    suspend fun deleteEmpty() = dao.deleteEmpty()
 }

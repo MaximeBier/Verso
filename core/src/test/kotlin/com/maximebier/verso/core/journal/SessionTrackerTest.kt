@@ -36,6 +36,14 @@ class SessionTrackerTest {
     private fun tracker() = SessionTracker(bookId = 7)
 
     @Test
+    fun sessionIsEmptyUntilAWordIsRead() {
+        val opened = record(startedAt = 0, endedAt = 60_000, activeMs = 60_000, start = 0.1)
+        assertThat(opened.isEmpty).isTrue()
+        assertThat(opened.copy(end = pos(0.2)).isEmpty).isTrue() // saut ou « Rester ici » : aucun mot lu
+        assertThat(opened.copy(wordsRead = 12).isEmpty).isFalse()
+    }
+
+    @Test
     fun defaultThresholdsMatchSpec() {
         assertThat(SessionThresholds().inactivityEndMs).isEqualTo(300_000L)
         assertThat(SessionThresholds().activeGapMs).isEqualTo(120_000L)

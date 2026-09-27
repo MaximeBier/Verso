@@ -25,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -48,8 +49,10 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onStop(changingConfigurations = activity?.isChangingConfigurations == true)
     }
-    LaunchedEffect(density.fontScale, density.density) {
-        viewModel.onDisplayMetrics(fontScale = density.fontScale, density = density.density)
+    // Le texte de lecture suit la taille de police d’Android ; la distance en écrans utilise la même échelle.
+    val readingFontScale = remember(density) { ReadingStyle.readingFontScale(density) }
+    LaunchedEffect(readingFontScale, density.density) {
+        viewModel.onDisplayMetrics(fontScale = readingFontScale.toFloat(), density = density.density)
     }
     KeepScreenOn()
     ImmersiveSystemBars(showSystemBars = state.barsVisible)
@@ -65,6 +68,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit) {
                 publication = publication,
                 initialLocator = state.initialLocator,
                 dark = VersoTheme.isDark,
+                fontScale = readingFontScale,
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,

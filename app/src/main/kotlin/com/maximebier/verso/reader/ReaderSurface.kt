@@ -79,13 +79,15 @@ private const val EDGES_SCRIPT =
  * Navigateur EPUB classique de Readium (Fragment) : un chapitre à la fois, défilé nativement par la WebView ; un
  * glissé commencé au bord ouvre le chapitre voisin ([chapterChain]). `initialLocator` n’est lu qu’à la création
  * (clé : la publication). `onInternalLink` : lien interne touché (ordre de lecture), appelé juste avant que Readium
- * ne le suive. `onFailed` : le moteur refuse le livre (mise en page fixe, hors V1) ; appelé une fois, surface unie.
+ * ne le suive. `fontScale` : échelle de la taille de police d’Android appliquée au texte. `onFailed` : le moteur
+ * refuse le livre (mise en page fixe, hors V1) ; appelé une fois, surface unie.
  */
 @Composable
 fun ReaderSurface(
     publication: Publication,
     initialLocator: Locator?,
     dark: Boolean,
+    fontScale: Double = 1.0,
     onReady: (ReaderController) -> Unit,
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
@@ -139,7 +141,7 @@ fun ReaderSurface(
         EpubNavigatorFactory(publication).createFragmentFactory(
             initialLocator = initialLocator,
             listener = listener,
-            initialPreferences = VersoReadingPreferences.epub(dark),
+            initialPreferences = VersoReadingPreferences.epub(dark, fontScale = fontScale),
             configuration = EpubNavigatorFragment.Configuration { applyVerso() },
         )
     }
@@ -172,8 +174,8 @@ fun ReaderSurface(
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
     }
-    LaunchedEffect(navigator, dark) {
-        navigator?.submitPreferences(VersoReadingPreferences.epub(dark))
+    LaunchedEffect(navigator, dark, fontScale) {
+        navigator?.submitPreferences(VersoReadingPreferences.epub(dark, fontScale = fontScale))
     }
 
     Box(modifier.fillMaxSize().background(background)) {

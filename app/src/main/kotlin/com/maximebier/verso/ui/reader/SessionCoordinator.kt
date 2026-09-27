@@ -150,9 +150,11 @@ class SessionCoordinator(
     }
 
     private suspend fun persist(record: SessionRecord) {
+        // Session sans lecture : jamais écrite (spec, « Journal de lecture »).
         // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.
         val id = try {
+            if (record.isEmpty) return
             upsert(record.toEntity())
         } catch (e: CancellationException) {
             throw e

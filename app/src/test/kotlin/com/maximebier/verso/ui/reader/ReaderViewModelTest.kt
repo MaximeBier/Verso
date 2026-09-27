@@ -406,7 +406,8 @@ class ReaderViewModelTest {
             store.clear()
         }
         viewModel.awaitSessionWrites()
-        assertThat(db.sessionDao().observeForBook(id).first()).hasSize(1)
+        // Des touchers sans lecture : la session n'est pas gardée au journal.
+        assertThat(db.sessionDao().observeForBook(id).first()).isEmpty()
     }
 
     @Test
