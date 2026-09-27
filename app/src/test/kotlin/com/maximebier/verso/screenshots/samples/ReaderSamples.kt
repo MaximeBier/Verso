@@ -17,12 +17,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.core.text.TocNode
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.ui.reader.ReaderBars
 import com.maximebier.verso.ui.reader.ReaderBarsState
 import com.maximebier.verso.ui.reader.ReturnCard
 import com.maximebier.verso.ui.reader.TocSheet
 import com.maximebier.verso.ui.reader.buildTocRows
-import com.maximebier.verso.ui.reader.preorder
 import com.maximebier.verso.ui.reader.tocSummary
 import com.maximebier.verso.ui.theme.VersoTheme
 import com.maximebier.verso.ui.theme.VersoTypography

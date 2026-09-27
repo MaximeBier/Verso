@@ -17,6 +17,7 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.chapterPathAt
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test

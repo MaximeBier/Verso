@@ -17,6 +17,7 @@ import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.calibrateAnchor
 import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.longLocation
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.BookRepository
@@ -57,9 +58,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
-import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.Url
 
@@ -70,6 +71,8 @@ data class ReaderUiState(
     val loading: Boolean = true,
     val failed: Boolean = false,
     val publication: Publication? = null,
+    /** Positions de l’ordre de lecture (progression totale fine), calculées une fois et partagées avec la surface. */
+    val readingPositions: ReadingOrderPositions? = null,
     /** Locator de création de la surface : position sauvegardée, puis dernière position affichée. */
     val initialLocator: Locator? = null,
     val bookTitle: String = "",
@@ -216,6 +219,7 @@ class ReaderViewModel(
         _uiState.update {
             it.copy(
                 publication = publication,
+                readingPositions = positions,
                 initialLocator = saved,
                 bookTitle = book.title,
                 totalWords = book.totalWords,

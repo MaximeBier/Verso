@@ -33,7 +33,7 @@ fun chapterPathAt(toc: List<TocNode>, href: String, progression: Double? = null)
 
 private class TocEntry(val node: TocNode, val path: List<String>, val preorder: Int, var postorder: Int = 0)
 
-/** Entrées dans l'ordre du sommaire (préordre), avec leur chemin de titres et leur rang en postordre. */
+/** Entrées dans l’ordre du sommaire ([preorder]), avec leur chemin de titres et leur rang en postordre. */
 private fun flattenWithPaths(toc: List<TocNode>): List<TocEntry> {
     val result = mutableListOf<TocEntry>()
     var post = 0

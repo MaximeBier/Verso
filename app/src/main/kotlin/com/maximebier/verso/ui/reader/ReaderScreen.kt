@@ -25,8 +25,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.reader.ReaderSurface
+import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
@@ -69,6 +69,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 initialLocator = state.initialLocator,
                 dark = VersoTheme.isDark,
                 fontScale = readingFontScale,
+                positions = state.readingPositions,
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,
