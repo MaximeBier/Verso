@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
+import com.maximebier.verso.ui.theme.TintDialogNavigationBar
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -58,6 +59,9 @@ fun VersoBottomSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
     ) {
+        // La feuille vit dans sa propre fenêtre (Dialog) : sans ceci, sa barre de navigation reste
+        // blanche quel que soit le thème affiché.
+        TintDialogNavigationBar(color = colors.surface, dark = VersoTheme.isDark)
         Column(
             Modifier
                 .fillMaxSize()
