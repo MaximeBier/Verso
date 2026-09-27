@@ -1,5 +1,7 @@
 package com.maximebier.verso.reader
 
+import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.readium.r2.shared.publication.Locator
@@ -23,7 +25,14 @@ class FakeReaderController(initial: Locator?) : ReaderController {
         displayed.value = locator
     }
 
-    override suspend fun excerptLocator(): Locator? = excerpt ?: displayed.value
+    /** Extrait qui répond après ce délai ; null : jamais (WebView détruite pendant l’appel JavaScript, non annulable). */
+    var excerptDelayMs: Long? = 0L
+
+    override suspend fun excerptLocator(): Locator? {
+        val wait = excerptDelayMs ?: return suspendCoroutine { }
+        if (wait > 0) delay(wait)
+        return excerpt ?: displayed.value
+    }
 }
 
 fun testLocator(chapter: Int = 2, progression: Double = 0.5, total: Double = 0.3): Locator =

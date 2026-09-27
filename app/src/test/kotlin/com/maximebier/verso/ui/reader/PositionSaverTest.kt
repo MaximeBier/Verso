@@ -51,6 +51,41 @@ class PositionSaverTest {
     }
 
     @Test
+    fun excerptThatNeverAnswersDoesNotBlockTheWrites() = runTest {
+        val first = testLocator(progression = 0.42, total = 0.31)
+        val fake = FakeReaderController(first).apply { excerptDelayMs = null }
+        val saver = saver()
+        saver.attach(fake)
+
+        saver.requestSave(Locators.toPosition(first))
+        advanceTimeBy(debounceMs + PositionSaver.EXCERPT_TIMEOUT_MS + 1)
+        runCurrent()
+        assertThat(saves.map { it.progression }).containsExactly(0.31)
+
+        saver.requestSave(Locators.toPosition(testLocator(progression = 0.50, total = 0.35)))
+        saver.flush()
+        advanceTimeBy(PositionSaver.EXCERPT_TIMEOUT_MS + 1)
+        runCurrent()
+        assertThat(saves.map { it.progression }).containsExactly(0.31, 0.35).inOrder()
+    }
+
+    @Test
+    fun flushDuringAWriteInProgressKeepsThatWrite() = runTest {
+        val target = testLocator(progression = 0.42, total = 0.31)
+        val fake = FakeReaderController(target).apply { excerptDelayMs = 100 }
+        val saver = saver()
+        saver.attach(fake)
+
+        saver.requestSave(Locators.toPosition(target))
+        advanceTimeBy(debounceMs + 50) // l’écriture a commencé : extrait en cours de calcul
+        saver.flush()
+        advanceTimeBy(200)
+        runCurrent()
+
+        assertThat(saves.map { it.progression }).containsExactly(0.31)
+    }
+
+    @Test
     fun readingPositionOnScreenIsEnrichedWithVisibleText() = runTest {
         val target = testLocator(progression = 0.42, total = 0.31)
         val fake = FakeReaderController(target)

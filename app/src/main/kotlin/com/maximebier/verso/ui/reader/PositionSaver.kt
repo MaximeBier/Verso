@@ -10,11 +10,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.readium.r2.shared.publication.Locator
 
 /**
@@ -35,6 +37,10 @@ class PositionSaver(
     private var debounceJob: Job? = null
     private val writeMutex = Mutex()
 
+    /** Rang de la dernière écriture demandée et de la dernière écrite. */
+    private var requested = 0L
+    private var written = 0L
+
     fun attach(controller: ReaderController) {
         this.controller = controller
     }
@@ -45,7 +51,8 @@ class PositionSaver(
         debounceJob?.cancel()
         debounceJob = scope.launch {
             delay(debounceMs)
-            writePending()
+            // Seule l’attente s’annule : une écriture commencée va au bout (sinon la position serait perdue).
+            withContext(NonCancellable) { writePending() }
         }
     }
 
@@ -59,11 +66,17 @@ class PositionSaver(
     }
 
     private suspend fun writePending() {
+        val position = pending ?: return
+        pending = null
+        val order = ++requested
+        val locator = Locators.fromJson(position.locatorJson)
+        // Extrait calculé hors du verrou et borné : la lecture JavaScript ne s’annule pas et peut ne jamais répondre
+        // (WebView détruite pendant l’appel) ; elle ne bloque alors ni cette écriture ni les suivantes.
+        val json = if (locator != null) Locators.toJson(enrichWithin(locator)) else position.locatorJson
         writeMutex.withLock {
-            val position = pending ?: return
-            pending = null
-            val locator = Locators.fromJson(position.locatorJson)
-            val json = if (locator != null) Locators.toJson(enrich(locator)) else position.locatorJson
+            // Une écriture plus récente est déjà passée : celle-ci, plus ancienne, ne l’écrase pas.
+            if (order < written) return
+            written = order
             // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée,
             // la position suivante sera réécrite par la prochaine sauvegarde.
             try {
@@ -74,6 +87,12 @@ class PositionSaver(
                 Log.w(TAG, "Écriture de la position de lecture impossible", e)
             }
         }
+    }
+
+    private suspend fun enrichWithin(position: Locator): Locator {
+        val titled = chapterTitle(position)?.let { position.copy(title = it) } ?: position
+        val enriching = scope.async { enrich(position) }
+        return withTimeoutOrNull(EXCERPT_TIMEOUT_MS) { enriching.await() } ?: titled.also { enriching.cancel() }
     }
 
     /**
@@ -102,6 +121,9 @@ class PositionSaver(
     companion object {
         /** Écart de progression dans le chapitre en dessous duquel lecture et affichage coïncident. */
         const val SAME_SPOT_TOLERANCE = 0.000_5
+
+        /** Au-delà, la position est écrite sans extrait (le navigateur ne répond pas). */
+        const val EXCERPT_TIMEOUT_MS = 1_000L
         private const val TAG = "PositionSaver"
     }
 }

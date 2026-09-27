@@ -2,7 +2,9 @@ package com.maximebier.verso
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
@@ -12,7 +14,11 @@ import com.maximebier.verso.importer.EpubImporter
 import com.maximebier.verso.readium.ReadiumOpener
 import java.io.File
 
-private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+// Fichier illisible (corrompu) : remplacé par les réglages par défaut plutôt que de faire échouer chaque lecture ou écriture.
+private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 /** Injection manuelle : une instance par processus, créée par VersoApplication. */
 class AppContainer(context: Context) {

@@ -1,6 +1,8 @@
 package com.maximebier.verso.data
 
+import android.util.Log
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -37,19 +39,28 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     }
 
     suspend fun setReopenLastBook(value: Boolean) {
-        dataStore.edit { it[REOPEN_LAST_BOOK] = value }
+        save { it[REOPEN_LAST_BOOK] = value }
     }
 
     suspend fun setLibrarySort(value: LibrarySort) {
-        dataStore.edit { it[LIBRARY_SORT] = value.name }
+        save { it[LIBRARY_SORT] = value.name }
     }
 
     suspend fun setLibraryViewMode(value: LibraryViewMode) {
-        dataStore.edit { it[LIBRARY_VIEW_MODE] = value.name }
+        save { it[LIBRARY_VIEW_MODE] = value.name }
     }
 
     suspend fun setThemeMode(value: ThemeMode) {
-        dataStore.edit { it[THEME_MODE] = value.name }
+        save { it[THEME_MODE] = value.name }
+    }
+
+    /** Écriture ratée (disque plein) : journalisée, le réglage garde sa valeur précédente ; jamais de plantage. */
+    private suspend fun save(change: (MutablePreferences) -> Unit) {
+        try {
+            dataStore.edit { change(it) }
+        } catch (e: IOException) {
+            Log.w(TAG, "Écriture des réglages impossible", e)
+        }
     }
 
     private companion object {
@@ -57,5 +68,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val LIBRARY_SORT = stringPreferencesKey("library_sort")
         val LIBRARY_VIEW_MODE = stringPreferencesKey("library_view_mode")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        const val TAG = "SettingsRepository"
     }
 }
