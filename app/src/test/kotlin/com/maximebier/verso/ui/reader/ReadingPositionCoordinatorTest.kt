@@ -53,6 +53,33 @@ class ReadingPositionCoordinatorTest {
     }
 
     @Test
+    fun goBackWhileTheSurfaceIsRecreatedIsReplayedOnTheNewOne() = runTest {
+        val start = testLocator(total = 0.300)
+        val fake = FakeReaderController(start)
+        val coordinator = coordinatorAt(start)
+        coordinator.attach(fake)
+        runCurrent()
+        for (step in 1..3) {
+            advanceTimeBy(200)
+            fake.displayed.value = testLocator(total = 0.300 + step * 0.010)
+            runCurrent()
+        }
+        fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = true))
+        advanceTimeBy(1_500)
+        runCurrent()
+        assertThat(coordinator.state.value.showReturnCard).isTrue()
+
+        // Rotation : la surface est retirée, « Revenir » est touché avant que la nouvelle soit prête.
+        coordinator.detach()
+        coordinator.onGoBack()
+        val recreated = FakeReaderController(testLocator(total = 0.330))
+        coordinator.attach(recreated)
+        runCurrent()
+
+        assertThat(recreated.goCalls.single().locations.totalProgression!!).isWithin(1e-9).of(0.300)
+    }
+
+    @Test
     fun violentScrollOfThirtyPagesKeepsReadingAndGoBackReturnsInOneTap() = runTest {
         val start = testLocator(total = 0.300)
         val fake = FakeReaderController(start)

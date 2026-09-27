@@ -43,6 +43,9 @@ sealed interface ReaderEvent {
 
     /** Battement d'horloge (environ une fois par seconde pendant la lecture) : détecte le repos. */
     data class Tick(override val timeMs: Long) : ReaderEvent
+
+    /** Repos forcé (lecteur mis en arrière-plan) : le mouvement en attente est traité tout de suite. */
+    data class Rest(override val timeMs: Long) : ReaderEvent
 }
 
 enum class TrackerMode { FOLLOWING, AWAY }
@@ -96,7 +99,12 @@ sealed interface TrackerEffect {
  * - Saut vers une cible approximative (`Jumped.approximate` : ancre, rapportée au début du fichier) :
  *   chaque `Displayed` est gardé comme position affichée, et la première position stabilisée
  *   ([ReadingThresholds.saveDebounceMs] sans nouveau `Displayed`) est l'arrivée ; la carte est alors
- *   réévaluée depuis elle. `StayHere` enregistre toujours la dernière position affichée.
+ *   réévaluée depuis elle. `StayHere` enregistre toujours la dernière position affichée. Sans aucune position
+ *   rapportée (cible déjà à l’écran), l’arrivée est la position affichée avant le saut : à `StayHere`, ou après
+ *   [ReadingThresholds.jumpArrivalMaxWaitMs].
+ * - Fling sans position rapportée à sa fin de geste (le navigateur classique n’en donne aucune pendant l’inertie) :
+ *   la navigation reste ouverte jusqu’à la position d’arrivée, au plus [ReadingThresholds.flingPositionMaxWaitMs].
+ * - `Rest` (arrière-plan) : repos immédiat, le mouvement en attente est validé.
  * - Le premier `Displayed` reçu est l'arrivée à la position initiale : il ne modifie jamais la lecture.
  * - `SaveReading` sans `ReadingMoved` (restauration, « Rester ici », confirmation) : la lecture change
  *   sans mouvement de lecture, aucun mot n'est compté.
@@ -138,6 +146,16 @@ class ReadingPositionTracker(
 
     /** Au moins une position affichée reçue depuis le début du saut approximatif. */
     private var jumpDisplayedSeen = false
+
+    /** Début du saut en cours et position affichée juste avant (arrivée d’un saut approximatif qui ne bouge pas). */
+    private var jumpStartedAtMs: Long = Long.MIN_VALUE
+    private var displayedBeforeJump: BookPosition = initial
+
+    /** Fin d’un fling qui n’a encore rapporté aucune position ; null sinon. */
+    private var flingAwaitingPositionSinceMs: Long? = null
+
+    /** Une position en mouvement est arrivée depuis la dernière fin de geste. */
+    private var displayedSinceGestureEnd = false
 
     /** Point d'arrivée en AWAY : la confirmation exige de lire à au plus un écran de lui. */
     private var anchor: Stamped = Stamped(0L, initial)
@@ -185,12 +203,20 @@ class ReadingPositionTracker(
             is ReaderEvent.StayHere -> onStayHere(event.timeMs, effects)
             is ReaderEvent.GoBack -> onGoBack(event.timeMs, effects)
             is ReaderEvent.Tick -> Unit
+            is ReaderEvent.Rest -> {
+                if (jumpTarget != null && jumpApproximate && jumpDisplayedSeen) {
+                    lastMotion?.let { arriveFromApproximateJump(it.timeMs, it.position) }
+                }
+                flingAwaitingPositionSinceMs = null
+                settle(effects)
+            }
         }
         pruneHistory(event.timeMs)
         return effects
     }
 
     private fun onDisplayed(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {
+        flingAwaitingPositionSinceMs = null
         val target = jumpTarget
         if (target != null) {
             if (jumpApproximate) {
@@ -216,6 +242,7 @@ class ReadingPositionTracker(
         // rapporter la position d’un glissé juste après sa fin de geste, qui porte encore l’ancienne position.
         val fast = speedScreensPerSecond(Stamped(displayedAtMs, displayed), timeMs, position) >
             thresholds.displayedSpeedNavigationScreensPerSecond
+        displayedSinceGestureEnd = true
         lastMotion = Stamped(timeMs, position)
         move(timeMs, position, forcedNavigation = fast, effects = effects)
     }
@@ -240,6 +267,9 @@ class ReadingPositionTracker(
         } else if (isFling && !navigating) {
             startNavigation(timeMs, windowStartMs = null, effects = effects)
         }
+        // Navigateur classique : la position d’un fling n’arrive qu’après l’inertie ; la navigation l’attend.
+        if (isFling && !displayedSinceGestureEnd) flingAwaitingPositionSinceMs = timeMs
+        displayedSinceGestureEnd = false
         if (!isFling && !navigating && mode == TrackerMode.AWAY) readingGestureWhileAway(timeMs, effects)
         if (!isFling) settle(effects)
     }
@@ -281,6 +311,9 @@ class ReadingPositionTracker(
         settle(effects)
         navigating = false
         motionPending = false
+        flingAwaitingPositionSinceMs = null
+        displayedBeforeJump = displayed
+        jumpStartedAtMs = timeMs
         displayed = target
         displayedAtMs = timeMs
         jumpTarget = target
@@ -303,6 +336,8 @@ class ReadingPositionTracker(
     private fun onStayHere(timeMs: Long, effects: MutableList<TrackerEffect>) {
         // « Rester ici » enregistre toujours la position réellement affichée, même avant la stabilisation.
         if (jumpTarget != null && jumpApproximate && jumpDisplayedSeen) arriveFromApproximateJump(timeMs, displayed)
+        // Rien n’a bougé depuis le saut (cible déjà à l’écran) : le texte affiché est celui d’avant le saut.
+        if (jumpTarget != null && jumpApproximate && !jumpDisplayedSeen) arriveFromApproximateJump(timeMs, displayedBeforeJump)
         settle(effects)
         if (mode != TrackerMode.AWAY) return
         commit(displayed, timeMs, reportMove = false, effects = effects)
@@ -411,6 +446,17 @@ class ReadingPositionTracker(
     private fun settleIfResting(nowMs: Long, effects: MutableList<TrackerEffect>) {
         val last = lastMotion ?: return
         val resting = nowMs - last.timeMs >= thresholds.saveDebounceMs
+        if (jumpTarget != null && jumpApproximate && !jumpDisplayedSeen &&
+            nowMs - jumpStartedAtMs >= thresholds.jumpArrivalMaxWaitMs
+        ) {
+            arriveFromApproximateJump(nowMs, displayedBeforeJump)
+            return
+        }
+        val flingSince = flingAwaitingPositionSinceMs
+        if (flingSince != null) {
+            if (nowMs - flingSince < thresholds.flingPositionMaxWaitMs) return
+            flingAwaitingPositionSinceMs = null
+        }
         if (jumpTarget != null && jumpApproximate && jumpDisplayedSeen && resting) {
             // Saut approximatif : la position affichée stabilisée est l'arrivée.
             arriveFromApproximateJump(last.timeMs, last.position)

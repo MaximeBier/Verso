@@ -4,6 +4,7 @@ package com.maximebier.verso.reader
 
 import android.os.SystemClock
 import android.util.Log
+import android.view.ViewTreeObserver
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -31,6 +32,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.compose.AndroidFragment
@@ -47,6 +49,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -163,6 +166,14 @@ fun ReaderSurface(
         }
         nav.addInputListener(listener)
         onDispose { nav.removeInputListener(listener) }
+    }
+    // Défilement natif de la WebView, image par image : Readium ne rapporte la position que 100 ms après l’arrêt.
+    val hostView = LocalView.current
+    DisposableEffect(hostView, controller) {
+        val observer = hostView.viewTreeObserver
+        val scrollListener = ViewTreeObserver.OnScrollChangedListener { controller.onScrolled() }
+        observer.addOnScrollChangedListener(scrollListener)
+        onDispose { if (observer.isAlive) observer.removeOnScrollChangedListener(scrollListener) }
     }
     LaunchedEffect(navigator) {
         val nav = navigator ?: return@LaunchedEffect
@@ -287,9 +298,15 @@ internal class FragmentReaderController(
     private var positions: ReadingOrderPositions? = null
     private var lastDisplayedChangeAt: Long? = null
 
-    private var settleJob: Job? = null
-    private var pendingIsFling = false
-    private var pendingChapterTurn = false
+    /** Dernière image de défilement natif de la WebView ([onScrolled]) ; null si la surface ne la signale pas. */
+    private var lastScrollAt: Long? = null
+    private var gestureDownAt: Long = Long.MIN_VALUE
+
+    /** Geste lâché dont le signal attend la fin du défilement. */
+    private var pending: PendingGesture? = null
+
+    /** Changement de chapitre interrompu par un toucher : son signal part dès que le chapitre visé s’affiche. */
+    private var detachedTurn: PendingGesture? = null
 
     private var touchStoppedScroll = false
     private var tapToken: TapToken? = null
@@ -332,15 +349,35 @@ internal class FragmentReaderController(
     private fun withTotalProgression(locator: Locator): Locator =
         positions?.withTotalProgression(locator) ?: locator
 
+    /** Image de défilement natif (le navigateur ne rapporte la position qu’après 100 ms sans défilement). */
+    fun onScrolled() {
+        lastScrollAt = uptimeMs()
+    }
+
+    /** Un défilement est en cours : dernière image de défilement il y a moins de [ReaderGestures.SCROLL_ACTIVE_MS]. */
+    private fun scrolling(now: Long): Boolean {
+        val lastScroll = lastScrollAt
+            ?: return lastDisplayedChangeAt?.let { now - it < ReaderGestures.SETTLE_QUIET_MS } ?: false
+        return now - lastScroll < ReaderGestures.SCROLL_ACTIVE_MS
+    }
+
     /** Doigt posé : il arrête tout défilement en cours, dont le signal part aussitôt ; les bords sont relus. */
     fun onPointerDown() {
         val now = uptimeMs()
-        touchStoppedScroll = lastDisplayedChangeAt?.let { now - it < ReaderGestures.SETTLE_QUIET_MS } ?: false
+        touchStoppedScroll = scrolling(now)
+        gestureDownAt = now
         flushPendingGesture()
         edgesJob?.cancel()
         edgesAtDown = null
         // Un doigt qui arrête un défilement en cours ne part pas d’un bord : pas de changement de chapitre.
-        if (!touchStoppedScroll) edgesJob = scope.launch { edgesAtDown = probeEdges?.invoke() }
+        if (!touchStoppedScroll) {
+            edgesJob = scope.launch {
+                val edges = probeEdges?.invoke()
+                // La lecture JavaScript ne s’annule pas : un appui plus récent a pu la remplacer entre-temps.
+                ensureActive()
+                edgesAtDown = edges
+            }
+        }
         // Le tap précédent est clos : rattrapé tout de suite s’il attendait encore (le navigateur signale
         // un tap quelques millisecondes après le lâcher, jamais après l’appui suivant), écho oublié sinon.
         val previous = tapToken
@@ -364,43 +401,85 @@ internal class FragmentReaderController(
         val isFling = !chapterTurn && height > 0 &&
             abs(velocityYPxPerSecond) / height >= thresholds.flingScreensPerSecond
         val releasedAt = uptimeMs()
-        settleJob?.cancel()
-        pendingIsFling = isFling
-        pendingChapterTurn = chapterTurn
-        settleJob = scope.launch {
+        pending?.job?.cancel()
+        val gesture = PendingGesture(isFling = isFling, chapterTurn = chapterTurn, target = target)
+        pending = gesture
+        gesture.job = scope.launch {
             if (target != null) {
                 navigate?.invoke(target)
                 // Chapitre pas encore chargé : le signal attend qu’il soit affiché, sinon le tracker verrait son
                 // arrivée comme une navigation (bond d’un écran), après la fin du geste.
                 awaitDisplayedIn(target, releasedAt)
             }
-            awaitSettled(releasedAt)
-            settleJob = null
-            gestureFlow.emit(GestureSignal(timeMs = wallClockMs(), isFling = isFling, chapterTurn = chapterTurn))
+            if (!gesture.detached) awaitSettled(releasedAt)
+            if (pending === gesture) pending = null
+            if (detachedTurn === gesture) detachedTurn = null
+            gestureFlow.emit(gesture.signal())
         }
     }
 
+    /**
+     * Nouveau toucher : le geste précédent envoie son signal tout de suite. Sauf un changement de chapitre dont le
+     * chapitre visé n’est pas encore affiché : son arrivée serait prise pour une navigation ; il signale à l’affichage.
+     */
     private fun flushPendingGesture() {
-        val pending = settleJob ?: return
-        pending.cancel()
-        settleJob = null
-        gestureFlow.tryEmit(
-            GestureSignal(timeMs = wallClockMs(), isFling = pendingIsFling, chapterTurn = pendingChapterTurn),
-        )
+        val gesture = pending ?: return
+        pending = null
+        val target = gesture.target
+        if (target != null && !isDisplayedIn(target)) {
+            gesture.detached = true
+            detachedTurn = gesture
+            return
+        }
+        gesture.job?.cancel()
+        gestureFlow.tryEmit(gesture.signal())
+    }
+
+    /** Saut : le geste en attente n’est pas signalé (il arriverait après le saut et le brouillerait). */
+    private fun dropPendingGesture() {
+        pending?.job?.cancel()
+        pending = null
+        detachedTurn?.job?.cancel()
+        detachedTurn = null
+    }
+
+    private fun isDisplayedIn(target: Locator): Boolean =
+        displayedState.value?.let { sameResource(it.href, target.href) } == true
+
+    private fun PendingGesture.signal() =
+        GestureSignal(timeMs = wallClockMs(), isFling = isFling, chapterTurn = chapterTurn)
+
+    private class PendingGesture(val isFling: Boolean, val chapterTurn: Boolean, val target: Locator?) {
+        var job: Job? = null
+        var detached = false
     }
 
     private suspend fun awaitDisplayedIn(target: Locator, releasedAt: Long) {
-        while (displayedState.value?.let { sameResource(it.href, target.href) } != true) {
+        while (!isDisplayedIn(target)) {
             if (uptimeMs() - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
             delay(ReaderGestures.SETTLE_POLL_MS)
         }
     }
 
+    /**
+     * Fin réelle du défilement. Avec les images de défilement natif : plus d’image depuis
+     * [ReaderGestures.SCROLL_QUIET_MS], puis une position rapportée après la dernière image (au plus
+     * [ReaderGestures.POSITION_WAIT_MS] après elle). Sans elles : aucune nouvelle position depuis
+     * [ReaderGestures.SETTLE_QUIET_MS]. Jamais plus de [ReaderGestures.SETTLE_MAX_MS] après le lâcher.
+     */
     private suspend fun awaitSettled(releasedAt: Long) {
         while (true) {
             val now = uptimeMs()
-            val quietFor = now - max(lastDisplayedChangeAt ?: releasedAt, releasedAt)
-            if (quietFor >= ReaderGestures.SETTLE_QUIET_MS || now - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
+            if (now - releasedAt >= ReaderGestures.SETTLE_MAX_MS) return
+            val lastScroll = lastScrollAt?.takeIf { it >= gestureDownAt }
+            val settled = if (lastScroll == null) {
+                now - max(lastDisplayedChangeAt ?: releasedAt, releasedAt) >= ReaderGestures.SETTLE_QUIET_MS
+            } else {
+                val positionAfterScroll = (lastDisplayedChangeAt ?: Long.MIN_VALUE) > lastScroll
+                now - lastScroll >= ReaderGestures.SCROLL_QUIET_MS &&
+                    (positionAfterScroll || now - lastScroll >= ReaderGestures.POSITION_WAIT_MS)
+            }
+            if (settled) return
             delay(ReaderGestures.SETTLE_POLL_MS)
         }
     }
@@ -452,9 +531,9 @@ internal class FragmentReaderController(
         data object HandledByFallback : TapToken
     }
 
-    /** Saut sans animation ; le geste en cours, interrompu, envoie son signal avant le saut. */
+    /** Saut sans animation ; le geste en attente est abandonné sans signal ([dropPendingGesture]). */
     override suspend fun go(locator: Locator) {
-        flushPendingGesture()
+        dropPendingGesture()
         navigate?.invoke(locator)
     }
 

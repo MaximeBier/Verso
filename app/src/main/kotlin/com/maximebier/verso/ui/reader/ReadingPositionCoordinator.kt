@@ -59,6 +59,9 @@ class ReadingPositionCoordinator(
     private var stopped = false
     private var lastDisplayed: BookPosition = initial
 
+    /** « Revenir » touché sans surface branchée (recréation) : rejoué au prochain [attach]. */
+    private var pendingScrollTo: Locator? = null
+
     /** Branche la surface de lecture (et le battement d’horloge) ; remplace la précédente. */
     fun attach(readerController: ReaderController) {
         if (controller === readerController) return
@@ -78,11 +81,14 @@ class ReadingPositionCoordinator(
                 }
             },
         )
+        pendingScrollTo?.let { target -> scope.launch { readerController.go(target) } }
+        pendingScrollTo = null
         if (!stopped) startTicker()
     }
 
     /** Lecteur en arrière-plan (`ON_STOP`) : plus de battement d’horloge jusqu’à [onStarted]. */
     fun onStopped() {
+        dispatch(ReaderEvent.Rest(clock()))
         stopped = true
         stopTicker()
     }
@@ -165,7 +171,11 @@ class ReadingPositionCoordinator(
                 is TrackerEffect.ScrollTo -> {
                     val target = Locators.fromJson(effect.position.locatorJson)
                     val current = controller
-                    if (target != null && current != null) scope.launch { current.go(target) }
+                    when {
+                        target == null -> Unit
+                        current != null -> scope.launch { current.go(target) }
+                        else -> pendingScrollTo = target
+                    }
                 }
                 is TrackerEffect.ReadingMoved -> _readingEffects.tryEmit(effect)
             }

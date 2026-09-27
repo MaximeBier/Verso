@@ -21,6 +21,7 @@ import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.reader.ReaderController
+import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.TocAnchors
@@ -359,6 +360,8 @@ class ReaderViewModel(
     fun jumpToTocEntry(index: Int) {
         val publication = _uiState.value.publication ?: return
         val link = preorder(tocLinks) { it.children }.getOrNull(index) ?: return
+        // Entrée hors de l’ordre de lecture (linear="no") : le moteur ne l’afficherait pas.
+        if (publication.readingOrder.none { sameResource(it.url(), link.url()) }) return
         val target = publication.locatorFromLink(link) ?: return
         if (controller == null) {
             // Sommaire laissé ouvert : il se ferme quand le saut part vraiment.
@@ -455,10 +458,11 @@ class ReaderViewModel(
      * est recréée aussitôt et la session continue.
      */
     fun onStop(changingConfigurations: Boolean = false) {
-        positionSaver.flush()
+        // Repos forcé d’abord : le dernier glissé, pas encore validé, est enregistré par le flush qui suit.
         // Aucun battement d’horloge en arrière-plan (revue finale M5) ; il reprend à onStart.
         stopped = true
         coordinator?.onStopped()
+        positionSaver.flush()
         if (!changingConfigurations) sessionCoordinator?.onBackgrounded()
     }
 

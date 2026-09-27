@@ -106,6 +106,122 @@ class FragmentReaderControllerTest {
         }
     }
 
+    /** Défilement natif de la WebView pendant `durationMs`, une image toutes les 16 ms. */
+    private suspend fun TestScope.scrollFor(h: Harness, durationMs: Long) {
+        var elapsed = 0L
+        while (elapsed < durationMs) {
+            h.controller.onScrolled()
+            advanceTimeBy(16)
+            elapsed += 16
+        }
+    }
+
+    @Test
+    fun flingSignalWaitsUntilTheInertiaEndsAndItsPositionArrives() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.1))
+        advanceTimeBy(1_000)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -4_000f, dragDyPx = -300f)
+            // Readium ne rapporte aucune position pendant l’inertie (anti-rebond de 100 ms).
+            scrollFor(h, 1_200)
+            expectNoEvents()
+            advanceTimeBy(150)
+            expectNoEvents()
+            h.controller.onDisplayed(at("ch1.xhtml", 0.3))
+            advanceTimeBy(ReaderGestures.SETTLE_POLL_MS * 2)
+            assertThat(awaitItem().isFling).isTrue()
+            assertThat(h.controller.displayed.value!!.locations.progression).isEqualTo(0.3)
+        }
+    }
+
+    @Test
+    fun slowDragSignalWaitsForItsLatePosition() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.1))
+        advanceTimeBy(1_000)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            scrollFor(h, 400)
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -200f)
+            // Position rapportée 260 ms après le lâcher : le signal l’attend.
+            advanceTimeBy(255)
+            expectNoEvents()
+            advanceTimeBy(5)
+            h.controller.onDisplayed(at("ch1.xhtml", 0.12))
+            advanceTimeBy(ReaderGestures.SETTLE_POLL_MS * 2)
+            assertThat(awaitItem().isFling).isFalse()
+        }
+    }
+
+    @Test
+    fun signalIsSentEvenIfTheNavigatorNeverReportsTheNewPosition() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.1))
+        advanceTimeBy(1_000)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            scrollFor(h, 100)
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -20f)
+            advanceTimeBy(ReaderGestures.POSITION_WAIT_MS + ReaderGestures.SETTLE_POLL_MS)
+            assertThat(awaitItem().isFling).isFalse()
+        }
+    }
+
+    @Test
+    fun touchDuringFlingInertiaIsNotATap() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.1))
+        advanceTimeBy(1_000)
+        scrollFor(h, 300)
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture(xFraction = 0.5f)
+        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
+
+        assertThat(h.centerTaps).isEqualTo(0)
+    }
+
+    @Test
+    fun dragRightAfterTheInertiaEndsCanTurnTheChapter() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        scrollFor(h, 300)
+        advanceTimeBy(120)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.99))
+        advanceTimeBy(60) // 60 ms après la position, 180 ms après la dernière image : le défilement est fini
+        h.controller.onPointerDown()
+        runCurrent()
+        h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -h.controller.chainThresholdPx * 2)
+        runCurrent()
+
+        assertThat(h.navigated.single().href.toString()).isEqualTo("ch2.xhtml")
+    }
+
+    @Test
+    fun touchBeforeTheNextChapterIsDisplayedDoesNotSendTheChapterTurnEarly() = runTest {
+        val h = Harness(this)
+        h.edges = ChapterEdges(atTop = false, atBottom = true)
+        h.adjacent = at("ch2.xhtml", 0.0)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.97))
+        advanceTimeBy(ReaderGestures.SETTLE_QUIET_MS)
+        h.controller.gestures.test {
+            h.controller.onPointerDown()
+            runCurrent()
+            h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = -h.controller.chainThresholdPx)
+            advanceTimeBy(100)
+            h.controller.onPointerDown() // nouveau toucher avant l’affichage du chapitre suivant
+            runCurrent()
+            expectNoEvents()
+            h.controller.onDisplayed(at("ch2.xhtml", 0.0))
+            advanceTimeBy(ReaderGestures.SETTLE_POLL_MS * 2)
+            val signal = awaitItem()
+            assertThat(signal.chapterTurn).isTrue()
+            assertThat(h.controller.displayed.value!!.href.toString()).isEqualTo("ch2.xhtml")
+        }
+    }
+
     @Test
     fun flingIsDecidedByReleaseSpeedInScreensPerSecond() = runTest {
         val h = Harness(this)
@@ -158,7 +274,7 @@ class FragmentReaderControllerTest {
     }
 
     @Test
-    fun goJumpsWithoutGestureSignalAndFlushesAPendingOne() = runTest {
+    fun goJumpsWithoutGestureSignalAndDropsAPendingOne() = runTest {
         val h = Harness(this)
         h.controller.gestures.test {
             h.controller.go(at("ch2.xhtml", 0.4))
@@ -168,9 +284,9 @@ class FragmentReaderControllerTest {
 
             h.controller.onPointerDown()
             h.controller.onGestureReleased(velocityYPxPerSecond = -300f, dragDyPx = 0f)
+            // Le geste interrompu par le saut n’est pas signalé : il arriverait après le saut et le brouillerait.
             h.controller.go(at("ch1.xhtml", 0.0))
             runCurrent()
-            assertThat(awaitItem().isFling).isFalse()
             advanceTimeBy(ReaderGestures.SETTLE_MAX_MS)
             expectNoEvents()
         }

@@ -45,4 +45,14 @@ data class ReadingThresholds(
      * Le tracker n'émet `SaveReading` qu'au repos ; l'app peut l'écrire sans attendre davantage.
      */
     val saveDebounceMs: Long = 500,
+    /**
+     * Après un fling qui n’a encore rapporté aucune position (navigateur classique : aucune position pendant
+     * l’inertie), la navigation reste ouverte jusqu’à la position d’arrivée, au plus ce délai.
+     */
+    val flingPositionMaxWaitMs: Long = 4_000,
+    /**
+     * Saut approximatif (ancre) sans aucune position rapportée : au-delà de ce délai, le texte n’a pas bougé
+     * (cible déjà à l’écran) et l’arrivée est la position affichée avant le saut.
+     */
+    val jumpArrivalMaxWaitMs: Long = 2_000,
 )
