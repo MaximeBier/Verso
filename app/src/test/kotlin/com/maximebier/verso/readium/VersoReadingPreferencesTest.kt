@@ -50,4 +50,11 @@ class VersoReadingPreferencesTest {
         assertThat(configuration.servedAssets).contains(ReadingStyle.SERVED_ASSETS_PATTERN)
         assertThat(configuration.disablePageTurnsWhileScrolling).isTrue()
     }
+
+    @Test
+    fun configurationLeavesInsetsToVerso() {
+        val configuration = EpubNavigatorFragment.Configuration { with(VersoReadingPreferences) { applyVerso() } }
+
+        assertThat(configuration.shouldApplyInsetsPadding).isFalse()
+    }
 }
