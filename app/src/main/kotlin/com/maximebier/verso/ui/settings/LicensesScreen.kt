@@ -29,7 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -102,7 +102,7 @@ fun LicensesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun LicenseRow(entry: LicenseEntry, expanded: Boolean, onToggle: () -> Unit) {
     val colors = VersoTheme.colors
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val toggleLabel = stringResource(if (expanded) R.string.licenses_hide_text else R.string.licenses_show_text)
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -127,7 +127,7 @@ private fun LicenseRow(entry: LicenseEntry, expanded: Boolean, onToggle: () -> U
         }
         if (expanded) {
             val text = remember(entry.text) {
-                context.resources.openRawResource(entry.text).bufferedReader().use { it.readText() }
+                resources.openRawResource(entry.text).bufferedReader().use { it.readText() }
             }
             Text(
                 text = text,

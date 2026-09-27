@@ -108,10 +108,10 @@ fun ReaderSurface(
     publication: Publication,
     initialLocator: Locator?,
     dark: Boolean,
-    fontScale: Double = 1.0,
     onReady: (ReaderController) -> Unit,
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
+    fontScale: Double = 1.0,
     onInternalLink: (Url) -> Unit = {},
     onFailed: () -> Unit = {},
 ) {

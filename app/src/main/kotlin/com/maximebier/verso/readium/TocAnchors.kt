@@ -11,8 +11,8 @@ import org.readium.r2.shared.util.Url
 /**
  * Progression, dans son fichier, des entrées du sommaire qui pointent vers une ancre (`fichier.xhtml#id`).
  *
- * Le navigateur (Variante A) ne donne pas accès au DOM : la progression d’une ancre est estimée comme la part
- * du texte du fichier qui la précède, sur le même texte brut ([ChapterText.plainText]) que l’extrait de la carte
+ * Calculé avant l’affichage, sans le DOM : la progression d’une ancre est estimée comme la part du texte du
+ * fichier qui la précède (une mesure dans la WebView serait plus juste : reportée, relecture REV-007), sur le même texte brut ([ChapterText.plainText]) que l’extrait de la carte
  * Reprendre, qui fait la conversion inverse (progression du moteur → caractère). Calculé une fois par livre.
  */
 object TocAnchors {

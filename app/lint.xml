@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- targetSdk 36 décidé dans la spec (compileSdk 37 exigé par Readium 3.4.0). -->
+    <issue id="OldTargetApi" severity="ignore" />
+    <!-- Timber n'est qu'une dépendance de Readium : Verso journalise avec android.util.Log. -->
+    <issue id="LogNotTimber" severity="ignore" />
+    <!-- Sans le suffixe v26, AAPT ne résout plus les icônes adaptatives (ic_launcher introuvable). -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

@@ -41,9 +41,12 @@ jobs:
           :app:testDebugUnitTest -Proborazzi.test.record=true
           :app:lintDebug
           :app:assembleDebug
+          :app:processReleaseManifest
 
       - name: Aucune permission dans le manifeste fusionné
-        run: bash scripts/check-no-internet.sh
+        run: |
+          bash scripts/check-no-internet.sh
+          bash scripts/check-no-internet.sh app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
 
       - name: APK debug
         uses: actions/upload-artifact@v7

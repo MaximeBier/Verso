@@ -3,7 +3,6 @@ package com.maximebier.verso.ui.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.BuildConfig
@@ -68,7 +68,7 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
  * c'est le navigateur qui charge la page. Sans navigateur installé, il ne se passe rien.
  */
 internal fun openUrl(context: Context, url: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
     try {
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {

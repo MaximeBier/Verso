@@ -18,7 +18,8 @@ object IncomingIntent {
     /** Types proposés au sélecteur : certains fournisseurs déclarent un .epub en octet-stream (contenu vérifié ensuite). */
     val PICKER_MIME_TYPES = arrayOf(EPUB_MIME_TYPE, "application/octet-stream")
 
-    private val readableSchemes = setOf(ContentResolver.SCHEME_CONTENT, ContentResolver.SCHEME_FILE)
+    // Seul content:// est lisible : Verso n’a aucune permission de stockage (file:// échouerait à la lecture).
+    private val readableSchemes = setOf(ContentResolver.SCHEME_CONTENT)
 
     fun parse(intent: Intent?): Uri? {
         if (intent == null) return null

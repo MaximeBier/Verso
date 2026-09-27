@@ -60,9 +60,10 @@ class IncomingIntentTest {
     }
 
     @Test
-    fun fileSchemeIsAccepted() {
+    fun fileSchemeIsRefused() {
+        // Aucune permission de stockage : un file:// ne pourrait pas être lu.
         val uri = Uri.parse("file:///storage/emulated/0/Download/candide.epub")
-        assertThat(IncomingIntent.parse(Intent(Intent.ACTION_VIEW, uri))).isEqualTo(uri)
+        assertThat(IncomingIntent.parse(Intent(Intent.ACTION_VIEW, uri))).isNull()
     }
 
     @Test
