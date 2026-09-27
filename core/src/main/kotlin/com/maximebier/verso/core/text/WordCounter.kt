@@ -14,7 +14,8 @@ private val SKIPPED_CONTENT_TAGS = setOf("head", "script", "style")
 private val NAMED_ENTITIES = mapOf(
     "nbsp" to " ", "ensp" to " ", "emsp" to " ", "thinsp" to " ",
     "amp" to "&", "lt" to "<", "gt" to ">", "quot" to "\"", "apos" to "'",
-    "rsquo" to "'", "lsquo" to "'", "rdquo" to """, "ldquo" to """,
+    // Échappements Unicode : un guillemet typographique écrit tel quel ouvrirait une chaîne brute Kotlin.
+    "rsquo" to "’", "lsquo" to "‘", "rdquo" to "”", "ldquo" to "“",
     "laquo" to "«", "raquo" to "»", "hellip" to "…", "mdash" to "—", "ndash" to "–",
     "shy" to "", "oelig" to "œ", "OElig" to "Œ", "aelig" to "æ", "AElig" to "Æ",
     "agrave" to "à", "acirc" to "â", "ccedil" to "ç", "eacute" to "é", "egrave" to "è",
@@ -23,6 +24,9 @@ private val NAMED_ENTITIES = mapOf(
     "Agrave" to "À", "Acirc" to "Â", "Ccedil" to "Ç", "Eacute" to "É", "Egrave" to "È",
     "Ecirc" to "Ê", "Icirc" to "Î", "Ocirc" to "Ô", "Ugrave" to "Ù", "Ucirc" to "Û",
 )
+
+/** Valeur d’une entité HTML nommée courante (« rsquo » → « ’ ») ; null si inconnue. */
+fun namedHtmlEntity(name: String): String? = NAMED_ENTITIES[name]
 
 /**
  * Machine à états qui reproduit `[\p{L}\p{N}\p{M}]+(?:[joiner][\p{L}\p{N}\p{M}]+)*` sans regex, en une
@@ -261,8 +265,9 @@ private fun isWordCodePoint(cp: Int): Boolean = when (Character.getType(cp)) {
     else -> false
 }
 
-/** Apostrophe droite et tirets qui ne coupent pas un mot entre deux lettres/chiffres. */
-private fun isJoiner(cp: Int): Boolean = cp == '\''.code || cp == '‐'.code || cp == '‑'.code || cp == '-'.code
+/** Apostrophes (droite, typographique, lettre apostrophe) et tirets qui ne coupent pas un mot entre deux lettres. */
+private fun isJoiner(cp: Int): Boolean =
+    cp == '\''.code || cp == 0x2019 || cp == 0x02BC || cp == '‐'.code || cp == '‑'.code || cp == '-'.code
 
 private fun Char.isAsciiLetter(): Boolean = this in 'A'..'Z' || this in 'a'..'z'
 private fun Char.isAsciiDigit(): Boolean = this in '0'..'9'

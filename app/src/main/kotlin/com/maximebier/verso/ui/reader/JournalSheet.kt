@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.R
 import com.maximebier.verso.core.journal.DayGroup
 import com.maximebier.verso.core.journal.SessionRecord
@@ -32,6 +33,7 @@ import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.durationOfMinutes
+import com.maximebier.verso.core.text.LocationTexts
 import com.maximebier.verso.core.text.passageLabel
 import com.maximebier.verso.data.db.SessionEntity
 import com.maximebier.verso.readium.Locators
@@ -45,7 +47,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.floor
 
 // ---------------------------------------------------------------------------
 // Modèle d'affichage
@@ -90,6 +91,7 @@ fun journalUiState(
     toc: List<TocNode>,
     now: Long,
     zone: ZoneId,
+    texts: LocationTexts,
     positionOf: (String) -> ResourcePosition?,
 ): JournalUiState {
     val currentId = current?.id?.takeIf { it != 0L }
@@ -117,7 +119,7 @@ fun journalUiState(
         JournalDay(
             group = group,
             showYear = group is DayGroup.Date && group.date.year != currentYear,
-            sessions = dayRows.map { it.toItem(toc, zone, positionOf) },
+            sessions = dayRows.map { it.toItem(toc, zone, texts, positionOf) },
         )
     }
     return JournalUiState(days)
@@ -140,7 +142,12 @@ private data class JournalRow(
     val inProgress: Boolean,
 )
 
-private fun JournalRow.toItem(toc: List<TocNode>, zone: ZoneId, positionOf: (String) -> ResourcePosition?): JournalSessionItem {
+private fun JournalRow.toItem(
+    toc: List<TocNode>,
+    zone: ZoneId,
+    texts: LocationTexts,
+    positionOf: (String) -> ResourcePosition?,
+): JournalSessionItem {
     val startPath = positionOf(start.locatorJson)?.let { chapterPathAt(toc, it.href, it.progression) }.orEmpty()
     val endPath = positionOf(end.locatorJson)?.let { chapterPathAt(toc, it.href, it.progression) }.orEmpty()
     return JournalSessionItem(
@@ -148,7 +155,7 @@ private fun JournalRow.toItem(toc: List<TocNode>, zone: ZoneId, positionOf: (Str
         start = clockTimeOf(startedAt, zone),
         end = clockTimeOf(endedAt, zone),
         durationMinutes = minutesOf(activeMs),
-        passage = passageLabel(startPath, endPath),
+        passage = passageLabel(startPath, endPath, texts),
         startPercent = percentOf(start.totalProgression),
         endPercent = percentOf(end.totalProgression),
         inProgress = inProgress,
@@ -160,10 +167,6 @@ internal fun clockTimeOf(epochMs: Long, zone: ZoneId): ClockTime {
     val time = Instant.ofEpochMilli(epochMs).atZone(zone)
     return ClockTime(time.hour, time.minute)
 }
-
-/** Pourcentage entier arrondi vers le bas (v1-ui-reference §1), protégé contre l'erreur d'arrondi des doubles. */
-internal fun percentOf(progression: Double): Int =
-    floor(progression * 100 + 1e-9).toInt().coerceIn(0, 100)
 
 /** Minutes de temps actif, arrondies à la minute la plus proche, jamais 0. */
 internal fun minutesOf(activeMs: Long): Int =

@@ -20,6 +20,7 @@ import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
 import com.maximebier.verso.reader.testLocator
+import com.maximebier.verso.ui.common.locationTexts
 import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadiumOpener
@@ -493,7 +494,7 @@ class ReaderViewModelTest {
                 sessions = SessionRepository(db.sessionDao()),
                 openPublication = open,
                 clock = clock,
-                joinLocation = { part, chapter -> ApplicationProvider.getApplicationContext<Context>().getString(R.string.common_location_long, part, chapter) },
+                locationTexts = ApplicationProvider.getApplicationContext<Context>().resources.locationTexts(),
                 reportOpenFailure = { title -> openFailures += title },
             ).also { viewModels += it }
         }
