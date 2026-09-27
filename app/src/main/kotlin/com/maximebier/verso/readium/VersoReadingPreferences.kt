@@ -37,10 +37,14 @@ object VersoReadingPreferences {
         )
     }
 
-    /** Atkinson servie depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne lui-même). */
+    /**
+     * Atkinson servie depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne lui-même). Les insets
+     * sont posés par Verso (`readerContentInsets`) : Readium ajouterait la découpe de l’écran une seconde fois.
+     */
     fun EpubNavigatorFragment.Configuration.applyVerso() {
         servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)
         disablePageTurnsWhileScrolling = true
+        shouldApplyInsetsPadding = false
         addFontFamilyDeclaration(ATKINSON) {
             addFontFace {
                 addSource(ReadingStyle.FONT_ASSET_REGULAR, preload = true)
