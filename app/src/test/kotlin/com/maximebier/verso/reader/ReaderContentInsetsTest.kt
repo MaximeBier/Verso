@@ -62,7 +62,8 @@ class ReaderContentInsetsTest {
         assertThat(readerTop).isEqualTo(shownTop)
         assertThat(readerBottom).isEqualTo(shownBottom)
         assertThat(readerTop).isEqualTo(STATUS_BAR)
-        assertThat(readerBottom).isEqualTo(NAVIGATION_BAR)
+        // Plein écran : le texte descend jusqu’en bas, sous la barre de navigation masquée.
+        assertThat(readerBottom).isEqualTo(0)
     }
 
     private fun dispatch(systemBarsVisible: Boolean) {
