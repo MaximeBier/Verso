@@ -27,6 +27,7 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 - Tout sur `master`, un commit par étape (`Étape N : …`), poussé et installé sur le téléphone à la fin de chaque étape. Pas de pull request. Toute décision qui change la spec est reportée dans `docs/SPEC.md` dans le même commit.
 - Plan d'implémentation V1 : `docs/superpowers/plans/2026-09-25-verso-v1.md`. Design V2 : `docs/superpowers/specs/2026-09-27-verso-v2-design.md`.
 - Téléphone branché en adb : installer, lancer, capturer l'écran uniquement ; ne jamais modifier ses réglages système.
+- Un seul agent pilote le téléphone à la fois : avant la première commande adb, prendre le verrou `mkdir .superpowers/phone.lock` (attendre s'il existe), le rendre à la fin (`rm -rf .superpowers/phone.lock`), même en cas d'échec. Les agents lancés en parallèle se limitent aux tests JVM/Robolectric sauf autorisation explicite.
 
 ## Vérifier un écran
 
