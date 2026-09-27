@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /**
  * Champ de la fiche (§3.12) : libellé au-dessus (pas de libellé flottant), 56 dp, bordure outline 1 dp,
@@ -69,7 +68,7 @@ fun DetailsTextField(
         // Libellé visible, porté par le champ pour TalkBack (« Titre, zone d’édition »), même vide.
         Text(
             label,
-            style = VersoTypography.captionBold,
+            style = VersoTheme.typography.captionBold,
             color = colors.textSecondary,
             modifier = Modifier.clearAndSetSemantics {},
         )
@@ -81,7 +80,7 @@ fun DetailsTextField(
             },
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             singleLine = true,
-            textStyle = VersoTypography.body.copy(color = colors.text, lineHeight = 23.2.sp),
+            textStyle = VersoTheme.typography.body.copy(color = colors.text, lineHeight = 23.2.sp),
             cursorBrush = SolidColor(colors.accent),
             interactionSource = interactionSource,
             decorationBox = { innerTextField ->
@@ -102,7 +101,7 @@ fun DetailsTextField(
             },
         )
         if (supportingText != null) {
-            Text(supportingText, style = VersoTypography.caption, color = colors.textSecondary)
+            Text(supportingText, style = VersoTheme.typography.caption, color = colors.textSecondary)
         }
     }
 }
@@ -117,7 +116,7 @@ private val MetadataGap = 16.dp
 @Composable
 fun MetadataRow(label: String, value: String, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
-    val valueStyle = VersoTypography.body.copy(fontWeight = FontWeight(600))
+    val valueStyle = VersoTheme.typography.body.copy(fontWeight = FontWeight(600))
     val measurer = rememberTextMeasurer()
     val gapPx = with(LocalDensity.current) { MetadataGap.roundToPx() }
     BoxWithConstraints(
@@ -130,17 +129,17 @@ fun MetadataRow(label: String, value: String, modifier: Modifier = Modifier) {
             }
             .padding(vertical = 12.dp),
     ) {
-        val labelWidth = measurer.measure(label, VersoTypography.body, maxLines = 1).size.width
+        val labelWidth = measurer.measure(label, VersoTheme.typography.body, maxLines = 1).size.width
         val valueWidth = measurer.measure(value, valueStyle, maxLines = 1).size.width
         val sideBySide = labelWidth + gapPx + valueWidth <= constraints.maxWidth
         if (sideBySide) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MetadataGap), verticalAlignment = Alignment.Top) {
-                Text(label, style = VersoTypography.body, color = colors.textSecondary)
+                Text(label, style = VersoTheme.typography.body, color = colors.textSecondary)
                 Text(value, style = valueStyle, color = colors.text, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
             }
         } else {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(label, style = VersoTypography.body, color = colors.textSecondary)
+                Text(label, style = VersoTheme.typography.body, color = colors.textSecondary)
                 Text(value, style = valueStyle, color = colors.text)
             }
         }

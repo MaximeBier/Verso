@@ -5,6 +5,9 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.ProgressionScreenDistance
 import com.maximebier.verso.core.position.TrackerEffect
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
 import com.maximebier.verso.reader.ReaderController
@@ -282,6 +285,7 @@ class ReadingPositionCoordinatorTest {
                 displayed.value = anchor
             }
             override suspend fun excerptLocator(): Locator? = displayed.value
+            override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) = Unit
         }
         val coordinator = coordinatorAt(start)
         coordinator.attach(engine)

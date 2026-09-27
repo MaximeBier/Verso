@@ -2,6 +2,7 @@ package com.maximebier.verso.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Bouton à icône seule : cible 48 × 48, cercle, intitulé TalkBack obligatoire. */
 @Composable
@@ -41,7 +41,12 @@ fun VersoIconButton(
     }
 }
 
-/** Barre de la bibliothèque : « Verso » (texte, pas le logo), Paramètres, et « Importer » sauf bibliothèque vide. */
+/**
+ * Barre de la bibliothèque : « Verso » (texte, pas le logo), Paramètres, et « Importer » sauf bibliothèque vide.
+ * À 100 %, les trois tiennent sur une ligne. À grande taille de texte système, `FlowRow` passe le groupe
+ * Paramètres/Importer à la ligne plutôt que de compresser le titre en dessous de la largeur du mot « Verso »
+ * (contrainte « texte à 200 % sans coupure »).
+ */
 @Composable
 fun LibraryTopBar(
     showImport: Boolean,
@@ -50,7 +55,7 @@ fun LibraryTopBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = VersoTheme.colors
-    Row(
+    FlowRow(
         modifier = modifier
             .fillMaxWidth()
             .background(colors.background)
@@ -58,15 +63,19 @@ fun LibraryTopBar(
             .heightIn(min = VersoDimens.topBarLibrary)
             .padding(start = 24.dp, top = 12.dp, end = 12.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = stringResource(R.string.app_name),
-            style = VersoTypography.logo,
+            style = VersoTheme.typography.logo,
             color = colors.text,
-            modifier = Modifier.weight(1f, fill = false).semantics { heading() },
+            modifier = Modifier.align(Alignment.CenterVertically).semantics { heading() },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.align(Alignment.CenterVertically),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             VersoIconButton(icon = VersoIcons.Settings, contentDescription = stringResource(R.string.library_settings), onClick = onOpenSettings)
             if (showImport) {
                 OutlinedPillButton(text = stringResource(R.string.library_import), onClick = onImport, icon = VersoIcons.Plus)
@@ -101,7 +110,7 @@ fun DetailTopBar(
         VersoIconButton(icon = VersoIcons.ArrowLeft, contentDescription = backContentDescription, onClick = onBack)
         Text(
             text = title,
-            style = VersoTypography.screenTitle,
+            style = VersoTheme.typography.screenTitle,
             color = colors.text,
             modifier = Modifier.weight(1f).semantics { heading() },
         )

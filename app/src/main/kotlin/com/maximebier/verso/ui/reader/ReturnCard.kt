@@ -32,7 +32,6 @@ import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /**
  * Carte de retour (1.14) : fond `inverse`, rayon 20 (`VersoShapes.card`), pas de minuterie ni de
@@ -68,12 +67,12 @@ fun ReturnCard(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = stringResource(R.string.return_card_title),
-                    style = VersoTypography.bookTitleStrong,
+                    style = VersoTheme.typography.bookTitleStrong,
                     color = colors.onInverse,
                 )
                 Text(
                     text = stringResource(R.string.return_card_position, location, percent),
-                    style = VersoTypography.caption,
+                    style = VersoTheme.typography.caption,
                     color = colors.onInverse,
                 )
             }
@@ -99,7 +98,7 @@ fun ReturnCard(
             ) {
                 Icon(VersoIcons.Undo, contentDescription = null, modifier = Modifier.size(VersoDimens.iconSmall))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.return_card_go_back), style = VersoTypography.button)
+                Text(stringResource(R.string.return_card_go_back), style = VersoTheme.typography.button)
             }
         }
     }

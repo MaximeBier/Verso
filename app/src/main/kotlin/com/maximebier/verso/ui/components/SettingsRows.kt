@@ -29,7 +29,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Section de paramètres : titre 14 sp gras à l'encre, trait bas sauf la dernière. */
 @Composable
@@ -44,7 +43,7 @@ fun SettingsSection(
         Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
             Text(
                 text = title,
-                style = VersoTypography.captionBold,
+                style = VersoTheme.typography.captionBold,
                 color = colors.textSecondary,
                 modifier = Modifier.padding(start = 24.dp, top = 12.dp, end = 24.dp, bottom = 4.dp).semantics { heading() },
             )
@@ -61,7 +60,7 @@ fun SettingsSection(
 fun SettingsParagraph(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = VersoTypography.body,
+        style = VersoTheme.typography.body,
         color = VersoTheme.colors.textSecondary,
         modifier = modifier.fillMaxWidth().padding(start = 24.dp, top = 4.dp, end = 24.dp, bottom = 12.dp),
     )
@@ -71,9 +70,9 @@ fun SettingsParagraph(text: String, modifier: Modifier = Modifier) {
 private fun RowScope.RowTexts(title: String, summary: String?) {
     val colors = VersoTheme.colors
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(text = title, style = VersoTypography.rowTitle, color = colors.text)
+        Text(text = title, style = VersoTheme.typography.rowTitle, color = colors.text)
         if (summary != null) {
-            Text(text = summary, style = VersoTypography.caption, color = colors.textSecondary)
+            Text(text = summary, style = VersoTheme.typography.caption, color = colors.textSecondary)
         }
     }
 }
@@ -166,7 +165,7 @@ fun ValueRow(title: String, value: String, modifier: Modifier = Modifier) {
         RowTexts(title, summary = null)
         Text(
             text = value,
-            style = VersoTypography.body,
+            style = VersoTheme.typography.body,
             color = VersoTheme.colors.textSecondary,
             modifier = Modifier.padding(end = 12.dp),
         )

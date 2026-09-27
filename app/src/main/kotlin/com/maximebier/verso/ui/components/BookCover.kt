@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 import java.io.File
 import java.util.Locale
 import java.util.zip.CRC32
@@ -92,7 +91,7 @@ fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, 
                 Text(
                     text = CoverArt.monogram(title, size.letters),
                     color = colors.onCover,
-                    style = VersoTypography.body.copy(fontSize = size.monogramSp.sp, lineHeight = size.monogramSp.sp, fontWeight = FontWeight(600)),
+                    style = VersoTheme.typography.body.copy(fontSize = size.monogramSp.sp, lineHeight = size.monogramSp.sp, fontWeight = FontWeight(600)),
                     maxLines = 1,
                 )
             }
@@ -132,7 +131,7 @@ fun GridBookCover(title: String, author: String, coverPath: String?, seed: Strin
                 Text(
                     text = title,
                     color = colors.onCover,
-                    style = VersoTypography.body.copy(fontSize = titleSp.sp, lineHeight = (titleSp * 1.2f).sp, fontWeight = FontWeight(600)),
+                    style = VersoTheme.typography.body.copy(fontSize = titleSp.sp, lineHeight = (titleSp * 1.2f).sp, fontWeight = FontWeight(600)),
                     textAlign = TextAlign.Center,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
@@ -142,7 +141,7 @@ fun GridBookCover(title: String, author: String, coverPath: String?, seed: Strin
                     Text(
                         text = author,
                         color = colors.onCover,
-                        style = VersoTypography.caption.copy(fontWeight = FontWeight(500)),
+                        style = VersoTheme.typography.caption.copy(fontWeight = FontWeight(500)),
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

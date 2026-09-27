@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Feuille modale (Sommaire, Journal) : hauteur fixe = écran − 88 dp, voile du thème, bouton Fermer. */
 @Composable
@@ -81,14 +80,14 @@ fun VersoBottomSheet(
                 Column(Modifier.weight(1f).padding(top = 10.dp)) {
                     Text(
                         text = title,
-                        style = VersoTypography.sheetTitle,
+                        style = VersoTheme.typography.sheetTitle,
                         color = colors.text,
                         modifier = Modifier.semantics { heading() },
                     )
                     if (subtitle != null) {
                         Text(
                             text = subtitle,
-                            style = VersoTypography.caption,
+                            style = VersoTheme.typography.caption,
                             color = colors.textSecondary,
                             modifier = Modifier.padding(top = 2.dp),
                         )

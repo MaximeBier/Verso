@@ -12,20 +12,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
+import com.maximebier.verso.core.settings.ReadingFont
 
-/** Thème Verso : clair ou sombre (réglage Thème, le système par défaut). Couleurs générées depuis tokens.json. */
+/** Thème Verso : clair ou sombre, dans la police choisie (réglages). Couleurs générées depuis tokens.json. */
 @Composable
-fun VersoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun VersoTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    font: ReadingFont = ReadingFont.LITERATA,
+    content: @Composable () -> Unit,
+) {
     val colors = if (darkTheme) VersoPalette.Dark else VersoPalette.Light
     val covers = if (darkTheme) VersoPalette.CoverDark else VersoPalette.CoverLight
+    val typography = VersoTypography.of(font)
     CompositionLocalProvider(
         LocalVersoColors provides colors,
         LocalCoverPalette provides covers,
         LocalVersoDarkTheme provides darkTheme,
+        LocalVersoTypography provides typography,
     ) {
         MaterialTheme(
             colorScheme = colorSchemeFor(colors, darkTheme),
-            typography = VersoTypography.material,
+            typography = typography.material,
             shapes = Shapes(
                 extraSmall = VersoShapes.cover,
                 small = VersoShapes.small,
@@ -36,7 +43,7 @@ fun VersoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable 
         ) {
             CompositionLocalProvider(
                 LocalContentColor provides colors.text,
-                LocalTextStyle provides VersoTypography.body,
+                LocalTextStyle provides typography.body,
                 content = content,
             )
         }
@@ -52,8 +59,9 @@ object VersoTheme {
     /** Thème sombre affiché : à utiliser à la place de isSystemInDarkTheme(). */
     val isDark: Boolean
         @Composable @ReadOnlyComposable get() = LocalVersoDarkTheme.current
+    /** Styles de texte dans la police choisie : VersoTheme.typography.body… */
     val typography: VersoTypography
-        get() = VersoTypography
+        @Composable @ReadOnlyComposable get() = LocalVersoTypography.current
 }
 
 /** Traduction vers Material 3 pour les composants M3 (Switch, ModalBottomSheet, Snackbar…). */

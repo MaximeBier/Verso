@@ -3,6 +3,9 @@ package com.maximebier.verso.reader
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,7 +50,7 @@ class ReaderSurfaceFailureTest {
             ReaderSurface(
                 publication = fixedLayout,
                 initialLocator = null,
-                dark = false,
+                initialStyle = ReaderStyle(ReadingSettings(), AppTheme.LIGHT, ScrollMode.CONTINUOUS),
                 onReady = { ready++ },
                 onCenterTap = {},
                 onFailed = { failures++ },

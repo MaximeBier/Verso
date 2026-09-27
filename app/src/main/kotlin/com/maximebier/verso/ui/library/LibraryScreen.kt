@@ -62,13 +62,14 @@ import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoSnackbarHost
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** 16 sp, interligne 1,35 (auteur d'une ligne ou d'une cellule). */
-private val AuthorStyle = VersoTypography.body.copy(lineHeight = 21.6.sp)
+@Composable
+private fun authorStyle() = VersoTheme.typography.body.copy(lineHeight = 21.6.sp)
 
 /** 16 sp, interligne 22 sp (compteur « 7 livres »). */
-private val CountStyle = VersoTypography.body.copy(lineHeight = 22.sp)
+@Composable
+private fun countStyle() = VersoTheme.typography.body.copy(lineHeight = 22.sp)
 
 /**
  * Point d'entrée de LibraryRoute (signature figée par la tâche 2.2, appelé par VersoNavHost) :
@@ -307,12 +308,12 @@ private val ToggleWidth = 105.dp
 
 @Composable
 private fun HeaderTitle(text: String, color: Color, modifier: Modifier = Modifier) {
-    Text(text = text, style = VersoTypography.screenTitle, color = color, modifier = modifier)
+    Text(text = text, style = VersoTheme.typography.screenTitle, color = color, modifier = modifier)
 }
 
 @Composable
 private fun HeaderCount(text: String, color: Color, modifier: Modifier = Modifier) {
-    Text(text = text, style = CountStyle, color = color, modifier = modifier)
+    Text(text = text, style = countStyle(), color = color, modifier = modifier)
 }
 
 /**
@@ -332,8 +333,8 @@ private fun LibraryHeader(state: LibraryUiState, actions: LibraryActions, modifi
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val maxWidthPx = with(density) { maxWidth.roundToPx() }
-        val titleWidthPx = measurer.measure(titleText, VersoTypography.screenTitle).size.width
-        val countWidthPx = measurer.measure(countText, CountStyle).size.width
+        val titleWidthPx = measurer.measure(titleText, VersoTheme.typography.screenTitle).size.width
+        val countWidthPx = measurer.measure(countText, countStyle()).size.width
         val toggleWidthPx = with(density) { ToggleWidth.roundToPx() }
         val smallGapPx = with(density) { 10.dp.roundToPx() }
         val bigGapPx = with(density) { 8.dp.roundToPx() }
@@ -389,9 +390,9 @@ private fun BookRow(book: LibraryBook, actions: LibraryActions) {
         ) {
             BookCover(title = book.title, coverPath = book.coverPath, seed = book.colorSeed, size = CoverSize.LIST)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(book.title, style = VersoTypography.bookTitle, color = colors.text, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(book.title, style = VersoTheme.typography.bookTitle, color = colors.text, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 if (book.author.isNotEmpty()) {
-                    Text(book.author, style = AuthorStyle, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(book.author, style = authorStyle(), color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 BookStatusLine(
                     status = book.status,
@@ -415,9 +416,9 @@ private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: M
         ) {
             GridBookCover(title = book.title, author = book.author, coverPath = book.coverPath, seed = book.colorSeed)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(book.title, style = VersoTypography.bookTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(book.title, style = VersoTheme.typography.bookTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (book.author.isNotEmpty()) {
-                    Text(book.author, style = AuthorStyle, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(book.author, style = authorStyle(), color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

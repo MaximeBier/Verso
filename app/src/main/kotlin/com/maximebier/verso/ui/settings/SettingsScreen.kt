@@ -37,7 +37,6 @@ import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /**
  * Point d'entrée de SettingsRoute (signature figée par 2.2, appelé par VersoNavHost) :
@@ -162,7 +161,7 @@ private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val label = stringResource(R.string.settings_theme)
     Text(
         text = label,
-        style = VersoTypography.rowTitle,
+        style = VersoTheme.typography.rowTitle,
         color = VersoTheme.colors.text,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
     )

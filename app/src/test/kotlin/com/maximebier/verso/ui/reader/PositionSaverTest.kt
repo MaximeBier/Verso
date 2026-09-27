@@ -156,9 +156,9 @@ class PositionSaverTest {
 
     @Test
     fun restoredLocatorIsIndependentOfFontSize() = runTest {
-        // Simulation V2 : la taille par défaut passe de 19 à 24 sp. La position restaurée ne dépend que
+        // Simulation V2 : la taille passe de 20 à 24 sp. La position restaurée ne dépend que
         // du locator écrit (fichier, progression, texte du bloc, sélecteur), jamais de pixels.
-        assertThat(ReadingStyle.fontSizeFactor(24.0)).isNotEqualTo(ReadingStyle.fontSizeFactor())
+        assertThat(ReadingStyle.fontSizeFactor(24.0)).isNotEqualTo(ReadingStyle.fontSizeFactor(20.0))
         val target = testLocator(progression = 0.42, total = 0.31)
         val fake = FakeReaderController(target)
         fake.excerpt = target.copy(

@@ -25,7 +25,6 @@ import com.maximebier.verso.ui.reader.TocSheet
 import com.maximebier.verso.ui.reader.buildTocRows
 import com.maximebier.verso.ui.reader.tocSummary
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Barre de la maquette 1.11 (Madame Bovary, 31 %, 5 h 30 restantes). */
 internal val readerBarsSampleState = ReaderBarsState(
@@ -100,7 +99,7 @@ internal fun SampleReadingText() {
             Text(
                 "Yonville-l’Abbaye est un bourg à huit lieues de Rouen, entre la route d’Abbeville et celle de Beauvais, au fond d’une vallée qu’arrose la Rieule.",
                 color = colors.text,
-                style = VersoTypography.body.copy(fontSize = 19.sp, lineHeight = 30.4.sp),
+                style = VersoTheme.typography.body.copy(fontSize = 20.sp, lineHeight = 32.sp),
             )
         }
     }

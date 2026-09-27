@@ -2,6 +2,9 @@ package com.maximebier.verso.reader
 
 import android.os.SystemClock
 import com.maximebier.verso.core.position.ReadingThresholds
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import kotlin.math.abs
@@ -73,6 +76,91 @@ internal class FragmentReaderController(
     override var viewportHeightPx: Int = 0
         internal set
 
+    private val styleState = MutableStateFlow<ReaderStyle?>(null)
+
+    /** Derniers réglages demandés ; la surface les passe à `submitPreferences`. */
+    val style: StateFlow<ReaderStyle?> = styleState.asStateFlow()
+
+    override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) {
+        styleState.value = ReaderStyle(settings, theme, scrollMode)
+    }
+
+    /** Remise en page en cours : locator affiché avant le premier changement, rétabli ensuite ; null sinon. */
+    private var relayoutAnchor: Locator? = null
+    private var relayoutJob: Job? = null
+
+    /** Instant de la dernière position rapportée pendant l’étape en cours de la remise en page ; null si aucune. */
+    private var relayoutReportAt: Long? = null
+
+    /** Dernière position rapportée pendant la remise en page (non publiée) : celle de l’écran si elle est abandonnée. */
+    private var relayoutLastReport: Locator? = null
+
+    /**
+     * Préférences qui changent la mise en page (police, taille, interligne, marges, et largeur de la surface, dont
+     * dépend la gouttière) : Readium applique le CSS sans repositionner le texte (défilement gardé en pixels).
+     * [apply] soumet les préférences ; une fois la nouvelle mise en page rapportée, le texte revient au locator
+     * affiché avant le changement. Entre-temps, les positions rapportées ne sont pas publiées : la machine à états
+     * ne voit ni mouvement, ni fling, ni navigation, et la position affichée reste ce locator. Des changements
+     * rapprochés (taille +/− répétés) gardent celui du premier. Un toucher sur le texte ([onPointerDown]) ou un saut
+     * ([go]) abandonne la remise en page : l’utilisateur ou le saut l’emporte sur le retour au locator.
+     */
+    fun relayout(apply: () -> Unit) {
+        relayoutJob?.cancel()
+        val anchor = relayoutAnchor ?: displayedState.value
+        if (anchor == null) {
+            // Rien d’affiché encore : le navigateur ouvrira directement la position initiale avec ces préférences.
+            apply()
+            return
+        }
+        relayoutAnchor = anchor
+        relayoutJob = scope.launch {
+            relayoutReportAt = null
+            apply()
+            awaitRelayoutReport()
+            relayoutReportAt = null
+            navigate?.invoke(anchor)
+            // Un saut ou un toucher arrivé pendant ce déplacement l’a abandonnée : plus rien à faire.
+            ensureActive()
+            awaitRelayoutReport()
+            relayoutAnchor = null
+            relayoutReportAt = null
+            relayoutLastReport = null
+            relayoutJob = null
+        }
+    }
+
+    /**
+     * Position rapportée puis calme depuis [ReaderGestures.SETTLE_QUIET_MS] (une police qui se charge peut
+     * décaler le texte une seconde fois), ou [ReaderGestures.RELAYOUT_REPORT_MAX_MS] sans position.
+     */
+    private suspend fun awaitRelayoutReport() {
+        val startedAt = uptimeMs()
+        while (true) {
+            val now = uptimeMs()
+            val reportAt = relayoutReportAt
+            if (reportAt != null && now - reportAt >= ReaderGestures.SETTLE_QUIET_MS) return
+            if (reportAt == null && now - startedAt >= ReaderGestures.RELAYOUT_REPORT_MAX_MS) return
+            if (now - startedAt >= ReaderGestures.SETTLE_MAX_MS) return
+            delay(ReaderGestures.SETTLE_POLL_MS)
+        }
+    }
+
+    /**
+     * Abandonne la remise en page en cours. `publishScreen` : la dernière position rapportée pendant celle-ci est
+     * publiée, pour que [displayed] corresponde à l’écran (le navigateur ne la réémettra pas). Pas pour un saut :
+     * sa cible est la prochaine position.
+     */
+    private fun cancelRelayout(publishScreen: Boolean) {
+        if (relayoutAnchor == null) return
+        relayoutJob?.cancel()
+        relayoutJob = null
+        relayoutAnchor = null
+        relayoutReportAt = null
+        val screen = relayoutLastReport
+        relayoutLastReport = null
+        if (publishScreen && screen != null) onDisplayed(screen)
+    }
+
     fun bind(
         navigate: suspend (Locator) -> Unit,
         probeEdges: suspend () -> ChapterEdges?,
@@ -90,6 +178,11 @@ internal class FragmentReaderController(
     }
 
     fun onDisplayed(locator: Locator) {
+        if (relayoutAnchor != null) {
+            relayoutReportAt = uptimeMs()
+            relayoutLastReport = locator
+            return
+        }
         val filled = withTotalProgression(locator)
         if (filled == displayedState.value) return
         lastDisplayedChangeAt = uptimeMs()
@@ -113,6 +206,8 @@ internal class FragmentReaderController(
 
     /** Doigt posé : il arrête tout défilement en cours, dont le signal part aussitôt ; les bords sont relus. */
     fun onPointerDown() {
+        // L’utilisateur reprend le texte en main (feuille « Aa » sans voile) : pas de retour au locator sous son doigt.
+        cancelRelayout(publishScreen = true)
         val now = uptimeMs()
         touchStoppedScroll = scrolling(now)
         gestureDownAt = now
@@ -143,6 +238,8 @@ internal class FragmentReaderController(
      * (`chapterTurn`). Sinon : fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde.
      */
     fun onGestureReleased(velocityYPxPerSecond: Float, dragDyPx: Float) {
+        // Remise en page commencée pendant le glissé : le chapitre voisin se calcule sur la position réelle.
+        cancelRelayout(publishScreen = true)
         val height = viewportHeightPx
         val chain = chapterChain(edgesAtDown, dragDyPx, chainThresholdPx)
         val target = displayedState.value?.takeIf { chain != ChapterChain.NONE }
@@ -283,6 +380,8 @@ internal class FragmentReaderController(
 
     /** Saut sans animation ; le geste en attente est abandonné sans signal ([dropPendingGesture]). */
     override suspend fun go(locator: Locator) {
+        // Le saut l’emporte sur le retour au locator d’une remise en page en cours.
+        cancelRelayout(publishScreen = false)
         dropPendingGesture()
         navigate?.invoke(locator)
     }

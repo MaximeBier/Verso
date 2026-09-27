@@ -2,9 +2,15 @@ package com.maximebier.verso.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.LineSpacing
+import com.maximebier.verso.core.settings.Margins
+import com.maximebier.verso.core.settings.ReadingFont
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -62,5 +68,45 @@ class SettingsRepositoryTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "theme.preferences_pb") })
         store.edit { it[stringPreferencesKey("theme_mode")] = "SEPIA" }
         assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.AUTO)
+    }
+
+    @Test
+    fun readingSettingsDefaultToTheSpec() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "reading-defaults.preferences_pb") })
+        assertThat(SettingsRepository(store).readingSettings.first()).isEqualTo(ReadingSettings())
+    }
+
+    @Test
+    fun readingSettingsAreWrittenAndReadBack() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "reading-values.preferences_pb") })
+        val settings = SettingsRepository(store)
+        settings.updateReadingSettings {
+            it.copy(font = ReadingFont.ATKINSON, lineSpacing = LineSpacing.AIRY, margins = Margins.WIDE, defaultScrollMode = ScrollMode.PAGES)
+                .withFontSize(26)
+        }
+        settings.updateReadingSettings { it.larger() }
+        assertThat(settings.readingSettings.first()).isEqualTo(
+            ReadingSettings(ReadingFont.ATKINSON, 27, LineSpacing.AIRY, Margins.WIDE, ScrollMode.PAGES),
+        )
+    }
+
+    @Test
+    fun unknownReadingValuesFallBackToDefaults() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "reading-unknown.preferences_pb") })
+        store.edit {
+            it[stringPreferencesKey("reading_font")] = "COMIC_SANS"
+            it[intPreferencesKey("reading_font_size")] = 99
+            it[stringPreferencesKey("reading_line_spacing")] = "DOUBLE"
+            it[stringPreferencesKey("reading_margins")] = "NONE"
+            it[stringPreferencesKey("default_scroll_mode")] = "SPIRAL"
+        }
+        assertThat(SettingsRepository(store).readingSettings.first()).isEqualTo(ReadingSettings(fontSizeSp = 32))
+    }
+
+    @Test
+    fun v1ThemeValueIsReadUnchanged() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "v1-theme.preferences_pb") })
+        store.edit { it[stringPreferencesKey("theme_mode")] = "DARK" }
+        assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.DARK)
     }
 }

@@ -6,6 +6,9 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
@@ -49,7 +52,7 @@ class ReaderEngineIntegrationTest {
         withAlice { publication ->
             val factory = EpubNavigatorFactory(publication).createFragmentFactory(
                 initialLocator = publication.locatorFromLink(publication.readingOrder[1])!!.copyWithLocations(progression = 0.5),
-                initialPreferences = VersoReadingPreferences.epub(dark = false),
+                initialPreferences = VersoReadingPreferences.epub(ReadingSettings(), AppTheme.LIGHT, ScrollMode.CONTINUOUS),
             )
             assertThat(factory).isNotNull()
         }

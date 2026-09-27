@@ -37,7 +37,6 @@ import com.maximebier.verso.R
 import com.maximebier.verso.ui.components.DetailTopBar
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Un composant embarqué, sa licence et le texte complet de celle-ci (res/raw). */
 data class LicenseEntry(
@@ -52,6 +51,7 @@ object OpenSourceLicenses {
         LicenseEntry(R.string.license_component_verso, R.string.license_name_apache_2, R.raw.license_apache_2_0),
         LicenseEntry(R.string.license_component_readium, R.string.license_name_bsd_3, R.raw.license_bsd_3_readium),
         LicenseEntry(R.string.license_component_atkinson, R.string.license_name_ofl, R.raw.license_ofl_atkinson),
+        LicenseEntry(R.string.license_component_literata, R.string.license_name_ofl, R.raw.license_ofl_literata),
         LicenseEntry(R.string.license_component_lucide, R.string.license_name_isc, R.raw.license_isc_lucide),
         LicenseEntry(R.string.license_component_androidx, R.string.license_name_apache_2, R.raw.license_apache_2_0),
         LicenseEntry(R.string.license_component_kotlin, R.string.license_name_apache_2, R.raw.license_apache_2_0),
@@ -84,7 +84,7 @@ fun LicensesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 Text(
                     text = stringResource(R.string.licenses_intro),
                     modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp),
-                    style = VersoTypography.body,
+                    style = VersoTheme.typography.body,
                     color = colors.textSecondary,
                 )
             }
@@ -115,8 +115,8 @@ private fun LicenseRow(entry: LicenseEntry, expanded: Boolean, onToggle: () -> U
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(stringResource(entry.component), style = VersoTypography.rowTitle, color = colors.text)
-                Text(stringResource(entry.licenseName), style = VersoTypography.caption, color = colors.textSecondary)
+                Text(stringResource(entry.component), style = VersoTheme.typography.rowTitle, color = colors.text)
+                Text(stringResource(entry.licenseName), style = VersoTheme.typography.caption, color = colors.textSecondary)
             }
             Icon(
                 imageVector = VersoIcons.ChevronRight,
@@ -132,7 +132,7 @@ private fun LicenseRow(entry: LicenseEntry, expanded: Boolean, onToggle: () -> U
             Text(
                 text = text,
                 modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
-                style = VersoTypography.caption,
+                style = VersoTheme.typography.caption,
                 color = colors.text,
             )
         }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import org.json.JSONTokener
 import org.readium.r2.navigator.HyperlinkNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.shared.ExperimentalReadiumApi
@@ -83,7 +85,9 @@ private const val TOP_TEXT_SCRIPT =
  * Navigateur EPUB classique de Readium (Fragment) : un chapitre à la fois, défilé nativement par la WebView ; un
  * glissé commencé au bord ouvre le chapitre voisin ([chapterChain]). `initialLocator` n’est lu qu’à la création
  * (clé : la publication). `onInternalLink` : lien interne touché (ordre de lecture), appelé juste avant que Readium
- * ne le suive. `fontScale` : échelle de la taille de police d’Android appliquée au texte. `positions` : positions
+ * ne le suive. `initialStyle` : réglages de lecture et palette à la création du lecteur (lus une fois, comme
+ * `initialLocator`) ; les changements passent ensuite par [ReaderController.submit], sans recréer le lecteur. La
+ * taille choisie suit l’échelle de police d’Android ([ReadingStyle.readingFontScale]). `positions` : positions
  * de l’ordre de lecture déjà calculées (progression totale fine). `onFailed` : le moteur refuse le livre (mise en
  * page fixe, hors V1) ; appelé une fois, surface unie.
  */
@@ -91,22 +95,22 @@ private const val TOP_TEXT_SCRIPT =
 fun ReaderSurface(
     publication: Publication,
     initialLocator: Locator?,
-    dark: Boolean,
+    initialStyle: ReaderStyle,
     onReady: (ReaderController) -> Unit,
     onCenterTap: () -> Unit,
     modifier: Modifier = Modifier,
-    fontScale: Double = 1.0,
     positions: ReadingOrderPositions? = null,
     onInternalLink: (Url) -> Unit = {},
     onFailed: () -> Unit = {},
 ) {
     val activity = LocalActivity.current as? FragmentActivity
-    val density = LocalDensity.current.density
+    val densityInfo = LocalDensity.current
+    val density = densityInfo.density
     val currentOnReady by rememberUpdatedState(onReady)
     val currentOnCenterTap by rememberUpdatedState(onCenterTap)
     val currentOnInternalLink by rememberUpdatedState(onInternalLink)
     val currentOnFailed by rememberUpdatedState(onFailed)
-    val background = Color(ReadingStyle.colors(dark).background)
+    val background = Color(ReadingStyle.colors(initialStyle.theme).background)
 
     if (publication.metadata.layout == Layout.FIXED || activity == null) {
         // Livre à mise en page fixe : hors du périmètre V1. Jamais d’écran vide sans issue.
@@ -128,6 +132,12 @@ fun ReaderSurface(
         )
     }
     controller.chainThresholdPx = ReaderGestures.CHAPTER_CHAIN_DRAG_DP * density
+    val requestedStyle by controller.style.collectAsState()
+    val style = requestedStyle ?: initialStyle
+    // Taille réelle voulue par Android pour la taille choisie (échelle non linéaire : dépend de la taille).
+    val fontScale = remember(densityInfo, style.settings.fontSizeSp) {
+        ReadingStyle.readingFontScale(densityInfo, style.settings.fontSizeSp)
+    }
 
     val fragmentFactory = remember(publication) {
         val listener = object : EpubNavigatorFragment.Listener {
@@ -147,8 +157,13 @@ fun ReaderSurface(
         EpubNavigatorFactory(publication).createFragmentFactory(
             initialLocator = initialLocator,
             listener = listener,
-            initialPreferences = VersoReadingPreferences.epub(dark, fontScale = fontScale),
-            configuration = EpubNavigatorFragment.Configuration { applyVerso(dark) },
+            initialPreferences = VersoReadingPreferences.epub(
+                initialStyle.settings,
+                initialStyle.theme,
+                initialStyle.scrollMode,
+                fontScale = ReadingStyle.readingFontScale(densityInfo, initialStyle.settings.fontSizeSp),
+            ),
+            configuration = EpubNavigatorFragment.Configuration { applyVerso(initialStyle.theme) },
         )
     }
     // Posée à chaque composition, donc avant que AndroidFragment instancie le fragment.
@@ -193,11 +208,23 @@ fun ReaderSurface(
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
     }
-    LaunchedEffect(navigator, dark, fontScale, widthDp) {
-        navigator?.submitPreferences(VersoReadingPreferences.epub(dark, fontScale = fontScale, widthDp = widthDp))
+    // Préférences soumises au navigateur en dernier ; lues seulement ici, jamais pendant la composition.
+    val submitted = remember { mutableStateOf<EpubPreferences?>(null) }
+    LaunchedEffect(navigator, style, fontScale, widthDp) {
+        val nav = navigator ?: return@LaunchedEffect
+        val preferences =
+            VersoReadingPreferences.epub(style.settings, style.theme, style.scrollMode, fontScale = fontScale, widthDp = widthDp)
+        val previous = submitted.value
+        submitted.value = preferences
+        if (previous != null && VersoReadingPreferences.changesLayout(previous, preferences)) {
+            // Police, taille, interligne, marges : le texte revient au même locator, sans mouvement pour la machine à états.
+            controller.relayout { nav.submitPreferences(preferences) }
+        } else {
+            nav.submitPreferences(preferences)
+        }
     }
 
-    Box(modifier.fillMaxSize().background(background)) {
+    Box(modifier.fillMaxSize().background(Color(ReadingStyle.colors(style.theme).background))) {
         AndroidFragment<EpubNavigatorFragment>(
             modifier = Modifier
                 .fillMaxSize()

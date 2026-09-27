@@ -22,7 +22,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import com.maximebier.verso.ui.theme.VersoTypography
 
 /** Au-delà de cette part de la largeur, l'action passe sous le message (texte système agrandi). */
 private const val ACTION_MAX_WIDTH_FRACTION = 0.4f
@@ -44,7 +43,7 @@ fun VersoSnackbar(data: SnackbarData, modifier: Modifier = Modifier) {
         content = {
             Text(
                 text = data.visuals.message,
-                style = VersoTypography.body.copy(lineHeight = VersoTypography.body.fontSize * 1.4f),
+                style = VersoTheme.typography.body.copy(lineHeight = VersoTheme.typography.body.fontSize * 1.4f),
                 color = colors.onInverse,
                 modifier = Modifier.padding(vertical = 8.dp),
             )

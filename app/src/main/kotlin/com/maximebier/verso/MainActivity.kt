@@ -36,6 +36,7 @@ class MainActivity : FragmentActivity() {
         val settings = (application as VersoApplication).container.settings
         // Lu avant la première image : le thème choisi s'affiche d'emblée, sans passer par celui du téléphone.
         val initialThemeMode = runBlocking { settings.themeMode.first() }
+        val initialReading = runBlocking { settings.readingSettings.first() }
         // Le navigateur EPUB est un Fragment sans constructeur vide : restauré par le système (rotation, thème), il
         // n’a pas sa fabrique. Il est recréé à vide puis retiré ; la surface de lecture en crée un vrai.
         supportFragmentManager.fragmentFactory = EpubNavigatorFragment.createDummyFactory()
@@ -52,10 +53,11 @@ class MainActivity : FragmentActivity() {
         val reopenBookId = if (allowAutoReopen) runBlocking { bookToReopen() } else null
         setContent {
             val themeMode by settings.themeMode.collectAsState(initial = initialThemeMode)
+            val reading by settings.readingSettings.collectAsState(initial = initialReading)
             val dark = themeMode.isDark(systemDark = isSystemInDarkTheme())
             LaunchedEffect(themeMode) { applyWindowNightMode(themeMode) }
             LaunchedEffect(dark) { enableEdgeToEdge(dark) }
-            VersoTheme(darkTheme = dark) {
+            VersoTheme(darkTheme = dark, font = reading.font) {
                 val navController = rememberNavController()
                 VersoNavHost(navController = navController, reopenBookId = reopenBookId)
                 ReturnToLibraryOnIncomingImport(navController)

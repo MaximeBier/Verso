@@ -180,6 +180,7 @@
     <string name="license_component_verso" translatable="false">Verso</string>
     <string name="license_component_readium" translatable="false">Readium Kotlin Toolkit</string>
     <string name="license_component_atkinson" translatable="false">Atkinson Hyperlegible Next</string>
+    <string name="license_component_literata" translatable="false">Literata</string>
     <string name="license_component_lucide">Lucide (icônes)</string>
     <string name="license_component_androidx">AndroidX (Compose, Navigation, Room, DataStore, Lifecycle, Fragment, Media3, WebKit)</string>
     <string name="license_component_kotlin" translatable="false">Kotlin, kotlinx.coroutines, kotlinx.serialization, kotlinx.datetime</string>
