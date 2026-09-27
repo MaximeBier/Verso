@@ -16,10 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.preorder
+import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.reader.ReaderBars
 import com.maximebier.verso.ui.reader.ReaderBarsState
+import com.maximebier.verso.ui.reader.ReadingSettingsSheet
+import com.maximebier.verso.ui.reader.ReadingSettingsSheetState
 import com.maximebier.verso.ui.reader.ReturnCard
 import com.maximebier.verso.ui.reader.TocSheet
 import com.maximebier.verso.ui.reader.buildTocRows
@@ -47,7 +52,7 @@ internal val tocSample = listOf(
 internal fun ReaderBarsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
         SampleReadingText()
-        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onJournalClick = {})
+        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onJournalClick = {}, onSettingsClick = {})
     }
 }
 
@@ -64,6 +69,40 @@ internal fun TocSheetSample() {
         rows = buildTocRows(tocSample, readingOrder, currentHref = "p2c1.xhtml"),
         readingPercent = 31,
         onChapterClick = {},
+        onDismiss = {},
+    )
+}
+
+/** 2.01 : barre V2 (Sommaire, Journal, Réglages ; Rechercher ajouté à l'étape 15). */
+@Composable
+internal fun ReaderToolsSample() {
+    Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
+        SampleReadingText()
+        ReaderBars(
+            visible = true,
+            state = readerBarsSampleState,
+            onBack = {},
+            onTocClick = {},
+            onJournalClick = {},
+            onSettingsClick = {},
+        )
+    }
+}
+
+/** 2.02 : feuille « Réglages de lecture » ouverte à mi-hauteur au-dessus du texte, réglages par défaut. */
+@Composable
+internal fun ReadingSettingsSheetSample() {
+    Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
+        SampleReadingText()
+    }
+    ReadingSettingsSheet(
+        state = ReadingSettingsSheetState(ReadingSettings(), ThemeMode.AUTO, ScrollMode.CONTINUOUS),
+        onFontSelected = {},
+        onSmaller = {},
+        onLarger = {},
+        onThemeSelected = {},
+        onLineSpacingSelected = {},
+        onMarginsSelected = {},
         onDismiss = {},
     )
 }

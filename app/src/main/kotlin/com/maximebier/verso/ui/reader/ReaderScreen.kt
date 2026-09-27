@@ -25,7 +25,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
@@ -63,6 +62,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     KeepScreenOn()
     ImmersiveSystemBars(showSystemBars = state.barsVisible)
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
+    BackHandler(enabled = state.settingsVisible) { viewModel.hideReadingSettings() }
     if (state.failed) {
         LaunchedEffect(Unit) { onOpenFailed() }
     }
@@ -74,7 +74,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 publication = publication,
                 initialLocator = state.initialLocator,
                 // Lu à la création du lecteur seulement ; les changements passent par ReaderController.submit.
-                initialStyle = ReaderStyle(state.readingSettings, theme, ScrollMode.CONTINUOUS),
+                initialStyle = ReaderStyle(state.readingSettings, theme, state.scrollMode),
                 positions = state.readingPositions,
                 onReady = viewModel::onReaderReady,
                 onCenterTap = viewModel::toggleBars,
@@ -95,6 +95,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 progression = state.readingProgression.toFloat(),
                 remainingMinutes = state.remainingMinutes,
             ),
+            onSettingsClick = viewModel::showReadingSettings,
             onBack = onBackToLibrary,
             onTocClick = viewModel::showToc,
             // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas.
@@ -140,6 +141,19 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             state = journalState,
             onResume = viewModel::resumeFromJournal,
             onDismiss = viewModel::hideJournal,
+        )
+    }
+    if (state.settingsVisible) {
+        val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+        ReadingSettingsSheet(
+            state = ReadingSettingsSheetState(state.readingSettings, themeMode, state.scrollMode),
+            onFontSelected = { font -> viewModel.updateReadingSettings { it.copy(font = font) } },
+            onSmaller = { viewModel.updateReadingSettings { it.smaller() } },
+            onLarger = { viewModel.updateReadingSettings { it.larger() } },
+            onThemeSelected = viewModel::setThemeMode,
+            onLineSpacingSelected = { spacing -> viewModel.updateReadingSettings { it.copy(lineSpacing = spacing) } },
+            onMarginsSelected = { margins -> viewModel.updateReadingSettings { it.copy(margins = margins) } },
+            onDismiss = viewModel::hideReadingSettings,
         )
     }
 }

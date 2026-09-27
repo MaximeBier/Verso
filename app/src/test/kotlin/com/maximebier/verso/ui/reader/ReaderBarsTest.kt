@@ -2,8 +2,13 @@ package com.maximebier.verso.ui.reader
 
 import com.maximebier.verso.data.AppTheme
 import android.content.Context
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +18,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
+import com.maximebier.verso.core.settings.ReadingFont
 import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
@@ -35,10 +41,23 @@ class ReaderBarsTest {
         remainingMinutes = 330,
     )
 
-    private fun show(visible: Boolean, onBack: () -> Unit = {}, onToc: () -> Unit = {}, onJournal: () -> Unit = {}) {
+    private fun show(
+        visible: Boolean,
+        onBack: () -> Unit = {},
+        onToc: () -> Unit = {},
+        onJournal: () -> Unit = {},
+        onSettings: () -> Unit = {},
+    ) {
         compose.setContent {
-            VersoTheme(theme = AppTheme.LIGHT) {
-                ReaderBars(visible = visible, state = state, onBack = onBack, onTocClick = onToc, onJournalClick = onJournal)
+            VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.LITERATA) {
+                ReaderBars(
+                    visible = visible,
+                    state = state,
+                    onBack = onBack,
+                    onTocClick = onToc,
+                    onJournalClick = onJournal,
+                    onSettingsClick = onSettings,
+                )
             }
         }
     }
@@ -67,15 +86,36 @@ class ReaderBarsTest {
         var back = 0
         var toc = 0
         var journal = 0
-        show(visible = true, onBack = { back++ }, onToc = { toc++ }, onJournal = { journal++ })
+        var settings = 0
+        show(visible = true, onBack = { back++ }, onToc = { toc++ }, onJournal = { journal++ }, onSettings = { settings++ })
 
         compose.onNodeWithContentDescription(context.getString(R.string.reader_back_to_library))
             .assertHeightIsAtLeast(48.dp)
             .performClick()
-        compose.onNodeWithText(context.getString(R.string.reader_toc)).assertHeightIsAtLeast(48.dp).performClick()
-        compose.onNodeWithText(context.getString(R.string.reader_journal)).performClick()
+        compose.onNode(hasText(context.getString(R.string.reader_toc)) and hasClickAction())
+            .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).performClick()
+        compose.onNode(hasText(context.getString(R.string.reader_journal)) and hasClickAction())
+            .assertHeightIsAtLeast(48.dp).performClick()
+        compose.onNode(hasText(context.getString(R.string.reader_settings)) and hasClickAction())
+            .assertHeightIsAtLeast(48.dp).performClick()
 
-        assertThat(listOf(back, toc, journal)).containsExactly(1, 1, 1).inOrder()
+        assertThat(listOf(back, toc, journal, settings)).containsExactly(1, 1, 1, 1).inOrder()
+    }
+
+    @Test
+    fun barShowsThreeToolsUntilSearchArrives() {
+        show(visible = true)
+        // Étape 11 : Sommaire, Journal, Réglages ; Rechercher s'ajoute à l'étape 15 (jamais de commande inactive).
+        compose.onAllNodes(hasClickAction() and hasText(context.getString(R.string.reader_settings))).assertCountEquals(1)
+        compose.onAllNodes(hasClickAction() and hasText("Rechercher")).assertCountEquals(0)
+    }
+
+    @Test
+    fun settingsGlyphIsHiddenFromTalkBack() {
+        show(visible = true)
+        // Le bouton se lit « Réglages, bouton », jamais « Aa ».
+        compose.onNode(hasText(context.getString(R.string.reader_settings)) and hasClickAction())
+            .assert(hasText(context.getString(R.string.reader_settings_glyph)).not())
     }
 
     @Test

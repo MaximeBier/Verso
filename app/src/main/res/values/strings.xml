@@ -196,6 +196,34 @@
     <string name="reader_back_to_library">Retour à la bibliothèque</string>
     <string name="reader_toc">Sommaire</string>
     <string name="reader_journal">Journal</string>
+    <!-- V2 · écran 2.01 -->
+    <string name="reader_settings">Réglages</string>
+    <!-- Glyphe de l’outil Réglages et des pastilles de thème (maquettes 2.01, 2.02) ; masqué à TalkBack. -->
+    <string name="reader_settings_glyph" translatable="false">Aa</string>
+    <!-- V2 · écran 2.02 -->
+    <string name="reader_settings_title">Réglages de lecture</string>
+    <string name="reader_settings_font">Police</string>
+    <string name="reader_settings_font_literata">Literata</string>
+    <string name="reader_settings_font_atkinson">Atkinson</string>
+    <string name="reader_settings_font_system">Système</string>
+    <string name="reader_settings_text_size">Taille du texte</string>
+    <string name="reader_settings_text_smaller">Réduire le texte</string>
+    <string name="reader_settings_text_larger">Agrandir le texte</string>
+    <string name="reader_settings_text_size_value">%1$d</string>
+    <string name="reader_settings_theme">Thème</string>
+    <string name="reader_settings_theme_auto">Auto</string>
+    <string name="reader_settings_theme_light">Clair</string>
+    <string name="reader_settings_theme_sepia">Sépia</string>
+    <string name="reader_settings_theme_dark">Sombre</string>
+    <string name="reader_settings_theme_black">Noir</string>
+    <string name="reader_settings_line_spacing">Interligne</string>
+    <string name="reader_settings_line_spacing_tight">Serré</string>
+    <string name="reader_settings_line_spacing_normal">Normal</string>
+    <string name="reader_settings_line_spacing_airy">Aéré</string>
+    <string name="reader_settings_margins">Marges</string>
+    <string name="reader_settings_margins_narrow">Étroites</string>
+    <string name="reader_settings_margins_normal">Normales</string>
+    <string name="reader_settings_margins_wide">Larges</string>
 
     <!-- ===================== Sommaire (1.12) ===================== -->
     <string name="toc_title">Sommaire</string>

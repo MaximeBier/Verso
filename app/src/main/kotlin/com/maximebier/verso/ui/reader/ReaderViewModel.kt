@@ -25,6 +25,8 @@ import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
+import com.maximebier.verso.data.SettingsRepository
+import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.reader.sameResource
@@ -39,7 +41,6 @@ import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -96,6 +97,10 @@ data class ReaderUiState(
     val barsVisible: Boolean = false,
     val tocVisible: Boolean = false,
     val journalVisible: Boolean = false,
+    /** Feuille « Réglages de lecture » (2.02) ouverte. */
+    val settingsVisible: Boolean = false,
+    /** Défilement de ce livre (`books.scrollMode`), à défaut celui des Paramètres (`defaultScrollMode`). */
+    val scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
     /** Carte « Revenir » ; jamais persistée. */
     val returnCard: ReturnCardState? = null,
     /** Réglages de lecture courants (police, taille, interligne, marges). */
@@ -112,8 +117,8 @@ class ReaderViewModel(
     private val locationTexts: LocationTexts,
     /** Livre impossible à ouvrir (fichier illisible, moteur qui le refuse) : titre signalé à la bibliothèque. */
     private val reportOpenFailure: (title: String) -> Unit = {},
-    /** Réglages de lecture (`SettingsRepository.readingSettings`), appliqués au lecteur à chaque changement. */
-    private val readingSettings: Flow<ReadingSettings> = flowOf(ReadingSettings()),
+    /** Réglages de lecture (appliqués au lecteur à chaque changement) et thème, lus et écrits depuis la feuille « Aa ». */
+    private val settings: SettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -173,11 +178,15 @@ class ReaderViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /** Thème choisi (Automatique, Clair, Sépia, Sombre, Noir), pour la feuille « Aa ». */
+    val themeMode: StateFlow<ThemeMode> =
+        settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.AUTO)
+
     init {
         viewModelScope.launch { load() }
         viewModelScope.launch {
-            readingSettings.collect { settings ->
-                _uiState.update { it.copy(readingSettings = settings) }
+            settings.readingSettings.collect { reading ->
+                _uiState.update { it.copy(readingSettings = reading) }
                 submitStyle()
                 refreshDistance()
             }
@@ -234,9 +243,15 @@ class ReaderViewModel(
         )
         coordinator = created
         if (stopped) created.onStopped()
+        // Réglages lus avant de publier `publication` : la surface naît avec eux, sans relayout à la première image.
+        val reading = settings.readingSettings.first()
+        val scrollMode = book.scrollMode?.let { stored -> ScrollMode.entries.firstOrNull { it.name == stored } }
+            ?: reading.defaultScrollMode
         _uiState.update {
             it.copy(
                 publication = publication,
+                readingSettings = reading,
+                scrollMode = scrollMode,
                 readingPositions = positions,
                 initialLocator = saved,
                 bookTitle = book.title,
@@ -331,8 +346,7 @@ class ReaderViewModel(
     private fun submitStyle() {
         val reader = controller ?: return
         val current = theme ?: return
-        // Mode pages : étape 12 (défilement du livre ou défaut des Paramètres). Jusque-là, toujours continu.
-        reader.submit(_uiState.value.readingSettings, current, ScrollMode.CONTINUOUS)
+        reader.submit(_uiState.value.readingSettings, current, _uiState.value.scrollMode)
     }
 
     /** Distance en écrans recalculée quand la surface est mesurée, que l’échelle ou les réglages du texte changent. */
@@ -406,6 +420,26 @@ class ReaderViewModel(
     }
 
     fun hideJournal() = _uiState.update { it.copy(journalVisible = false) }
+
+    /** « Aa » : la feuille s’ouvre, la barre se referme (maquette 2.02 : texte seul derrière la feuille). */
+    fun showReadingSettings() {
+        sessionCoordinator?.onInteraction()
+        _uiState.update { it.copy(settingsVisible = true, barsVisible = false) }
+    }
+
+    fun hideReadingSettings() = _uiState.update { it.copy(settingsVisible = false) }
+
+    /** Police, taille, interligne, marges : communs à tous les livres (spec) ; appliqués en direct par la collecte des réglages. */
+    fun updateReadingSettings(transform: (ReadingSettings) -> ReadingSettings) {
+        sessionCoordinator?.onInteraction()
+        viewModelScope.launch { settings.updateReadingSettings(transform) }
+    }
+
+    /** Thème de toute l’app (même réglage que les Paramètres) ; revient par `onThemeChanged` via `VersoTheme.theme`. */
+    fun setThemeMode(mode: ThemeMode) {
+        sessionCoordinator?.onInteraction()
+        viewModelScope.launch { settings.setThemeMode(mode) }
+    }
 
     /**
      * « Reprendre ici » (journal) : saut explicite à la fin de la session, par [jumpTo] (`ReaderEvent.Jumped`) :
@@ -559,7 +593,7 @@ class ReaderViewModel(
                     clock = container.clock,
                     locationTexts = app.resources.locationTexts(),
                     reportOpenFailure = OpenFailures::report,
-                    readingSettings = container.settings.readingSettings,
+                    settings = container.settings,
                 )
             }
         }

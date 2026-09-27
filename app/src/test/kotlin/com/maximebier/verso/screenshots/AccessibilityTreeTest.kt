@@ -34,7 +34,7 @@ class AccessibilityTreeTest(private val fixture: ScreenFixture, private val vari
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
         fun parameters(): List<Array<Any>> =
-            V1ScreenCatalog.fixtures.flatMap { fixture ->
+            (V1ScreenCatalog.fixtures + V2ScreenCatalog.fixtures.map { it.screen }).flatMap { fixture ->
                 listOf(ScreenVariant.LIGHT, ScreenVariant.FONT_200).map { arrayOf<Any>(fixture, it) }
             }
     }

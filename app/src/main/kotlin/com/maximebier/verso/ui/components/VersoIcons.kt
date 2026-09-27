@@ -38,6 +38,7 @@ object VersoIcons {
         "M12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6z",
     )
     val Plus: ImageVector = strokeIcon("plus", "M12 5v14M5 12h14")
+    val Minus: ImageVector = strokeIcon("minus", "M5 12h14")
     val ArrowRight: ImageVector = strokeIcon("arrow-right", "M5 12h14M13 6l6 6-6 6", strokeWidth = 2.2f)
     val ArrowLeft: ImageVector = strokeIcon("arrow-left", "M19 12H5M11 18l-6-6 6-6")
     val List: ImageVector = strokeIcon("list", "M4 6h16M4 12h16M4 18h16")
