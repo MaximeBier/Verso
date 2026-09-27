@@ -29,6 +29,16 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 - Téléphone branché en adb : installer, lancer, capturer l'écran uniquement ; ne jamais modifier ses réglages système.
 - Un seul agent pilote le téléphone à la fois : avant la première commande adb, prendre le verrou `mkdir .superpowers/phone.lock` (attendre s'il existe), le rendre à la fin (`rm -rf .superpowers/phone.lock`), même en cas d'échec. Les agents lancés en parallèle se limitent aux tests JVM/Robolectric sauf autorisation explicite.
 
+## Rythme de travail
+
+Objectif : moins de 10 minutes par tâche (code, tests, commit). Mesuré le 2026-09-28 : test ciblé 5 s, après une modification du code 30 s, suite complète de l'app 57 s, lint complet 78 s.
+
+- Exécution directe dans la conversation, tâche après tâche : le contexte et le démon Gradle restent chauds. Sous-agents seulement pour de gros morceaux indépendants, deux au plus en même temps.
+- Pendant une tâche, seulement les tests concernés : `./gradlew :app:testDebugUnitTest --tests '<classe>'` ou `:core:test`. La suite complète, le lint, les captures Roborazzi et `assembleDebug` une fois par étape, avant le commit d'étape.
+- Relecture : une par étape, sur tout le diff de l'étape. Relecture par tâche seulement pour la machine à états et le moteur de lecture.
+- Téléphone : une seule passe groupée en fin d'étape.
+- Build : `JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"` depuis Git Bash ; cache de configuration et cache de build activés dans `gradle.properties`.
+
 ## Vérifier un écran
 
 Comparer le rendu sur le téléphone ou l'émulateur (390 × 844 dp si possible) au PNG de l'écran, en clair et en sombre. 1 px de maquette = 1 dp ; les tailles de texte en px sont des sp.
