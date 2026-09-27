@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -93,7 +94,7 @@ fun LibraryScreen(
     LibraryContent(
         state = state,
         actions = LibraryActions(
-            onImport = { picker.launch(arrayOf(IncomingIntent.EPUB_MIME_TYPE)) },
+            onImport = { picker.launch(IncomingIntent.PICKER_MIME_TYPES) },
             onOpenSettings = onOpenSettings,
             onOpenBook = onOpenReader,
             onOpenDetails = onOpenDetails,
@@ -232,7 +233,7 @@ private fun LibraryList(state: LibraryUiState, actions: LibraryActions) {
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             )
         }
-        items(state.books, key = { it.id }) { book -> BookRow(book, actions) }
+        items(state.listedBooks, key = { it.id }) { book -> BookRow(book, actions) }
     }
 }
 
@@ -257,7 +258,7 @@ private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions) {
         item(key = "sort", span = { GridItemSpan(maxLineSpan) }) {
             SortSelector(selected = state.sort, onSelect = actions.onSortChange)
         }
-        itemsIndexed(state.books, key = { _, book -> book.id }) { index, book ->
+        itemsIndexed(state.listedBooks, key = { _, book -> book.id }) { index, book ->
             // Marge extérieure de 20 dp comme la maquette : 16 dp de la grille + 4 dp.
             val edge = if (index % 2 == 0) Modifier.padding(start = 4.dp) else Modifier.padding(end = 4.dp)
             BookGridCell(book, actions, edge)
@@ -381,7 +382,7 @@ private fun BookRow(book: LibraryBook, actions: LibraryActions) {
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clickable { actions.onOpenBook(book.id) }
+                .clickable(role = Role.Button) { actions.onOpenBook(book.id) }
                 .padding(start = 24.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -409,7 +410,7 @@ private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: M
     val colors = VersoTheme.colors
     Column(modifier) {
         Column(
-            modifier = Modifier.clickable { actions.onOpenBook(book.id) },
+            modifier = Modifier.clickable(role = Role.Button) { actions.onOpenBook(book.id) },
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             GridBookCover(title = book.title, author = book.author, coverPath = book.coverPath, seed = book.colorSeed)

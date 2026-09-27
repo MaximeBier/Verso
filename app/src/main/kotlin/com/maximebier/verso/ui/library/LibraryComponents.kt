@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -217,6 +218,16 @@ private fun ViewModeSegment(icon: ImageVector, label: String, selected: Boolean,
             tint = if (selected) colors.onSelection else colors.text,
             modifier = Modifier.size(VersoDimens.iconSmall),
         )
+        // Marque du mode choisi en plus du fond : jamais la couleur seule (spec, « Sélection »).
+        if (selected) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 7.dp)
+                    .size(width = 20.dp, height = 2.dp)
+                    .background(colors.onSelection, CircleShape),
+            )
+        }
     }
 }
 

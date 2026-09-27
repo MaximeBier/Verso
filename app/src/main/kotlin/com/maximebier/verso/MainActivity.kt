@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -23,6 +24,7 @@ import com.maximebier.verso.importer.IncomingIntent
 import com.maximebier.verso.ui.nav.LibraryRoute
 import com.maximebier.verso.ui.nav.StartDestination
 import com.maximebier.verso.ui.nav.VersoNavHost
+import com.maximebier.verso.ui.theme.VersoPalette
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import kotlinx.coroutines.flow.first
@@ -120,9 +122,10 @@ class MainActivity : FragmentActivity() {
     }
 
     private companion object {
-        // Valeurs de SystemBarStyle par défaut (navigation à trois boutons).
-        val LightNavigationScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
-        val DarkNavigationScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+        // Voile de la barre de navigation à trois boutons (API 26 à 28 seulement) : fond des jetons, opacité par défaut
+        // de SystemBarStyle (90 % en clair, 50 % en sombre).
+        val LightNavigationScrim = VersoPalette.Light.background.copy(alpha = 0.9f).toArgb()
+        val DarkNavigationScrim = VersoPalette.Dark.background.copy(alpha = 0.5f).toArgb()
     }
 }
 

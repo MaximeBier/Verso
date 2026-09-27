@@ -65,8 +65,21 @@ object ReadingStyle {
     fun readiumLetterSpacing(dark: Boolean): Double? =
         if (dark) DARK_LETTER_SPACING_EM * 2 else null
 
-    /** Navigateur Fragment : 24 dp / gouttière de 20 px = 1,2 (indépendant de la taille du texte). */
-    fun fragmentPageMargins(): Double = SIDE_MARGIN_DP / FRAGMENT_PAGE_GUTTER_PX
+    /**
+     * Navigateur Fragment : 24 dp / gouttière de ReadiumCSS, qui s’élargit avec la largeur de l’écran (paliers de
+     * `--RS__pageGutter` en em de 16 px) : 1,2 en portrait sur téléphone. Indépendant de la taille du texte.
+     */
+    fun fragmentPageMargins(widthDp: Float = 0f): Double = SIDE_MARGIN_DP / fragmentPageGutterPx(widthDp)
+
+    private fun fragmentPageGutterPx(widthDp: Float): Double {
+        val widthEm = widthDp / WEBVIEW_ROOT_FONT_SIZE_PX
+        return when {
+            widthEm >= 75 -> 50.0
+            widthEm >= 45 -> 40.0
+            widthEm >= 35 -> 30.0
+            else -> FRAGMENT_PAGE_GUTTER_PX
+        }
+    }
 
     fun colors(dark: Boolean): ReadingColors {
         val palette = if (dark) VersoPalette.Dark else VersoPalette.Light
