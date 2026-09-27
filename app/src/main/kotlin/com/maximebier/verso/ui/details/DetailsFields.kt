@@ -26,6 +26,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
@@ -63,14 +66,20 @@ fun DetailsTextField(
     }
     lastExternalValue = value
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = VersoTypography.captionBold, color = colors.textSecondary)
+        // Libellé visible, porté par le champ pour TalkBack (« Titre, zone d’édition »), même vide.
+        Text(
+            label,
+            style = VersoTypography.captionBold,
+            color = colors.textSecondary,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
         BasicTextField(
             value = fieldValue,
             onValueChange = { newValue ->
                 fieldValue = newValue
                 if (newValue.text != value) onValueChange(newValue.text)
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             singleLine = true,
             textStyle = VersoTypography.body.copy(color = colors.text, lineHeight = 23.2.sp),
             cursorBrush = SolidColor(colors.accent),

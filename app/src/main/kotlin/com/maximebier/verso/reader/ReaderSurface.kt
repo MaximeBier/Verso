@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -162,7 +163,7 @@ fun ReaderSurface(
             initialLocator = initialLocator,
             listener = listener,
             initialPreferences = VersoReadingPreferences.epub(dark, fontScale = fontScale),
-            configuration = EpubNavigatorFragment.Configuration { applyVerso() },
+            configuration = EpubNavigatorFragment.Configuration { applyVerso(dark) },
         )
     }
     // Posée à chaque composition, donc avant que AndroidFragment instancie le fragment.
@@ -172,6 +173,8 @@ fun ReaderSurface(
     }
 
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
+    // Largeur de la surface, en dp : la marge de 24 dp dépend de la gouttière de ReadiumCSS (paliers selon la largeur).
+    var widthDp by remember { mutableFloatStateOf(0f) }
     DisposableEffect(navigator) {
         val nav = navigator ?: return@DisposableEffect onDispose {}
         val listener = object : InputListener {
@@ -205,8 +208,8 @@ fun ReaderSurface(
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
     }
-    LaunchedEffect(navigator, dark, fontScale) {
-        navigator?.submitPreferences(VersoReadingPreferences.epub(dark, fontScale = fontScale))
+    LaunchedEffect(navigator, dark, fontScale, widthDp) {
+        navigator?.submitPreferences(VersoReadingPreferences.epub(dark, fontScale = fontScale, widthDp = widthDp))
     }
 
     Box(modifier.fillMaxSize().background(background)) {
@@ -214,7 +217,10 @@ fun ReaderSurface(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(readerContentInsets)
-                .onSizeChanged { controller.viewportHeightPx = it.height }
+                .onSizeChanged {
+                    controller.viewportHeightPx = it.height
+                    widthDp = it.width / density
+                }
                 .observeGestures(controller),
         ) { fragment ->
             if (navigator !== fragment) navigator = fragment

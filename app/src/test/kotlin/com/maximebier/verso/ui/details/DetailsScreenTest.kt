@@ -45,7 +45,7 @@ class DetailsScreenTest {
         compose.onNodeWithText(text(R.string.common_percent_read, 31)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.common_time_remaining, text(R.string.common_duration_hours_minutes, 5, 30))).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.common_resume)).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.details_field_title)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(text(R.string.details_field_title)).assertIsDisplayed()
         compose.onNodeWithText("Madame Bovary").assertIsDisplayed()
         compose.onNodeWithText("Gustave Flaubert").assertIsDisplayed()
         compose.onNodeWithText(text(R.string.details_autosave_hint)).assertIsDisplayed()

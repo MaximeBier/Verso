@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.css.Color as CssColor
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
 import org.readium.r2.shared.ExperimentalReadiumApi
@@ -49,6 +50,16 @@ class VersoReadingPreferencesTest {
 
         assertThat(configuration.servedAssets).contains(ReadingStyle.SERVED_ASSETS_PATTERN)
         assertThat(configuration.disablePageTurnsWhileScrolling).isTrue()
+    }
+
+    @Test
+    fun linksUseTheAccentColorInBothThemes() {
+        for (dark in listOf(false, true)) {
+            val configuration = EpubNavigatorFragment.Configuration { with(VersoReadingPreferences) { applyVerso(dark) } }
+            val accent = CssColor.Int(ReadingStyle.colors(dark).link)
+            assertThat(configuration.readiumCssRsProperties.linkColor).isEqualTo(accent)
+            assertThat(configuration.readiumCssRsProperties.visitedColor).isEqualTo(accent)
+        }
     }
 
     @Test

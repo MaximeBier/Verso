@@ -4,6 +4,7 @@ package com.maximebier.verso.readium
 
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.navigator.epub.css.Color as CssColor
 import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.FontFamily
@@ -19,11 +20,13 @@ object VersoReadingPreferences {
     /**
      * @param fontSizeSp taille de lecture ; paramètre pour la simulation « taille changée » (V2).
      * @param fontScale échelle de la taille de police d’Android ([ReadingStyle.readingFontScale]).
+     * @param widthDp largeur de la surface de lecture : la gouttière de ReadiumCSS s’élargit avec elle.
      */
     fun epub(
         dark: Boolean,
         fontSizeSp: Double = ReadingStyle.READING_FONT_SIZE_SP,
         fontScale: Double = 1.0,
+        widthDp: Float = 0f,
     ): EpubPreferences {
         val colors = ReadingStyle.colors(dark)
         return EpubPreferences(
@@ -35,7 +38,7 @@ object VersoReadingPreferences {
             hyphens = false,
             letterSpacing = ReadingStyle.readiumLetterSpacing(dark),
             lineHeight = ReadingStyle.LINE_HEIGHT,
-            pageMargins = ReadingStyle.fragmentPageMargins(),
+            pageMargins = ReadingStyle.fragmentPageMargins(widthDp),
             paragraphSpacing = ReadingStyle.paragraphSpacingRem(),
             publisherStyles = false,
             scroll = true,
@@ -48,8 +51,12 @@ object VersoReadingPreferences {
      * Atkinson servie depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne lui-même). Les insets
      * sont posés par Verso (`readerContentInsets`) : Readium ajouterait la découpe de l’écran une seconde fois.
      */
-    fun EpubNavigatorFragment.Configuration.applyVerso() {
+    fun EpubNavigatorFragment.Configuration.applyVerso(dark: Boolean = false) {
         servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)
+        // Liens (visités ou non) à la couleur d’accent des jetons, contrastée à 7:1 : en sombre, le mode nuit de
+        // ReadiumCSS mettrait les liens visités en #0099E5 (5,8:1). Variables en ligne : elles priment sur ce mode.
+        val link = CssColor.Int(ReadingStyle.colors(dark).link)
+        readiumCssRsProperties = readiumCssRsProperties.copy(linkColor = link, visitedColor = link)
         disablePageTurnsWhileScrolling = true
         shouldApplyInsetsPadding = false
         addFontFamilyDeclaration(ATKINSON) {

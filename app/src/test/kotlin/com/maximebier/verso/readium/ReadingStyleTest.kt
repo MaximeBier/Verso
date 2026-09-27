@@ -29,7 +29,12 @@ class ReadingStyleTest {
 
     @Test
     fun marginsStayAtTwentyFourDp() {
-        assertThat(ReadingStyle.fragmentPageMargins()).isWithin(1e-9).of(1.2)
+        // Gouttière de ReadiumCSS : 20 px sous 35 em, 30 px dès 35 em, 40 px dès 45 em, 50 px dès 75 em.
+        assertThat(ReadingStyle.fragmentPageMargins(widthDp = 390f)).isWithin(1e-9).of(1.2)
+        assertThat(ReadingStyle.fragmentPageMargins(widthDp = 600f)).isWithin(1e-9).of(0.8)
+        assertThat(ReadingStyle.fragmentPageMargins(widthDp = 844f)).isWithin(1e-9).of(0.6)
+        assertThat(ReadingStyle.fragmentPageMargins(widthDp = 1_280f)).isWithin(1e-9).of(0.48)
+        assertThat(ReadingStyle.fragmentPageMargins(widthDp = 0f)).isWithin(1e-9).of(1.2)
     }
 
     @Test

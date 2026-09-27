@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -204,7 +205,7 @@ private fun ChapterRow(row: TocRow.Chapter, readingPercent: Int, onClick: () -> 
                 .clip(VersoShapes.small)
                 .then(if (current) Modifier.background(colors.selection) else Modifier)
                 .semantics(mergeDescendants = true) { selected = current }
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .padding(start = (if (current) 12.dp else 24.dp) + indent, end = if (current) 12.dp else 24.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),

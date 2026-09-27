@@ -69,7 +69,11 @@ data class LibraryUiState(
     val pendingDelete: LibraryBook? = null,
     /** Titre du livre que le lecteur n’a pas pu ouvrir (message), null sinon. */
     val openFailed: String? = null,
-)
+) {
+    /** Livres de la liste : sans celui de la carte « Reprendre », déjà affiché au-dessus (maquette 1.02). */
+    val listedBooks: List<LibraryBook>
+        get() = resume?.let { r -> books.filterNot { it.id == r.book.id } } ?: books
+}
 
 /** Opérations d'import, injectées pour tester sans Readium (EpubImporter au cycle 5). */
 data class ImportActions(
