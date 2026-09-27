@@ -215,8 +215,8 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 - [x] Au premier lancement après la mise à jour, l'app et le texte de lecture sont en Literata ; la bibliothèque, les positions et le journal de la V1 sont intacts.
 - [ ] Je choisis Atkinson puis la police du système dans les Paramètres : toute l'app et le texte de lecture changent de police, et le choix survit à un redémarrage.
 - [ ] Je change la taille, l'interligne et les marges pendant la lecture : le texte change aussitôt et le même paragraphe reste à l'écran.
-- [ ] Les thèmes Sépia et Noir s'appliquent à toute l'app et au texte, sans zone d'une autre couleur ; Automatique suit le thème du téléphone.
-- [ ] Dans les cinq thèmes, tout texte a un contraste d'au moins 7:1 (captures vérifiées).
+- [x] Les thèmes Sépia et Noir s'appliquent à toute l'app et au texte, sans zone d'une autre couleur ; Automatique suit le thème du téléphone (à vérifier par Maxime : changement du thème système).
+- [x] Dans les cinq thèmes, tout texte a un contraste d'au moins 7:1 (captures vérifiées).
 - [ ] La barre de lecture montre Sommaire, Journal, Rechercher et Réglages, chacun avec son texte sous l'icône.
 - [ ] « Aa » ouvre la feuille à mi-hauteur sans voile ; le texte derrière reste visible et change en direct ; Interligne, Marges et Défilement apparaissent en faisant glisser la feuille.
 - [ ] En mode pages, je tourne les pages par swipe et par tap sur les côtés, aucune ligne n'est coupée en bas, et le pied de page affiche le chapitre et « Page x sur y ».
