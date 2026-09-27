@@ -81,6 +81,21 @@ class IncomingIntentTest {
     }
 
     @Test
+    fun returnToLibraryIsRequestedEvenWhenTheQueueIsDrainedAtOnce() {
+        // Bibliothèque vivante : son collecteur (Main.immediate) vide la file dans l’appel même à submit.
+        val drainer = CoroutineScope(Dispatchers.Unconfined).launch {
+            IncomingImports.pending.collect { if (it.isNotEmpty()) IncomingImports.take() }
+        }
+        IncomingImports.submit(epubUri)
+
+        assertThat(IncomingImports.hasPending()).isFalse()
+        assertThat(IncomingImports.returnToLibrary.value).isTrue()
+        IncomingImports.onReturnedToLibrary()
+        assertThat(IncomingImports.returnToLibrary.value).isFalse()
+        drainer.cancel()
+    }
+
+    @Test
     fun mainActivitySubmitsIncomingUriOnCreateAndOnNewIntent() {
         val seen = mutableListOf<Uri>()
         val watcher = CoroutineScope(Dispatchers.Unconfined).launch { IncomingImports.pending.collect { seen += it } }

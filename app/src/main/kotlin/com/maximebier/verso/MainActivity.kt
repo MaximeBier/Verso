@@ -21,6 +21,7 @@ import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.importer.IncomingIntent
 import com.maximebier.verso.ui.nav.LibraryRoute
+import com.maximebier.verso.ui.nav.StartDestination
 import com.maximebier.verso.ui.nav.VersoNavHost
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -41,9 +42,12 @@ class MainActivity : FragmentActivity() {
         if (savedInstanceState != null) removeRestoredReaders()
         // Fichier reçu par « Ouvrir avec » / « Partager vers ». Après une recréation, l'intent a déjà été traité.
         // Appelé avant setContent : IncomingImports.hasPending() est donc connu dès la première composition.
-        if (savedInstanceState == null) handleIncomingIntent(intent)
+        // Relancé depuis les récents : l’intent d’origine a déjà été importé, il ne se rejoue pas.
+        if (savedInstanceState == null && !launchedFromHistory(intent)) handleIncomingIntent(intent)
         // Premier lancement seulement (après une recréation, Navigation restaure la pile), et jamais devant un import.
         val allowAutoReopen = savedInstanceState == null && !IncomingImports.hasPending()
+        // Décidé avant la première image, comme le thème : la bibliothèque ne s’affiche pas avant le livre rouvert.
+        val reopenBookId = if (allowAutoReopen) runBlocking { bookToReopen() } else null
         setContent {
             val themeMode by settings.themeMode.collectAsState(initial = initialThemeMode)
             val dark = themeMode.isDark(systemDark = isSystemInDarkTheme())
@@ -51,10 +55,20 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(dark) { enableEdgeToEdge(dark) }
             VersoTheme(darkTheme = dark) {
                 val navController = rememberNavController()
-                VersoNavHost(navController = navController, allowAutoReopen = allowAutoReopen)
+                VersoNavHost(navController = navController, reopenBookId = reopenBookId)
                 ReturnToLibraryOnIncomingImport(navController)
             }
         }
+    }
+
+    private suspend fun bookToReopen(): Long? {
+        val container = (application as VersoApplication).container
+        return StartDestination.bookToReopen(
+            lastOpened = container.books.lastOpened(),
+            reopenEnabled = container.settings.reopenLastBook.first(),
+            now = container.clock(),
+            hasIncomingImport = IncomingImports.hasPending(),
+        )
     }
 
     private fun removeRestoredReaders() {
@@ -68,6 +82,9 @@ class MainActivity : FragmentActivity() {
         setIntent(intent)
         handleIncomingIntent(intent)
     }
+
+    private fun launchedFromHistory(intent: Intent?): Boolean =
+        intent != null && intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
 
     private fun handleIncomingIntent(intent: Intent?) {
         IncomingIntent.parse(intent)?.let(IncomingImports::submit)
@@ -115,10 +132,10 @@ class MainActivity : FragmentActivity() {
  */
 @Composable
 private fun ReturnToLibraryOnIncomingImport(navController: NavHostController) {
-    val incoming by IncomingImports.pending.collectAsState()
-    val hasIncoming = incoming.isNotEmpty()
-    LaunchedEffect(hasIncoming) {
-        if (!hasIncoming) return@LaunchedEffect
+    val returnRequested by IncomingImports.returnToLibrary.collectAsState()
+    LaunchedEffect(returnRequested) {
+        if (!returnRequested) return@LaunchedEffect
+        IncomingImports.onReturnedToLibrary()
         if (navController.currentDestination?.hasRoute<LibraryRoute>() == true) return@LaunchedEffect
         if (!navController.popBackStack<LibraryRoute>(inclusive = false)) {
             navController.navigate(LibraryRoute) { popUpTo(navController.graph.id) { inclusive = true } }

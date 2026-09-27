@@ -47,8 +47,21 @@ object IncomingImports {
 
     val pending: StateFlow<List<Uri>> = queue.asStateFlow()
 
+    private val returnRequested = MutableStateFlow(false)
+
+    /**
+     * Un fichier vient d’être déposé : l’écran revient à la bibliothèque puis appelle [onReturnedToLibrary]. Suivre
+     * [pending] ne suffit pas : la bibliothèque vivante vide la file dans l’appel même à [submit].
+     */
+    val returnToLibrary: StateFlow<Boolean> = returnRequested.asStateFlow()
+
     fun submit(uri: Uri) {
         queue.update { it + uri }
+        returnRequested.value = true
+    }
+
+    fun onReturnedToLibrary() {
+        returnRequested.value = false
     }
 
     fun take(): Uri? = queue.getAndUpdate { it.drop(1) }.firstOrNull()
@@ -57,5 +70,6 @@ object IncomingImports {
 
     fun clear() {
         queue.value = emptyList()
+        returnRequested.value = false
     }
 }

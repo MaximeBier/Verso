@@ -200,7 +200,7 @@ class LibraryViewModelTest {
             val shown = awaitUntil { it.snackbar != null }
             assertThat(shown.snackbar).isEqualTo(ImportSnackbar(5, "Candide"))
             assertThat(shown.importing).isFalse()
-            vm.onSnackbarShown()
+            vm.onSnackbarShown(ImportSnackbar(5, "Candide"))
             awaitUntil { it.snackbar == null }
         }
         assertThat(fake.imported).containsExactly(Uri.parse("content://fichiers/candide.epub"))

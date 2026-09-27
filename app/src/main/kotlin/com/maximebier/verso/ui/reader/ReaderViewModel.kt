@@ -20,6 +20,7 @@ import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
+import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.Locators
@@ -56,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.Url
 
@@ -169,7 +171,22 @@ class ReaderViewModel(
             fail(book.title)
             return
         }
-        books.markOpened(bookId, clock())
+        try {
+            start(book, publication)
+        } catch (t: Throwable) {
+            // Ouverture annulée (retour pendant le chargement) ou ratée : l’archive est refermée tout de suite.
+            if (_uiState.value.publication !== publication) publication.close()
+            throw t
+        }
+    }
+
+    private suspend fun start(book: BookEntity, publication: Publication) {
+        if (publication.metadata.layout == Layout.FIXED) {
+            // Mise en page fixe, hors V1 : refusée avant de devenir le dernier livre ouvert (rouvert en boucle sinon).
+            publication.close()
+            fail(book.title)
+            return
+        }
         tocLinks = publication.tableOfContents.ifEmpty { publication.readingOrder }
         positions = ReadingOrderPositions.load(publication)
         val anchors = TocAnchors.load(publication, tocLinks)
@@ -181,6 +198,7 @@ class ReaderViewModel(
             else -> null
         }
         if (initialPosition == null) {
+            publication.close()
             fail(book.title)
             return
         }
@@ -210,6 +228,8 @@ class ReaderViewModel(
         // Relais dans l’ordre d’émission ; lancé avant attach() (onReaderReady), donc aucun effet perdu.
         viewModelScope.launch { created.readingEffects.collect { readingEffectsFlow.emit(it) } }
         startSessions(book.totalWords, initialPosition)
+        // Livre réellement ouvert : il devient le dernier lu (carte « Reprendre », réouverture au lancement).
+        books.markOpened(bookId, clock())
     }
 
     private fun startSessions(totalWords: Long, initial: BookPosition) {
@@ -225,6 +245,8 @@ class ReaderViewModel(
         viewModelScope.launch { coordinator.current.collect { sessionCurrent.value = it } }
         viewModelScope.launch { readingEffects.collect(coordinator::onTrackerEffect) }
         coordinator.onOpened(initial)
+        // Arrière-plan pendant le chargement : pas de session ni de battement avant le retour au premier plan.
+        if (stopped) coordinator.onBackgrounded()
         coordinator.start()
     }
 
