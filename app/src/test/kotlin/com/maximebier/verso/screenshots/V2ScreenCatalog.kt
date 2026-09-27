@@ -9,6 +9,8 @@ import com.maximebier.verso.screenshots.samples.DetailsSample
 import com.maximebier.verso.screenshots.samples.JournalSample
 import com.maximebier.verso.screenshots.samples.LibraryListSample
 import com.maximebier.verso.screenshots.samples.ReaderBarsSample
+import com.maximebier.verso.screenshots.samples.ReaderToolsSample
+import com.maximebier.verso.screenshots.samples.ReadingSettingsSheetSample
 import com.maximebier.verso.screenshots.samples.ReturnCardSample
 import com.maximebier.verso.screenshots.samples.SampleReadingText
 import com.maximebier.verso.screenshots.samples.SettingsSample
@@ -41,5 +43,7 @@ object V2ScreenCatalog {
         V2ScreenFixture(ScreenFixture("2.03-2.04-sommaire") { TocSheetSample() }, paperThemes),
         V2ScreenFixture(ScreenFixture("2.03-2.04-journal") { JournalSample() }, paperThemes),
         V2ScreenFixture(ScreenFixture("2.03-2.04-revenir") { ReturnCardSample() }, paperThemes),
+        V2ScreenFixture(ScreenFixture("2.01-barre-de-lecture") { ReaderToolsSample() }),
+        V2ScreenFixture(ScreenFixture("2.02-reglages-de-lecture") { ReadingSettingsSheetSample() }),
     )
 }

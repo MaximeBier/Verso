@@ -10,11 +10,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,11 +27,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -38,9 +41,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,11 +59,11 @@ import com.maximebier.verso.R
 import com.maximebier.verso.core.text.longLocation
 import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
-import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoProgressBar
 import com.maximebier.verso.ui.theme.VersoDimens
+import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 import java.util.Locale
 
@@ -78,6 +85,7 @@ fun ReaderBars(
     onBack: () -> Unit,
     onTocClick: () -> Unit,
     onJournalClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     onBottomBarHeightChanged: (Int) -> Unit = {},
 ) {
@@ -101,8 +109,7 @@ fun ReaderBars(
         ) {
             ReaderBottomBar(
                 state = state,
-                onTocClick = onTocClick,
-                onJournalClick = onJournalClick,
+                tools = readerTools(onTocClick, onJournalClick, onSettingsClick),
                 modifier = Modifier.onSizeChanged { onBottomBarHeightChanged(it.height) },
             )
         }
@@ -155,21 +162,38 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Outil de la barre du bas (2.01) : icône, ou glyphe « Aa », au-dessus du libellé. */
+data class ReaderTool(val label: String, val glyph: ToolGlyph, val onClick: () -> Unit)
+
+sealed interface ToolGlyph {
+    data class Icon(val vector: ImageVector) : ToolGlyph
+    data class Text(val text: String) : ToolGlyph
+}
+
+/** Ordre de la maquette 2.01 : Sommaire, Journal, Rechercher, Réglages. */
 @Composable
-private fun ReaderBottomBar(
-    state: ReaderBarsState,
+private fun readerTools(
     onTocClick: () -> Unit,
     onJournalClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+    onSettingsClick: () -> Unit,
+): List<ReaderTool> = buildList {
+    add(ReaderTool(stringResource(R.string.reader_toc), ToolGlyph.Icon(VersoIcons.ListBullets), onTocClick))
+    add(ReaderTool(stringResource(R.string.reader_journal), ToolGlyph.Icon(VersoIcons.History), onJournalClick))
+    // Étape 15 : outil Rechercher (icône VersoIcons.Search, libellé R.string.reader_search) inséré ici.
+    add(ReaderTool(stringResource(R.string.reader_settings), ToolGlyph.Text(stringResource(R.string.reader_settings_glyph)), onSettingsClick))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
     Column(modifier.fillMaxWidth().background(colors.surface)) {
         HorizontalDivider(thickness = 1.dp, color = colors.divider)
         Column(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+                // 2.01 : 16 dp en haut et en bas, 20 dp sur les côtés.
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -189,29 +213,62 @@ private fun ReaderBottomBar(
             }
             // Barre du livre en cours (§3.7) : 6 dp, accent ; elle occupe toute la largeur.
             VersoProgressBar(fraction = state.progression, current = true)
-            // Côte à côte et de même largeur ; l’un sous l’autre quand le texte système grossit, au lieu de couper
-            // « Sommaire » au milieu du mot.
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // Boutons contour de la référence §3.8 (48 dp, pilule, bordure outline, 16 sp 600, icône 20).
-                OutlinedPillButton(
-                    text = stringResource(R.string.reader_toc),
-                    onClick = onTocClick,
-                    modifier = Modifier.weight(1f),
-                    icon = VersoIcons.ListBullets,
-                )
-                OutlinedPillButton(
-                    text = stringResource(R.string.reader_journal),
-                    onClick = onJournalClick,
-                    modifier = Modifier.weight(1f),
-                    icon = VersoIcons.History,
-                )
-            }
+            ReaderToolbar(tools)
         }
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBarsIgnoringVisibility))
+    }
+}
+
+private val ToolGap = 4.dp
+private val ToolCellPadding = 4.dp
+private val ToolMinHeight = 64.dp
+private val ToolIconSize = 22.dp
+
+/**
+ * Outils en une rangée de colonnes égales (2.01 : 64 dp de haut, icône 22 dp, texte 14 sp 600). Quand un libellé ne
+ * tient plus (texte système agrandi), deux colonnes, puis une, plutôt que de couper « Rechercher ».
+ */
+@Composable
+internal fun ReaderToolbar(tools: List<ReaderTool>, modifier: Modifier = Modifier) {
+    val style = VersoTheme.typography.captionSemiBold
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val columns = fittingColumns(
+            labels = tools.map { it.label },
+            style = style,
+            maxWidth = maxWidth,
+            gap = ToolGap,
+            cellPadding = ToolCellPadding,
+            candidates = listOf(tools.size, 2, 1).distinct(),
+        )
+        AdaptiveGrid(items = tools, columns = columns, gap = ToolGap) { tool, cellModifier ->
+            ToolButton(tool, cellModifier)
+        }
+    }
+}
+
+@Composable
+private fun ToolButton(tool: ReaderTool, modifier: Modifier) {
+    val colors = VersoTheme.colors
+    Column(
+        modifier = modifier
+            .heightIn(min = ToolMinHeight)
+            .clip(VersoShapes.small)
+            .clickable(role = Role.Button, onClick = tool.onClick)
+            .padding(horizontal = ToolCellPadding, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+    ) {
+        when (val glyph = tool.glyph) {
+            is ToolGlyph.Icon -> Icon(glyph.vector, contentDescription = null, tint = colors.text, modifier = Modifier.size(ToolIconSize))
+            // 2.01 : « Aa » 20 sp 700, décoratif ; le bouton se lit par son libellé.
+            is ToolGlyph.Text -> Text(
+                text = glyph.text,
+                style = VersoTheme.typography.bodyStrong.copy(fontSize = 20.sp, lineHeight = 22.sp),
+                color = colors.text,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
+        Text(text = tool.label, style = VersoTheme.typography.captionSemiBold, color = colors.text, textAlign = TextAlign.Center)
     }
 }
 

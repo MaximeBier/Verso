@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.reader
 
 import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
@@ -12,13 +13,16 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
+import com.maximebier.verso.core.settings.LineSpacing
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
-import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.preorder
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
+import com.maximebier.verso.data.SettingsRepository
+import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.importer.EpubFixtures
@@ -32,10 +36,7 @@ import com.maximebier.verso.ui.common.locationTexts
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -51,7 +52,9 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
@@ -80,8 +83,19 @@ class ReaderViewModelTest {
     /** Titres signalés par `reportOpenFailure` (message de la bibliothèque). */
     private val openFailures = mutableListOf<String>()
 
+    @get:Rule val tmp = TemporaryFolder()
+
+    /** Un seul DataStore par test : deux instances sur le même fichier lèveraient une exception. */
+    private var settingsRepository: SettingsRepository? = null
+
+    private fun TestScope.testSettings(): SettingsRepository =
+        settingsRepository ?: SettingsRepository(
+            PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "reader.preferences_pb") }),
+        ).also { settingsRepository = it }
+
     @Before
     fun setUp() {
+        settingsRepository = null
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, VersoDatabase::class.java).allowMainThreadQueries().build()
         books = BookRepository(db.bookDao(), context.filesDir.resolve("books"), context.filesDir.resolve("covers"))
@@ -99,9 +113,8 @@ class ReaderViewModelTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.40, total = 0.3000)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
-        val settings = MutableStateFlow(ReadingSettings())
         val store = ViewModelStore()
-        val viewModel = ViewModelProvider.create(store, factory(id, readingSettings = settings))[ReaderViewModel::class]
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
         viewModel.uiState.first { !it.loading }
         val fake = FakeReaderController(start)
         viewModel.onThemeChanged(AppTheme.LIGHT)
@@ -109,7 +122,8 @@ class ReaderViewModelTest {
         runCurrent()
         assertThat(fake.submitted.last()).isEqualTo(ReaderStyle(ReadingSettings(), AppTheme.LIGHT, ScrollMode.CONTINUOUS))
 
-        settings.value = ReadingSettings(fontSizeSp = 24)
+        testSettings().updateReadingSettings { it.withFontSize(24) }
+        testSettings().readingSettings.first { it.fontSizeSp == 24 }
         runCurrent()
         viewModel.onThemeChanged(AppTheme.SEPIA)
         runCurrent()
@@ -518,11 +532,144 @@ class ReaderViewModelTest {
         store.clear()
     }
 
+    @Test
+    fun readingSettingsChangedFromTheReaderAreSavedAndSubmittedWithoutMovingReading() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+
+        viewModel.onThemeChanged(AppTheme.SEPIA)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+        assertThat(fake.submitted.last()).isEqualTo(ReaderStyle(ReadingSettings(), AppTheme.SEPIA, ScrollMode.CONTINUOUS))
+
+        viewModel.updateReadingSettings { it.larger().copy(lineSpacing = LineSpacing.AIRY) }
+        runCurrent()
+        testSettings().readingSettings.first { it.fontSizeSp == 21 }
+        runCurrent()
+
+        val last = fake.submitted.last()
+        assertThat(last.settings.fontSizeSp).isEqualTo(21)
+        assertThat(last.settings.lineSpacing).isEqualTo(LineSpacing.AIRY)
+        assertThat(viewModel.uiState.value.readingPercent).isEqualTo(30)
+        assertThat(viewModel.uiState.value.returnCard).isNull()
+        assertThat(fake.goCalls).isEmpty()
+        store.clear()
+    }
+
+    @Test
+    fun readingSettingsSheetOpensWithoutBarsAndCloses() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        viewModel.toggleBars()
+
+        viewModel.showReadingSettings()
+        assertThat(viewModel.uiState.value.settingsVisible).isTrue()
+        assertThat(viewModel.uiState.value.barsVisible).isFalse()
+
+        viewModel.hideReadingSettings()
+        assertThat(viewModel.uiState.value.settingsVisible).isFalse()
+        store.clear()
+    }
+
+    @Test
+    fun themeChosenInTheSheetIsSaved() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+
+        viewModel.setThemeMode(ThemeMode.BLACK)
+        runCurrent()
+
+        // Écriture DataStore sur un autre fil : attente en temps réel, pas en temps virtuel.
+        val saved = withContext(Dispatchers.Default) {
+            withTimeout(5_000) { testSettings().themeMode.first { it == ThemeMode.BLACK } }
+        }
+        assertThat(saved).isEqualTo(ThemeMode.BLACK)
+        assertThat(viewModel.themeMode.first { it == ThemeMode.BLACK }).isEqualTo(ThemeMode.BLACK)
+        store.clear()
+    }
+
+    @Test
+    fun bookScrollModeIsSubmittedOtherwiseTheDefaultOne() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        testSettings().updateReadingSettings { it.copy(defaultScrollMode = ScrollMode.PAGES) }
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        assertThat(viewModel.uiState.first { !it.loading }.scrollMode).isEqualTo(ScrollMode.PAGES)
+        val fake = FakeReaderController(start)
+        viewModel.onThemeChanged(AppTheme.LIGHT)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+
+        assertThat(fake.submitted.last().scrollMode).isEqualTo(ScrollMode.PAGES)
+        store.clear()
+    }
+
+    @Test
+    fun bookOwnScrollModeWinsOverTheDefaultOne() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        assertThat(openedScrollMode(defaultMode = ScrollMode.CONTINUOUS, bookMode = "PAGES")).isEqualTo(ScrollMode.PAGES)
+    }
+
+    @Test
+    fun bookContinuousScrollModeWinsOverPagesByDefault() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        assertThat(openedScrollMode(defaultMode = ScrollMode.PAGES, bookMode = "CONTINUOUS")).isEqualTo(ScrollMode.CONTINUOUS)
+    }
+
+    @Test
+    fun unknownBookScrollModeFallsBackToTheDefaultOne() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        assertThat(openedScrollMode(defaultMode = ScrollMode.PAGES, bookMode = "SIDEWAYS")).isEqualTo(ScrollMode.PAGES)
+    }
+
+    @Test
+    fun surfaceIsCreatedWithTheSavedReadingSettings() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        testSettings().updateReadingSettings { it.withFontSize(26) }
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+
+        // Premier état qui porte la publication (ReaderSurface se crée alors) : les réglages enregistrés y sont déjà.
+        val first = viewModel.uiState.first { it.publication != null }
+        assertThat(first.readingSettings.fontSizeSp).isEqualTo(26)
+        store.clear()
+    }
+
+    /** Ouvre un livre de défilement [bookMode] (`books.scrollMode`) avec [defaultMode] dans les Paramètres ; mode soumis au lecteur. */
+    private suspend fun TestScope.openedScrollMode(defaultMode: ScrollMode, bookMode: String): ScrollMode {
+        testSettings().updateReadingSettings { it.copy(defaultScrollMode = defaultMode) }
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30).copy(scrollMode = bookMode))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        val state = viewModel.uiState.first { !it.loading }
+        val fake = FakeReaderController(start)
+        viewModel.onThemeChanged(AppTheme.LIGHT)
+        viewModel.onReaderReady(fake)
+        runCurrent()
+        assertThat(fake.submitted.last().scrollMode).isEqualTo(state.scrollMode)
+        store.clear()
+        return state.scrollMode
+    }
+
     private fun TestScope.factory(
         bookId: Long,
         open: suspend (File) -> Result<Publication> = { Result.success(testPublication()) },
         clock: () -> Long = { testScheduler.currentTime },
-        readingSettings: Flow<ReadingSettings> = flowOf(ReadingSettings()),
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -533,7 +680,7 @@ class ReaderViewModelTest {
                 clock = clock,
                 locationTexts = ApplicationProvider.getApplicationContext<Context>().resources.locationTexts(),
                 reportOpenFailure = { title -> openFailures += title },
-                readingSettings = readingSettings,
+                settings = testSettings(),
             ).also { viewModels += it }
         }
     }
