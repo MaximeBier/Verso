@@ -87,7 +87,7 @@ class EpubImporterTest {
         assertThat(book.sha256).isEqualTo(Sha256.of(File(sources, "candide.epub")))
         assertThat(book.filePath).isEqualTo(File(booksDir, "${book.sha256}.epub").absolutePath)
         assertThat(File(book.filePath).length()).isEqualTo(File(sources, "candide.epub").length())
-        assertThat(book.coverPath).isEqualTo(File(coversDir, "${book.sha256}.png").absolutePath)
+        assertThat(book.coverPath).isEqualTo(File(coversDir, "${book.sha256}.jpg").absolutePath)
         assertThat(File(requireNotNull(book.coverPath)).exists()).isTrue()
         assertThat(book.sizeBytes).isEqualTo(File(sources, "candide.epub").length())
         assertThat(book.originalFileName).isEqualTo("candide.epub")

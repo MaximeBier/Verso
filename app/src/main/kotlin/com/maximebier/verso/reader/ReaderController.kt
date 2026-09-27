@@ -5,8 +5,8 @@ import kotlinx.coroutines.flow.StateFlow
 import org.readium.r2.shared.publication.Locator
 
 /**
- * Ce que le reste de l’app voit du moteur de lecture. L’implémentation (Variante A retenue par le
- * prototype, navigateur Compose `ReflowableWebRendition`) vit dans `ReaderSurface.kt`.
+ * Ce que le reste de l’app voit du moteur de lecture. L’implémentation (navigateur classique de Readium,
+ * `EpubNavigatorFragment`) est `FragmentReaderController`.
  */
 interface ReaderController {
     /** Position affichée ; suit chaque scroll. `null` avant le premier affichage. */

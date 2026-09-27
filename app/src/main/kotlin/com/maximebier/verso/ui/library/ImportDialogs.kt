@@ -1,11 +1,11 @@
 package com.maximebier.verso.ui.library
 
-import android.text.TextUtils
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
+import androidx.core.text.htmlEncode
 import com.maximebier.verso.R
 import com.maximebier.verso.importer.RejectReason
 import com.maximebier.verso.ui.common.formatDate
@@ -27,8 +27,8 @@ fun DuplicateImportDialog(
     // Chaîne en CDATA avec <b> : on encode les valeurs puis on interprète le HTML (référence §1).
     val body = stringResource(
         R.string.import_duplicate_body,
-        TextUtils.htmlEncode(fileName),
-        TextUtils.htmlEncode(existingTitle),
+        fileName.htmlEncode(),
+        existingTitle.htmlEncode(),
         date,
     )
     VersoDialog(

@@ -14,8 +14,6 @@
     <!-- Actions -->
     <string name="common_resume">Reprendre</string>
     <string name="common_start">Commencer</string>
-    <string name="common_cancel">Annuler</string>
-    <string name="common_delete">Supprimer</string>
     <string name="common_close">Fermer</string>
     <string name="common_back">Retour</string>
 
@@ -44,8 +42,6 @@
     <string name="common_location_chapter">chap. %1$s</string>
     <!-- PROPOSÉ : forme courte sans partie (livre sans parties) : « Chap. IV » -->
     <string name="common_location_short_no_part">Chap. %1$s</string>
-    <!-- « Partie II, chap. I · 31 % » -->
-    <string name="common_location_with_percent">%1$s · %2$d %%</string>
 
     <!-- Extrait entre guillemets : « « Yonville-l’Abbaye… » » -->
     <string name="common_quoted">« %1$s »</string>

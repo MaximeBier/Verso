@@ -53,6 +53,8 @@ android {
 
     lint {
         abortOnError = true
+        // Exceptions justifiées dans app/lint.xml.
+        lintConfig = file("lint.xml")
     }
 }
 

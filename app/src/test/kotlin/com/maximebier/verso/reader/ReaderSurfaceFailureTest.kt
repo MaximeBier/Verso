@@ -15,7 +15,12 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 
-/** Revue finale I3 : un livre que le moteur refuse ne laisse pas un écran vide sans issue. */
+/**
+ * Revue finale I3 : la surface qui ne peut pas afficher un livre ne laisse pas un écran vide sans issue. Hébergée ici
+ * dans une `ComponentActivity` (pas de gestionnaire de fragments) : c’est ce cas qui est vérifié. Le refus d’un
+ * livre à mise en page fixe se fait avant, au chargement
+ * (`ReaderViewModelTest.fixedLayoutBookFailsWithoutBecomingTheLastOpenedBook`).
+ */
 @RunWith(AndroidJUnit4::class)
 class ReaderSurfaceFailureTest {
 
@@ -23,7 +28,7 @@ class ReaderSurfaceFailureTest {
     val compose = createComposeRule()
 
     @Test
-    fun fixedLayoutBookIsReportedAsFailed() {
+    fun surfaceWithoutAFragmentHostIsReportedAsFailed() {
         val page = Link(href = Url("page-1.xhtml")!!, mediaType = MediaType.XHTML)
         val fixedLayout = Publication(
             manifest = Manifest(

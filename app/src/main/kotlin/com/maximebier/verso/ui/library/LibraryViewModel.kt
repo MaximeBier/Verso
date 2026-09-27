@@ -21,6 +21,8 @@ import com.maximebier.verso.importer.RejectReason
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.ui.common.percentOf
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
 
@@ -104,6 +107,8 @@ class LibraryViewModel(
     private val takeIncoming: () -> Uri? = { null },
     openFailures: StateFlow<List<String>> = MutableStateFlow(emptyList()),
     private val takeOpenFailure: () -> String? = { null },
+    /** Requêtes aux fournisseurs de fichiers (nom affiché d’un fichier refusé). */
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private data class Transient(
@@ -184,8 +189,11 @@ class LibraryViewModel(
                     transient.update { it.copy(snackbar = ImportSnackbar(result.bookId, result.title)) }
                 is ImportResult.Duplicate ->
                     transient.update { it.copy(dialog = ImportDialog.Duplicate(result)) }
-                is ImportResult.Rejected ->
-                    transient.update { it.copy(dialog = ImportDialog.Rejected(result.reason, importActions.displayName(uri))) }
+                is ImportResult.Rejected -> {
+                    // Requête au fournisseur (Drive…) : jamais sur le fil principal.
+                    val name = withContext(ioDispatcher) { importActions.displayName(uri) }
+                    transient.update { it.copy(dialog = ImportDialog.Rejected(result.reason, name)) }
+                }
             }
         }
     }

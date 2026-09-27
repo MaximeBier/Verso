@@ -36,7 +36,7 @@ private fun elapsedMs(startNanos: Long): Long = (System.nanoTime() - startNanos)
  * Durées par phase d'un import, en millisecondes. `copySha256Ms` couvre la copie depuis l'URI *et*
  * l'empreinte SHA-256 : les deux se font en un seul passage streaming ([Sha256.copyAndHash]), les
  * séparer nécessiterait une deuxième lecture complète du fichier (donc changerait le comportement).
- * `coverMs` couvre l'extraction de la couverture par Readium *et* son écriture en PNG.
+ * `coverMs` couvre l'extraction de la couverture par Readium *et* son écriture en JPEG.
  */
 private class ImportTimings {
     var copySha256Ms: Long = 0
@@ -149,6 +149,8 @@ class EpubImporter(
                 // Fichier remplacé avec succès : l'ancien fichier devenu orphelin n'annule pas le
                 // remplacement s'il ne peut pas être supprimé, mais l'échec est journalisé.
                 if (existing.filePath != bookFile.absolutePath) deleteRetrying(File(existing.filePath))
+                // Ancienne couverture sous un autre nom (PNG des premières versions) : ne reste pas orpheline.
+                existing.coverPath?.takeIf { it != coverPath }?.let { deleteRetrying(File(it)) }
                 ImportResult.Added(existing.id, existing.title)
             } finally {
                 deleteRetrying(pending.tempFile)
@@ -304,11 +306,11 @@ class EpubImporter(
         deleteRetrying(source)
     }
 
-    /** PNG de la couverture ; null (vignette générée) si l'écriture échoue. */
+    /** JPEG de la couverture ; null (vignette générée) si l'écriture échoue. */
     private fun writeCover(cover: Bitmap, target: File): String? =
         try {
             target.parentFile?.mkdirs()
-            val written = target.outputStream().use { cover.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, it) }
+            val written = target.outputStream().use { cover.compress(Bitmap.CompressFormat.JPEG, COVER_QUALITY, it) }
             if (written) target.absolutePath else null.also { deleteRetrying(target) }
         } catch (e: IOException) {
             deleteRetrying(target)
@@ -329,8 +331,9 @@ class EpubImporter(
         const val TEMP_PREFIX = "import-"
         const val TEMP_SUFFIX = ".tmp"
         const val BOOK_EXTENSION = ".epub"
-        const val COVER_EXTENSION = ".png"
-        const val PNG_QUALITY = 100
+        const val COVER_EXTENSION = ".jpg"
+        /** Couvertures sans transparence : JPEG, bien plus léger que le PNG pour une photo. */
+        const val COVER_QUALITY = 85
         private const val STAGING_SUFFIX = ".part"
         const val STALE_TEMP_MS = 24L * 60 * 60 * 1000
     }
