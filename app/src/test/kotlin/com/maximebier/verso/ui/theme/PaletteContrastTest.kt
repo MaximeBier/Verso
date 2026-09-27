@@ -12,9 +12,15 @@ class PaletteContrastTest {
 
     private class ColorPair(val label: String, val foreground: (VersoColors) -> Color, val background: (VersoColors) -> Color)
 
-    private val v1Themes = listOf("clair" to VersoPalette.Light, "sombre" to VersoPalette.Dark)
+    /** Les quatre palettes (V1 : clair et sombre ; V2 : sépia et noir). */
+    private val themes = listOf(
+        "clair" to VersoPalette.Light,
+        "sépia" to VersoPalette.Sepia,
+        "sombre" to VersoPalette.Dark,
+        "noir" to VersoPalette.Black,
+    )
 
-    /** Couples texte/fond réellement utilisés par les écrans V1 : ≥ 7:1 (WCAG AAA). */
+    /** Couples texte/fond réellement utilisés par les écrans : ≥ 7:1 (WCAG AAA). */
     private val textPairs = listOf(
         ColorPair("text/background", { it.text }, { it.background }),
         ColorPair("text/surface", { it.text }, { it.surface }),
@@ -33,6 +39,7 @@ class PaletteContrastTest {
         ColorPair("onInverse/inverse", { it.onInverse }, { it.inverse }),
         ColorPair("inverseAccent/inverse", { it.inverseAccent }, { it.inverse }),
         ColorPair("onInverseAccent/inverseAccent", { it.onInverseAccent }, { it.inverseAccent }),
+        ColorPair("text/highlight", { it.text }, { it.highlight }),
     )
 
     /** Éléments non textuels (contours, barres, interrupteur) : ≥ 3:1. */
@@ -59,7 +66,7 @@ class PaletteContrastTest {
 
     @Test
     fun everyTextPairReachesSevenToOne() {
-        for ((theme, colors) in v1Themes) {
+        for ((theme, colors) in themes) {
             for (pair in textPairs) {
                 assertWithMessage("$theme ${pair.label}")
                     .that(contrast(pair.foreground(colors), pair.background(colors)))
@@ -70,7 +77,7 @@ class PaletteContrastTest {
 
     @Test
     fun everyNonTextPairReachesThreeToOne() {
-        for ((theme, colors) in v1Themes) {
+        for ((theme, colors) in themes) {
             for (pair in nonTextPairs) {
                 assertWithMessage("$theme ${pair.label}")
                     .that(contrast(pair.foreground(colors), pair.background(colors)))
@@ -87,6 +94,12 @@ class PaletteContrastTest {
         }
         for (cover in VersoPalette.CoverDark) {
             assertWithMessage("sombre $cover").that(contrast(VersoPalette.Dark.onCover, cover)).isAtLeast(4.5)
+        }
+        for (cover in VersoPalette.CoverLight) {
+            assertWithMessage("sépia $cover").that(contrast(VersoPalette.Sepia.onCover, cover)).isAtLeast(4.5)
+        }
+        for (cover in VersoPalette.CoverDark) {
+            assertWithMessage("noir $cover").that(contrast(VersoPalette.Black.onCover, cover)).isAtLeast(4.5)
         }
     }
 

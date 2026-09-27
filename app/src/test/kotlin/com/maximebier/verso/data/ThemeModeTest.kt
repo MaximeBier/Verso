@@ -28,4 +28,19 @@ class ThemeModeTest {
     fun onlyDarkAndBlackAreDark() {
         assertThat(AppTheme.entries.filter { it.isDark }).containsExactly(AppTheme.DARK, AppTheme.BLACK)
     }
+
+    @Test
+    fun sepiaAndBlackIgnoreThePhone() {
+        assertThat(ThemeMode.SEPIA.resolve(systemDark = true)).isEqualTo(AppTheme.SEPIA)
+        assertThat(ThemeMode.BLACK.resolve(systemDark = false)).isEqualTo(AppTheme.BLACK)
+        assertThat(ThemeMode.SEPIA.isDark(systemDark = true)).isFalse()
+        assertThat(ThemeMode.BLACK.isDark(systemDark = false)).isTrue()
+    }
+
+    @Test
+    fun settingsOrderMatchesTheMockups() {
+        assertThat(ThemeMode.entries).containsExactly(
+            ThemeMode.AUTO, ThemeMode.LIGHT, ThemeMode.SEPIA, ThemeMode.DARK, ThemeMode.BLACK,
+        ).inOrder()
+    }
 }

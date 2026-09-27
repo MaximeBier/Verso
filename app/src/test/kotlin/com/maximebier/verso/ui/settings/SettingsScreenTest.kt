@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -82,6 +84,24 @@ class SettingsScreenTest {
         composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).performScrollTo().performClick()
         composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).assertIsSelected()
         assertThat(events).containsExactly("theme=DARK")
+    }
+
+    @Test
+    fun themeSelectorOffersTheFiveThemesAsRadioButtons() {
+        show()
+        val labels = listOf(
+            R.string.settings_theme_auto, R.string.settings_theme_light, R.string.settings_theme_sepia,
+            R.string.settings_theme_dark, R.string.settings_theme_black,
+        ).map(ctx::getString)
+        labels.forEach { label ->
+            composeRule.onNodeWithText(label).performScrollTo()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+                .assertHeightIsAtLeast(48.dp)
+        }
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_sepia)).performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_sepia)).assertIsSelected()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_black)).performScrollTo().performClick()
+        assertThat(events).containsExactly("theme=SEPIA", "theme=BLACK").inOrder()
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.reader
 
+import com.maximebier.verso.data.AppTheme
 import android.content.Context
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -36,7 +37,7 @@ class ReturnCardTest {
 
     private fun show(dark: Boolean = false, onStay: () -> Unit = {}, onGoBack: () -> Unit = {}) {
         compose.setContent {
-            VersoTheme(darkTheme = dark) { ReturnCardSample(onStayHere = onStay, onGoBack = onGoBack) }
+            VersoTheme(theme = if (dark) AppTheme.DARK else AppTheme.LIGHT) { ReturnCardSample(onStayHere = onStay, onGoBack = onGoBack) }
         }
     }
 

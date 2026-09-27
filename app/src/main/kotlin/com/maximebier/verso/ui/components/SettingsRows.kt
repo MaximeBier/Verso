@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -26,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
@@ -147,6 +151,39 @@ fun ActionRow(
             contentDescription = null,
             tint = iconTint,
             modifier = Modifier.padding(end = 12.dp).size(VersoDimens.iconSmall),
+        )
+    }
+}
+
+/** Ligne d'un choix unique : bouton radio et libellé, toute la ligne cliquable (≥ 48 dp), annoncée comme bouton radio. */
+@Composable
+fun RadioRow(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** 24 dp dans une liste plein écran ; 0 dans un dialogue, qui a déjà sa marge. */
+    horizontalPadding: Dp = 24.dp,
+) {
+    val colors = VersoTheme.colors
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .padding(horizontal = horizontalPadding, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(selectedColor = colors.accent, unselectedColor = colors.outline),
+        )
+        Text(
+            text = title,
+            style = if (selected) VersoTheme.typography.bodyStrong else VersoTheme.typography.body,
+            color = colors.text,
+            modifier = Modifier.padding(start = 16.dp),
         )
     }
 }

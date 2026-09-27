@@ -3,6 +3,7 @@ package com.maximebier.verso.ui.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,13 +32,13 @@ import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.ActionRow
 import com.maximebier.verso.ui.components.DangerButton
 import com.maximebier.verso.ui.components.DetailTopBar
+import com.maximebier.verso.ui.components.RadioRow
 import com.maximebier.verso.ui.components.SettingsParagraph
 import com.maximebier.verso.ui.components.SettingsSection
 import com.maximebier.verso.ui.components.SwitchRow
 import com.maximebier.verso.ui.components.ValueRow
 import com.maximebier.verso.ui.components.VersoDialog
 import com.maximebier.verso.ui.components.VersoIcons
-import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -154,10 +158,9 @@ fun SettingsScreen(
     }
 }
 
-/** Thème Automatique / Clair / Sombre (dans l'ordre de ThemeMode.entries), le segmenté partagé du tri. */
+/** Thème Automatique / Clair / Sépia / Sombre / Noir, dans l'ordre de ThemeMode.entries (maquette 2.02). */
 @Composable
 private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    val modes = ThemeMode.entries
     val label = stringResource(R.string.settings_theme)
     Text(
         text = label,
@@ -165,15 +168,18 @@ private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
         color = VersoTheme.colors.text,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
     )
-    VersoSegmentedButton(
-        options = listOf(
-            stringResource(R.string.settings_theme_auto),
-            stringResource(R.string.settings_theme_light),
-            stringResource(R.string.settings_theme_dark),
-        ),
-        selectedIndex = modes.indexOf(selected),
-        onSelect = { index -> onSelect(modes[index]) },
-        groupLabel = label,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
-    )
+    Column(Modifier.selectableGroup().semantics { contentDescription = label }) {
+        ThemeMode.entries.forEach { mode ->
+            RadioRow(title = stringResource(mode.labelRes()), selected = mode == selected, onClick = { onSelect(mode) })
+        }
+    }
+}
+
+@StringRes
+private fun ThemeMode.labelRes(): Int = when (this) {
+    ThemeMode.AUTO -> R.string.settings_theme_auto
+    ThemeMode.LIGHT -> R.string.settings_theme_light
+    ThemeMode.SEPIA -> R.string.settings_theme_sepia
+    ThemeMode.DARK -> R.string.settings_theme_dark
+    ThemeMode.BLACK -> R.string.settings_theme_black
 }

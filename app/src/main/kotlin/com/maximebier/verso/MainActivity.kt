@@ -18,14 +18,15 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.importer.IncomingIntent
 import com.maximebier.verso.ui.nav.LibraryRoute
 import com.maximebier.verso.ui.nav.StartDestination
 import com.maximebier.verso.ui.nav.VersoNavHost
-import com.maximebier.verso.ui.theme.VersoPalette
 import com.maximebier.verso.ui.theme.VersoTheme
+import com.maximebier.verso.ui.theme.paletteOf
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -40,7 +41,7 @@ class MainActivity : FragmentActivity() {
         // Le navigateur EPUB est un Fragment sans constructeur vide : restauré par le système (rotation, thème), il
         // n’a pas sa fabrique. Il est recréé à vide puis retiré ; la surface de lecture en crée un vrai.
         supportFragmentManager.fragmentFactory = EpubNavigatorFragment.createDummyFactory()
-        enableEdgeToEdge(initialThemeMode.isDark(systemDark = isSystemNight()))
+        enableEdgeToEdge(initialThemeMode.resolve(systemDark = isSystemNight()))
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) removeRestoredReaders()
         // Fichier reçu par « Ouvrir avec » / « Partager vers ». Après une recréation, l'intent a déjà été traité.
@@ -54,10 +55,10 @@ class MainActivity : FragmentActivity() {
         setContent {
             val themeMode by settings.themeMode.collectAsState(initial = initialThemeMode)
             val reading by settings.readingSettings.collectAsState(initial = initialReading)
-            val dark = themeMode.isDark(systemDark = isSystemInDarkTheme())
+            val theme = themeMode.resolve(systemDark = isSystemInDarkTheme())
             LaunchedEffect(themeMode) { applyWindowNightMode(themeMode) }
-            LaunchedEffect(dark) { enableEdgeToEdge(dark) }
-            VersoTheme(darkTheme = dark, font = reading.font) {
+            LaunchedEffect(theme) { enableEdgeToEdge(theme) }
+            VersoTheme(theme = theme, font = reading.font) {
                 val navController = rememberNavController()
                 VersoNavHost(navController = navController, reopenBookId = reopenBookId)
                 ReturnToLibraryOnIncomingImport(navController)
@@ -99,35 +100,37 @@ class MainActivity : FragmentActivity() {
             android.content.res.Configuration.UI_MODE_NIGHT_YES
 
     /** Icônes des barres système lisibles sur le fond du thème affiché (même voile que le défaut d'AndroidX). */
-    private fun enableEdgeToEdge(dark: Boolean) {
+    private fun enableEdgeToEdge(theme: AppTheme) {
+        val scrim = navigationScrim(theme)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-            navigationBarStyle = SystemBarStyle.auto(LightNavigationScrim, DarkNavigationScrim) { dark },
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { theme.isDark },
+            navigationBarStyle = SystemBarStyle.auto(scrim, scrim) { theme.isDark },
         )
     }
 
     /**
      * Android 12+ : le thème choisi s'applique aussi à la fenêtre (fond au lancement, avant Compose), retenu par
      * le système. Changer ce réglage recrée l'activité ; Navigation restaure alors la pile. Avant Android 12,
-     * seul le rendu Compose suit le réglage.
+     * seul le rendu Compose suit le réglage. Sépia est un thème de jour et noir un thème de nuit pour la fenêtre :
+     * passer de clair à sépia (ou de sombre à noir) ne recrée pas l'activité.
      */
     private fun applyWindowNightMode(mode: ThemeMode) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         val uiModeManager = getSystemService(UiModeManager::class.java) ?: return
         val night = when (mode) {
             ThemeMode.AUTO -> UiModeManager.MODE_NIGHT_AUTO
-            ThemeMode.LIGHT -> UiModeManager.MODE_NIGHT_NO
-            ThemeMode.DARK -> UiModeManager.MODE_NIGHT_YES
+            ThemeMode.LIGHT, ThemeMode.SEPIA -> UiModeManager.MODE_NIGHT_NO
+            ThemeMode.DARK, ThemeMode.BLACK -> UiModeManager.MODE_NIGHT_YES
         }
         // Même valeur que la précédente : sans effet (pas de recréation).
         uiModeManager.setApplicationNightMode(night)
     }
 
     private companion object {
-        // Voile de la barre de navigation à trois boutons (API 26 à 28 seulement) : fond des jetons, opacité par défaut
-        // de SystemBarStyle (90 % en clair, 50 % en sombre).
-        val LightNavigationScrim = VersoPalette.Light.background.copy(alpha = 0.9f).toArgb()
-        val DarkNavigationScrim = VersoPalette.Dark.background.copy(alpha = 0.5f).toArgb()
+        // Voile de la barre de navigation à trois boutons (API 26 à 28 seulement) : fond des jetons du thème affiché,
+        // opacité par défaut de SystemBarStyle (90 % pour les thèmes clairs, 50 % pour les sombres).
+        fun navigationScrim(theme: AppTheme): Int =
+            paletteOf(theme).background.copy(alpha = if (theme.isDark) 0.5f else 0.9f).toArgb()
     }
 }
 

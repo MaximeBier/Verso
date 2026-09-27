@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.theme
 
+import com.maximebier.verso.data.AppTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.font.FontFamily
@@ -36,7 +37,7 @@ class TypographyTest {
     fun themeProvidesTheChosenTypography() {
         var family: FontFamily? = null
         composeRule.setContent {
-            VersoTheme(darkTheme = false, font = ReadingFont.ATKINSON) {
+            VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.ATKINSON) {
                 family = VersoTheme.typography.body.fontFamily
                 Text("Aa")
             }
@@ -48,7 +49,7 @@ class TypographyTest {
     @Test
     fun literataIsTheDefault() {
         var family: FontFamily? = null
-        composeRule.setContent { VersoTheme(darkTheme = false) { family = VersoTheme.typography.body.fontFamily } }
+        composeRule.setContent { VersoTheme(theme = AppTheme.LIGHT) { family = VersoTheme.typography.body.fontFamily } }
         composeRule.waitForIdle()
         assertThat(family).isSameInstanceAs(LiterataFamily)
     }

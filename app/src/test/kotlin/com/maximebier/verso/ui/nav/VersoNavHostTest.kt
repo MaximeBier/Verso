@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.nav
 
+import com.maximebier.verso.data.AppTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -18,7 +19,7 @@ class VersoNavHostTest {
 
     @Test
     fun startsOnTheLibraryAndOpensSettings() {
-        compose.setContent { VersoTheme(darkTheme = false) { VersoNavHost() } }
+        compose.setContent { VersoTheme(theme = AppTheme.LIGHT) { VersoNavHost() } }
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodesWithText("Votre bibliothèque est vide").fetchSemanticsNodes().isNotEmpty()
         }

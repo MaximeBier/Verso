@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.components
 
+import com.maximebier.verso.data.AppTheme
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -23,7 +24,7 @@ class ComponentsTest {
     fun segmentedButtonExposesSelectionAndReportsClicks() {
         var selected = 0
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 VersoSegmentedButton(
                     options = listOf("Récents", "Titre", "Auteur"),
                     selectedIndex = 0,
@@ -41,7 +42,7 @@ class ComponentsTest {
     @Test
     fun progressBarExposesItsFraction() {
         compose.setContent {
-            VersoTheme(darkTheme = false) { VersoProgressBar(fraction = 0.31f, current = true) }
+            VersoTheme(theme = AppTheme.LIGHT) { VersoProgressBar(fraction = 0.31f, current = true) }
         }
         compose.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.31f, 0f..1f))).assertExists()
     }
@@ -50,7 +51,7 @@ class ComponentsTest {
     fun iconButtonHasItsTalkBackLabel() {
         var clicks = 0
         compose.setContent {
-            VersoTheme(darkTheme = false) {
+            VersoTheme(theme = AppTheme.LIGHT) {
                 VersoIconButton(icon = VersoIcons.Settings, contentDescription = "Paramètres", onClick = { clicks++ })
             }
         }
