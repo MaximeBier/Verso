@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -37,14 +38,19 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.compose.AndroidFragment
+import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.VersoReadingPreferences
 import com.maximebier.verso.readium.VersoReadingPreferences.applyVerso
+import com.maximebier.verso.ui.a11y.rememberReducedMotion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONTokener
 import org.readium.r2.navigator.HyperlinkNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
@@ -82,6 +88,19 @@ private const val TOP_TEXT_SCRIPT =
         "return s;})()"
 
 /**
+ * Mode pages (une colonne) : nombre de pages du fichier affiché (largeur du document / largeur de l’écran), page
+ * affichée (défilement horizontal / largeur de l’écran, 1-based) puis, pour chaque ancre de [anchorIds], la page où
+ * elle se trouve (`null` si absente). Réponse : `"[pages, page affichée, page…]"`
+ * (chaîne JSON), ou `null` si la vue n’est pas mesurée.
+ */
+internal fun pageLayoutScript(anchorIds: List<String>): String =
+    "(function(ids){var e=document.scrollingElement,w=window.innerWidth;if(!w)return null;" +
+        "var r=[Math.max(1,Math.round(e.scrollWidth/w)),Math.round(e.scrollLeft/w)+1];" +
+        "for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);" +
+        "r.push(el?Math.floor((el.getBoundingClientRect().left+e.scrollLeft)/w)+1:null);}" +
+        "return JSON.stringify(r);})(" + JSONArray(anchorIds) + ")"
+
+/**
  * Navigateur EPUB classique de Readium (Fragment) : un chapitre à la fois, défilé nativement par la WebView ; un
  * glissé commencé au bord ouvre le chapitre voisin ([chapterChain]). `initialLocator` n’est lu qu’à la création
  * (clé : la publication). `onInternalLink` : lien interne touché (ordre de lecture), appelé juste avant que Readium
@@ -102,7 +121,10 @@ fun ReaderSurface(
     positions: ReadingOrderPositions? = null,
     onInternalLink: (Url) -> Unit = {},
     onFailed: () -> Unit = {},
+    /** Espace laissé sous le texte (pied de page du mode pages). */
+    bottomInset: Dp = 0.dp,
 ) {
+    val reducedMotion by rememberUpdatedState(rememberReducedMotion())
     val activity = LocalActivity.current as? FragmentActivity
     val densityInfo = LocalDensity.current
     val density = densityInfo.density
@@ -122,6 +144,8 @@ fun ReaderSurface(
         return
     }
 
+    // Chapitres ancrés de chaque fichier, pour « Page x sur y » dans le chapitre (mode pages).
+    val anchorIds = remember(publication) { chapterAnchorIds(publication) }
     val scope = rememberCoroutineScope()
     val controller = remember(publication) {
         FragmentReaderController(
@@ -129,7 +153,10 @@ fun ReaderSurface(
             readChapterHtml = { href -> readChapterHtml(publication, href) },
             onCenterTap = { currentOnCenterTap() },
             adjacentChapter = { current, next -> adjacentChapter(publication, current, next) },
-        )
+        ).apply {
+            // Mode du fragment créé ci-dessous ; les bascules suivantes passent par submit.
+            setScrollMode(initialStyle.scrollMode)
+        }
     }
     controller.chainThresholdPx = ReaderGestures.CHAPTER_CHAIN_DRAG_DP * density
     val requestedStyle by controller.style.collectAsState()
@@ -204,6 +231,13 @@ fun ReaderSurface(
                 jsString(nav.evaluateJavascript(TOP_TEXT_SCRIPT))?.takeIf { it.isNotBlank() }
                     ?: nav.firstVisibleElementLocator()?.text?.highlight
             },
+            turnPage = { forward ->
+                if (forward) nav.goForward(animated = !reducedMotion) else nav.goBackward(animated = !reducedMotion)
+            },
+            pageLayout = { locator ->
+                val ids = anchorIds[locator.href.removeFragment().toString()].orEmpty()
+                pageLayoutOf(nav.evaluateJavascript(pageLayoutScript(ids)), ids)
+            },
         )
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
@@ -217,8 +251,10 @@ fun ReaderSurface(
         val previous = submitted.value
         submitted.value = preferences
         if (previous != null && VersoReadingPreferences.changesLayout(previous, preferences)) {
-            // Police, taille, interligne, marges : le texte revient au même locator, sans mouvement pour la machine à états.
-            controller.relayout { nav.submitPreferences(preferences) }
+            // Police, taille, interligne, marges, défilement : le texte revient au même locator, sans mouvement pour
+            // la machine à états. La bascule continu ↔ pages laisse d’abord Readium remettre le chapitre en page.
+            val settleMs = if (previous.scroll != preferences.scroll) ReaderGestures.MODE_SWITCH_SETTLE_MS else 0L
+            controller.relayout(settleMs) { nav.submitPreferences(preferences) }
         } else {
             nav.submitPreferences(preferences)
         }
@@ -229,6 +265,7 @@ fun ReaderSurface(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(readerContentInsets)
+                .padding(bottom = bottomInset)
                 .onSizeChanged {
                     controller.viewportHeightPx = it.height
                     widthDp = it.width / density
@@ -255,6 +292,26 @@ internal val readerContentInsets: WindowInsets
 /** Chaîne rendue par `evaluateJavascript` (encodée en JSON : `"\"texte\""`) ; null si `null` ou illisible. */
 internal fun jsString(json: String?): String? =
     json?.let { runCatching { JSONTokener(it).nextValue() as? String }.getOrNull() }
+
+/** Réponse de [pageLayoutScript] pour [anchorIds] (`"\"[184,12,1,null,40]\""`) ; null si illisible ou sans page. */
+internal fun pageLayoutOf(json: String?, anchorIds: List<String> = emptyList()): PageLayout? {
+    val array = runCatching { JSONArray(jsString(json) ?: return null) }.getOrNull() ?: return null
+    val count = array.optDouble(0).takeIf { it.isFinite() && it >= 1 }?.toInt() ?: return null
+    val current = array.optDouble(1).takeIf { it.isFinite() }?.toInt()
+    val anchors = anchorIds.mapIndexedNotNull { index, id ->
+        array.optDouble(index + 2).takeIf { it.isFinite() }?.let { AnchorPage(id, it.toInt()) }
+    }
+    return PageLayout(count, anchors, current)
+}
+
+/**
+ * Identifiants des ancres du sommaire (chapitres ancrés), par fichier de l’ordre de lecture (href sans fragment),
+ * dans l’ordre du sommaire.
+ */
+internal fun chapterAnchorIds(publication: Publication): Map<String, List<String>> =
+    preorder(publication.tableOfContents) { it.children }
+        .mapNotNull { link -> link.url().let { url -> url.fragment?.let { url.removeFragment().toString() to it } } }
+        .groupBy({ it.first }, { it.second })
 
 /** Réponse de [EDGES_SCRIPT] (`"[true,false]"`, parfois entre guillemets) ; null si illisible. */
 internal fun edgesOf(json: String?): ChapterEdges? {

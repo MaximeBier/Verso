@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.db.VersoDatabase
 import java.io.File
 import kotlinx.coroutines.flow.first
@@ -37,6 +38,20 @@ class BookRepositoryTest {
     @After
     fun tearDown() {
         db.close()
+    }
+
+    @Test
+    fun scrollModeIsStoredPerBook() = runTest {
+        val first = repository.insert(testBook("a"))
+        val second = repository.insert(testBook("b"))
+
+        repository.setScrollMode(first, ScrollMode.PAGES)
+
+        assertThat(repository.book(first)!!.scrollMode).isEqualTo("PAGES")
+        assertThat(repository.book(second)!!.scrollMode).isNull()
+
+        repository.setScrollMode(first, ScrollMode.CONTINUOUS)
+        assertThat(repository.book(first)!!.scrollMode).isEqualTo("CONTINUOUS")
     }
 
     @Test

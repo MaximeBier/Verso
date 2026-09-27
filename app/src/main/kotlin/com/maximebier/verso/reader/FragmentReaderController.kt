@@ -4,6 +4,8 @@ import android.os.SystemClock
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.core.text.chapterPage
+import com.maximebier.verso.core.text.pageInChapter
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
@@ -48,6 +50,14 @@ internal class FragmentReaderController(
     private var navigate: (suspend (Locator) -> Unit)? = null
     private var probeEdges: (suspend () -> ChapterEdges?)? = null
     private var visibleText: (suspend () -> String?)? = null
+    private var turnPage: ((forward: Boolean) -> Boolean)? = null
+    private var readPageLayout: (suspend (Locator) -> PageLayout?)? = null
+    private val pageInfoState = MutableStateFlow<PageInfo?>(null)
+    private var pageCountJob: Job? = null
+
+    /** Défilement appliqué ; posé par [submit] (via [setScrollMode]). */
+    var scrollMode: ScrollMode = ScrollMode.CONTINUOUS
+        private set
     private var positions: ReadingOrderPositions? = null
     private var lastDisplayedChangeAt: Long? = null
 
@@ -72,6 +82,7 @@ internal class FragmentReaderController(
     var chainThresholdPx: Float = ReaderGestures.CHAPTER_CHAIN_DRAG_DP
 
     override val displayed: StateFlow<Locator?> = displayedState.asStateFlow()
+    override val pageInfo: StateFlow<PageInfo?> = pageInfoState.asStateFlow()
     override val gestures: Flow<GestureSignal> = gestureFlow.asSharedFlow()
     override var viewportHeightPx: Int = 0
         internal set
@@ -82,6 +93,7 @@ internal class FragmentReaderController(
     val style: StateFlow<ReaderStyle?> = styleState.asStateFlow()
 
     override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) {
+        setScrollMode(scrollMode)
         styleState.value = ReaderStyle(settings, theme, scrollMode)
     }
 
@@ -103,8 +115,10 @@ internal class FragmentReaderController(
      * ne voit ni mouvement, ni fling, ni navigation, et la position affichée reste ce locator. Des changements
      * rapprochés (taille +/− répétés) gardent celui du premier. Un toucher sur le texte ([onPointerDown]) ou un saut
      * ([go]) abandonne la remise en page : l’utilisateur ou le saut l’emporte sur le retour au locator.
+     * `settleMs` : délai minimal entre [apply] et le retour au locator (bascule continu ↔ pages,
+     * [ReaderGestures.MODE_SWITCH_SETTLE_MS]). En mode pages, les pages du chapitre sont recomptées à la fin.
      */
-    fun relayout(apply: () -> Unit) {
+    fun relayout(settleMs: Long = 0L, apply: () -> Unit) {
         relayoutJob?.cancel()
         val anchor = relayoutAnchor ?: displayedState.value
         if (anchor == null) {
@@ -116,6 +130,7 @@ internal class FragmentReaderController(
         relayoutJob = scope.launch {
             relayoutReportAt = null
             apply()
+            if (settleMs > 0) delay(settleMs)
             awaitRelayoutReport()
             relayoutReportAt = null
             navigate?.invoke(anchor)
@@ -126,6 +141,8 @@ internal class FragmentReaderController(
             relayoutReportAt = null
             relayoutLastReport = null
             relayoutJob = null
+            // Les positions rapportées pendant la remise en page n’ont pas été publiées : le compte n’a pas suivi.
+            if (scrollMode == ScrollMode.PAGES) refreshPageInfo()
         }
     }
 
@@ -159,16 +176,63 @@ internal class FragmentReaderController(
         val screen = relayoutLastReport
         relayoutLastReport = null
         if (publishScreen && screen != null) onDisplayed(screen)
+        // Le recomptage de fin de remise en page n’aura pas lieu (bascule en pages abandonnée au toucher, par exemple).
+        if (scrollMode == ScrollMode.PAGES) refreshPageInfo()
     }
 
     fun bind(
         navigate: suspend (Locator) -> Unit,
         probeEdges: suspend () -> ChapterEdges?,
         visibleText: suspend () -> String?,
+        turnPage: (forward: Boolean) -> Boolean = { false },
+        pageLayout: suspend (Locator) -> PageLayout? = { null },
     ) {
         this.navigate = navigate
         this.probeEdges = probeEdges
         this.visibleText = visibleText
+        this.turnPage = turnPage
+        this.readPageLayout = pageLayout
+    }
+
+    /**
+     * Continu : défilement vertical, changement de chapitre par un glissé au bord. Pages : tours de page par swipe
+     * (natif) ou tap sur les côtés, jamais de fling ni d’enchaînement au bord (Readium passe au chapitre suivant).
+     * Le compte des pages n’est pas lu ici : les préférences du nouveau mode ne sont pas encore appliquées (le
+     * chapitre n’est pas encore en pages). Il l’est à la prochaine position publiée ou à la fin de la remise en
+     * page qui suit la bascule ([relayout]).
+     */
+    fun setScrollMode(mode: ScrollMode) {
+        if (mode == scrollMode) return
+        scrollMode = mode
+        edgesJob?.cancel()
+        edgesAtDown = null
+        pageCountJob?.cancel()
+        pageInfoState.value = null
+    }
+
+    /**
+     * Pages du fichier affiché, page affichée et début de chacun de ses chapitres (JavaScript ; à défaut de page lue,
+     * la progression du locator), ramenés au chapitre ([chapterPage] : un fichier peut contenir plusieurs chapitres ancrés).
+     */
+    private fun refreshPageInfo() {
+        val requested = displayedState.value ?: return
+        pageCountJob?.cancel()
+        pageCountJob = scope.launch {
+            val layout = readPageLayout?.invoke(requested)?.takeIf { it.pageCount >= 1 } ?: return@launch
+            // La lecture JavaScript ne s’annule pas : un changement de mode ou de page a pu la remplacer.
+            ensureActive()
+            val current = displayedState.value ?: return@launch
+            // Autre fichier affiché entre-temps : sa propre position relancera le compte.
+            if (!sameResource(current.href, requested.href)) return@launch
+            // Page lue dans la WebView : la progression de Readium tombe parfois juste sous le début de la page.
+            val filePage = layout.currentPage?.coerceIn(1, layout.pageCount)
+                ?: pageInChapter(current.locations.progression ?: 0.0, layout.pageCount)
+            val chapter = chapterPage(filePage, layout.pageCount, layout.anchors.map { it.page })
+            val startPage = filePage - chapter.page + 1
+            // À égalité (partie et premier chapitre sur la même page), le dernier dans l’ordre du sommaire.
+            val anchor = layout.anchors.lastOrNull { it.page.coerceAtLeast(1) == startPage }?.id
+            pageInfoState.value = PageInfo(chapter.page, chapter.pageCount, anchor)
+        }
     }
 
     /** Progression totale fine ; recalcule le locator affiché s’il est déjà là (ce n’est pas un mouvement). */
@@ -187,6 +251,7 @@ internal class FragmentReaderController(
         if (filled == displayedState.value) return
         lastDisplayedChangeAt = uptimeMs()
         displayedState.value = filled
+        if (scrollMode == ScrollMode.PAGES) refreshPageInfo()
     }
 
     private fun withTotalProgression(locator: Locator): Locator =
@@ -215,7 +280,7 @@ internal class FragmentReaderController(
         edgesJob?.cancel()
         edgesAtDown = null
         // Un doigt qui arrête un défilement en cours ne part pas d’un bord : pas de changement de chapitre.
-        if (!touchStoppedScroll) {
+        if (!touchStoppedScroll && scrollMode == ScrollMode.CONTINUOUS) {
             edgesJob = scope.launch {
                 val edges = probeEdges?.invoke()
                 // La lecture JavaScript ne s’annule pas : un appui plus récent a pu la remplacer entre-temps.
@@ -241,11 +306,13 @@ internal class FragmentReaderController(
         // Remise en page commencée pendant le glissé : le chapitre voisin se calcule sur la position réelle.
         cancelRelayout(publishScreen = true)
         val height = viewportHeightPx
-        val chain = chapterChain(edgesAtDown, dragDyPx, chainThresholdPx)
+        val continuous = scrollMode == ScrollMode.CONTINUOUS
+        val chain = if (continuous) chapterChain(edgesAtDown, dragDyPx, chainThresholdPx) else ChapterChain.NONE
         val target = displayedState.value?.takeIf { chain != ChapterChain.NONE }
             ?.let { adjacentChapter(it, chain == ChapterChain.NEXT) }
         val chapterTurn = target != null
-        val isFling = !chapterTurn && height > 0 &&
+        // En pages, un swipe tourne une page : c’est de la lecture, quelle que soit sa vitesse.
+        val isFling = continuous && !chapterTurn && height > 0 &&
             abs(velocityYPxPerSecond) / height >= thresholds.flingScreensPerSecond
         val releasedAt = uptimeMs()
         pending?.job?.cancel()
@@ -368,8 +435,48 @@ internal class FragmentReaderController(
         tapToken = null
     }
 
+    /**
+     * Mode pages : tiers droit → page suivante, tiers gauche → page précédente (sens de lecture de gauche à droite ;
+     * les livres de droite à gauche sont hors du périmètre).
+     */
     private fun handleTap(xFraction: Float) {
-        if (xFraction in ReaderGestures.CENTER_TAP_RANGE) onCenterTap()
+        when {
+            xFraction in ReaderGestures.CENTER_TAP_RANGE -> onCenterTap()
+            scrollMode == ScrollMode.PAGES -> turn(forward = xFraction > ReaderGestures.CENTER_TAP_RANGE.endInclusive)
+        }
+    }
+
+    /**
+     * Tour de page (tap sur un côté, action TalkBack) : Readium tourne la page, puis un geste de lecture est signalé
+     * une fois la nouvelle page affichée, comme pour un glissé. Sans effet en continu.
+     */
+    override fun turn(forward: Boolean) {
+        if (scrollMode != ScrollMode.PAGES) return
+        // Comme un toucher : le lecteur l’emporte sur le retour au locator d’une remise en page en cours.
+        cancelRelayout(publishScreen = true)
+        flushPendingGesture()
+        if (turnPage?.invoke(forward) != true) return
+        val startedAt = uptimeMs()
+        // Seules les images de défilement de ce tour comptent (une action TalkBack n’a pas d’appui du doigt).
+        gestureDownAt = startedAt
+        val gesture = PendingGesture(isFling = false, chapterTurn = false, target = null)
+        pending = gesture
+        gesture.job = scope.launch {
+            // Nouvelle page d’abord (en fin de chapitre, le suivant se charge et sa position arrive tard) : sinon la
+            // machine à états verrait un geste sans mouvement, puis une position qui bouge sans geste.
+            awaitDisplayedChangeAfter(startedAt)
+            awaitSettled(startedAt)
+            if (pending === gesture) pending = null
+            gestureFlow.emit(gesture.signal())
+        }
+    }
+
+    /** Une position publiée après [since], ou [ReaderGestures.SETTLE_MAX_MS] sans. */
+    private suspend fun awaitDisplayedChangeAfter(since: Long) {
+        while ((lastDisplayedChangeAt ?: Long.MIN_VALUE) <= since) {
+            if (uptimeMs() - since >= ReaderGestures.SETTLE_MAX_MS) return
+            delay(ReaderGestures.SETTLE_POLL_MS)
+        }
     }
 
     /** Suivi d’un tap physique entre l’observateur de l’app et le signal du navigateur. */

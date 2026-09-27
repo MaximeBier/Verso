@@ -25,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
@@ -80,7 +81,17 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 onCenterTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,
                 onFailed = viewModel::onEngineFailed,
+                bottomInset = if (state.scrollMode == ScrollMode.PAGES) pageFooterReserve() else 0.dp,
             )
+            if (state.scrollMode == ScrollMode.PAGES) {
+                // Sous la barre de lecture dans l’ordre de dessin : la barre, quand elle est affichée, le recouvre.
+                PageFooter(
+                    chapter = chapterLongLabel(state.displayedChapterPath),
+                    pageInfo = state.pageInfo,
+                    onTurn = viewModel::turnPage,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
             // Surface quittée (rotation, thème) : plus de sauts vers l’ancienne rendition jusqu’au prochain onReady.
             DisposableEffect(publication) {
                 onDispose { viewModel.onReaderGone() }
@@ -154,6 +165,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             onLineSpacingSelected = { spacing -> viewModel.updateReadingSettings { it.copy(lineSpacing = spacing) } },
             onMarginsSelected = { margins -> viewModel.updateReadingSettings { it.copy(margins = margins) } },
             onDismiss = viewModel::hideReadingSettings,
+            scrollModeRow = { ScrollModeRow(selected = state.scrollMode, onSelect = viewModel::setScrollMode) },
         )
     }
 }

@@ -12,6 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.css.Color as CssColor
+import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
@@ -64,8 +65,25 @@ class VersoReadingPreferencesTest {
     }
 
     @Test
-    fun pagesModeTurnsScrollOff() {
-        assertThat(prefs(scrollMode = ScrollMode.PAGES).scroll).isFalse()
+    fun pagesModeIsPaginatedOnOneColumnAndKeepsVersoTypography() {
+        val p = VersoReadingPreferences.epub(ReadingSettings(), AppTheme.LIGHT, ScrollMode.PAGES)
+        assertThat(p.scroll).isFalse()
+        assertThat(p.columnCount).isEqualTo(ColumnCount.ONE)
+        assertThat(p.textAlign).isEqualTo(TextAlign.START)
+        assertThat(p.hyphens).isFalse()
+        assertThat(p.publisherStyles).isFalse()
+    }
+
+    @Test
+    fun continuousModeScrolls() {
+        assertThat(VersoReadingPreferences.epub(ReadingSettings(), AppTheme.LIGHT, ScrollMode.CONTINUOUS).scroll).isTrue()
+    }
+
+    @Test
+    fun switchingBetweenContinuousAndPagesChangesTheLayout() {
+        assertThat(
+            VersoReadingPreferences.changesLayout(prefs(scrollMode = ScrollMode.CONTINUOUS), prefs(scrollMode = ScrollMode.PAGES)),
+        ).isTrue()
     }
 
     @Test

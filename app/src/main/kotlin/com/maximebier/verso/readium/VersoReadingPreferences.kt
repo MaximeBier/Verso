@@ -11,6 +11,7 @@ import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.css.Color as CssColor
 import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.preferences.Color
+import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
@@ -44,6 +45,9 @@ object VersoReadingPreferences {
         val lineHeight = settings.lineSpacing.factor
         return EpubPreferences(
             backgroundColor = Color(colors.background),
+            // Mode pages : une seule colonne, même en paysage ; les lignes ne sont jamais coupées entre deux pages
+            // (les colonnes CSS de ReadiumCSS coupent entre deux lignes).
+            columnCount = ColumnCount.ONE,
             textColor = Color(colors.text),
             fontFamily = fontFamilyOf(settings.font),
             fontSize = ReadingStyle.fontSizeFactor(settings.fontSizeSp * fontScale),

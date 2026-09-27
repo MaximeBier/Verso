@@ -31,6 +31,13 @@ fun chapterPathAt(toc: List<TocNode>, href: String, progression: Double? = null)
     return cleanPath(chosen.path)
 }
 
+/**
+ * Chemin de titres de l’entrée n° [index] du sommaire (préordre, même parcours que [preorder]), mêmes règles que
+ * [chapterPathAt] (deux niveaux au plus, titres vides ignorés) ; liste vide hors du sommaire.
+ */
+fun chapterPathOfEntry(toc: List<TocNode>, index: Int): List<String> =
+    flattenWithPaths(toc).getOrNull(index)?.let { cleanPath(it.path) } ?: emptyList()
+
 private class TocEntry(val node: TocNode, val path: List<String>, val preorder: Int, var postorder: Int = 0)
 
 /** Entrées dans l’ordre du sommaire ([preorder]), avec leur chemin de titres et leur rang en postordre. */

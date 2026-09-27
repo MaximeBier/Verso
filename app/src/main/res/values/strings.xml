@@ -5,7 +5,7 @@
     = espace insécable (dans « … », durées, heures, unités)
   Apostrophe typographique ’ : aucun échappement nécessaire.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ===================== Application ===================== -->
     <string name="app_name" translatable="false">Verso</string>
@@ -224,6 +224,15 @@
     <string name="reader_settings_margins_narrow">Étroites</string>
     <string name="reader_settings_margins_normal">Normales</string>
     <string name="reader_settings_margins_wide">Larges</string>
+    <string name="reader_settings_scroll">Défilement</string>
+    <string name="reader_settings_scroll_for_this_book">Pour ce livre</string>
+    <string name="reader_settings_scroll_continuous">Continu</string>
+    <string name="reader_settings_scroll_pages">Pages</string>
+    <!-- V2 · écran 2.05 -->
+    <string name="reader_page_next">Page suivante</string>
+    <string name="reader_page_previous">Page précédente</string>
+    <!-- « Page 2 sur 9 » : page du chapitre affiché ; « Page 1 sur 1 » n’est pas un pluriel. -->
+    <string name="reader_page_of" tools:ignore="PluralsCandidate">Page %1$d sur %2$d</string>
 
     <!-- ===================== Sommaire (1.12) ===================== -->
     <string name="toc_title">Sommaire</string>

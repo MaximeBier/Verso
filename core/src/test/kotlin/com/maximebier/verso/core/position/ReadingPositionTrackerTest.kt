@@ -11,6 +11,7 @@ import com.maximebier.verso.core.position.ReaderEvent.Tick
 import com.maximebier.verso.core.position.TrackerEffect.ReadingMoved
 import com.maximebier.verso.core.position.TrackerEffect.SaveReading
 import com.maximebier.verso.core.position.TrackerEffect.ScrollTo
+import com.maximebier.verso.core.settings.ScrollMode
 import kotlin.math.abs
 import org.junit.Test
 
@@ -707,6 +708,79 @@ class ReadingPositionTrackerTest {
 
         assertThat(tracker.onEvent(GoBack(4_000))).containsExactly(ScrollTo(pos(10.0)))
         assertThat(tracker.state).isEqualTo(following(10.0))
+    }
+
+    // ---------- Mode pages : un tour de page est un geste de lecture ----------
+
+    /** Tour de page vers [page] écrans : position affichée à [atMs], fin de geste 100 ms plus tard. */
+    private fun pageTurn(atMs: Long, page: Double): Array<ReaderEvent> =
+        arrayOf(Displayed(atMs, pos(page)), GestureEnded(atMs + 100, pos(page), isFling = false))
+
+    @Test
+    fun slowPageTurnsAreReadingAndReadingFollows() {
+        val tracker = tracker(ReadingThresholds.forPages())
+        val effects = (1..5).flatMap { i -> tracker.feed(*pageTurn(atMs = 30_000L * i, page = 10.0 + i)) } +
+            tracker.onEvent(Tick(160_000))
+
+        assertThat(tracker.state).isEqualTo(following(15.0))
+        assertThat(effects).contains(SaveReading(pos(15.0)))
+        assertThat(effects.filterIsInstance<ScrollTo>()).isEmpty()
+    }
+
+    @Test
+    fun turningPagesFastIsANavigationAndGoBackReturnsInOneTap() {
+        val tracker = tracker(ReadingThresholds.forPages())
+        // Cinq pages en deux secondes : plus de 3 écrans en moins de 5 s.
+        (1..5).forEach { i -> tracker.feed(*pageTurn(atMs = 600L + 400L * i, page = 10.0 + i)) }
+        tracker.onEvent(Tick(4_000))
+
+        assertThat(tracker.state.reading).isEqualTo(pos(10.0))
+        assertThat(tracker.state.showReturnCard).isTrue()
+        assertThat(tracker.onEvent(GoBack(5_000))).containsExactly(ScrollTo(pos(10.0)))
+        assertThat(tracker.state).isEqualTo(following(10.0))
+    }
+
+    @Test
+    fun inPagesModeTwoPagesReadAtTheNewPlaceConfirmIt() {
+        val tracker = tracker()
+        tracker.updateThresholds(ReadingThresholds.forPages())
+        tracker.feed(Jumped(1_000, pos(30.0)), Displayed(1_100, pos(30.0)), Tick(2_000))
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 30.0))
+
+        // Une page lue en une minute environ, puis la suivante.
+        tracker.feed(*pageTurn(atMs = 40_000, page = 31.0))
+        assertThat(tracker.state.showReturnCard).isTrue()
+        val effects = tracker.feed(*pageTurn(atMs = 100_000, page = 32.0))
+
+        assertThat(tracker.state).isEqualTo(following(32.0))
+        assertThat(effects).contains(SaveReading(pos(32.0)))
+    }
+
+    @Test
+    fun withContinuousThresholdsPageTurnsWouldNeverConfirm() {
+        // Justifie ReadingThresholds.forPages() : 60 s entre deux tours dépassent la pause de 15 s, et deux pages
+        // dépassent la dérive d’un écran ; la carte ne partirait jamais en lisant.
+        val tracker = tracker()
+        tracker.feed(Jumped(1_000, pos(30.0)), Displayed(1_100, pos(30.0)), Tick(2_000))
+        tracker.feed(*pageTurn(atMs = 40_000, page = 31.0))
+        tracker.feed(*pageTurn(atMs = 100_000, page = 32.0))
+        tracker.feed(*pageTurn(atMs = 160_000, page = 33.0))
+
+        assertThat(tracker.state.showReturnCard).isTrue()
+        assertThat(tracker.state.reading).isEqualTo(pos(10.0))
+    }
+
+    @Test
+    fun pagesThresholdsOnlyRelaxTheConfirmationWindow() {
+        val pages = ReadingThresholds.forPages()
+        assertThat(pages).isEqualTo(
+            ReadingThresholds().copy(
+                confirmMaxIdleGapMs = ReadingThresholds.PAGES_CONFIRM_MAX_IDLE_GAP_MS,
+                confirmMaxDriftScreens = ReadingThresholds.PAGES_CONFIRM_MAX_DRIFT_SCREENS,
+            ),
+        )
+        assertThat(ReadingThresholds.forScrollMode(ScrollMode.PAGES)).isEqualTo(pages)
+        assertThat(ReadingThresholds.forScrollMode(ScrollMode.CONTINUOUS)).isEqualTo(ReadingThresholds())
     }
 
     // ---------- Configuration ----------
