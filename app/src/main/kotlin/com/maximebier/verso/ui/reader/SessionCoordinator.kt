@@ -43,7 +43,7 @@ class SessionCoordinator(
     private val upsert: suspend (SessionEntity) -> Long,
     private val clock: () -> Long,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
-    thresholds: SessionThresholds = SessionThresholds(),
+    private val thresholds: SessionThresholds = SessionThresholds(),
     private val tickIntervalMs: Long = TICK_INTERVAL_MS,
     private val onWriteFailed: (Exception) -> Unit = { e -> Log.w(TAG, "Écriture de la session impossible", e) },
 ) {
@@ -151,11 +151,13 @@ class SessionCoordinator(
     }
 
     private suspend fun persist(record: SessionRecord) {
-        // Session sans lecture : jamais écrite (spec, « Journal de lecture »).
+        // Session sans lecture ou de moins de 30 s de temps actif : pas encore (ou jamais) écrite (spec, « Journal
+        // de lecture »). Le temps actif ne fait que croître : une session écrite reste gardée.
         // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.
         val id = try {
             if (record.isEmpty && !movedWithoutWords(record)) return
+            if (record.activeMs < thresholds.minActiveMs) return
             upsert(record.toEntity())
         } catch (e: CancellationException) {
             throw e
