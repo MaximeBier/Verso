@@ -107,7 +107,7 @@ Ces valeurs s'appliquent aux réglages Readium (couleurs du texte et du fond, in
 - [x] 1.01 : icône de l'app à 64 dp à la place du pictogramme.
 - [x] 1.09 : ligne « Verso » / « Version x.y.z » avec l'icône à 40 dp.
 - [x] Ajouter à `strings.xml` : « Thème sombre », « Sombre », « Nuit », « Verso », « Version %1$s ».
-- [ ] Comparer à leur PNG, en clair, en sombre et en nuit : 1.01, 1.02, 1.09, 1.10. (captures Roborazzi comparées ; téléphone à faire)
+- [x] Comparer à leur PNG, en clair, en sombre et en nuit : 1.01, 1.02, 1.09, 1.10 (téléphone ; 1.01 sur les captures Roborazzi, la bibliothèque du téléphone n’étant pas vide).
 - [x] Vérifier le contraste de tout texte dans les deux thèmes foncés (au moins 7:1), par exemple avec un test unitaire sur les jetons.
 
 Fait le 2026-09-29 (voir l'Historique de `SPEC.md`). Écarts : sépia garde ses jetons ajustés à 7:1 à l'étape 10 ; les jetons propres au code (`onDanger`, `onCover`, `onInverseAccent`, `progressInk`, `scrim`, `coverPalette`) sont gardés dans `tokens.json` ; les Paramètres gardent la liste des thèmes (Automatique, Clair, Sépia, Sombre, Nuit) au-dessus de « Thème sombre », qui ne sert qu'à l'automatique.
