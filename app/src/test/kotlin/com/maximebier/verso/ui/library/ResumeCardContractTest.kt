@@ -35,7 +35,7 @@ class ResumeCardContractTest {
         val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { "<html><body><h1>I</h1><p>Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins)</p></body></html>" },
-            onCenterTap = {},
+            onTap = {},
             adjacentChapter = { _, _ -> null },
             thresholds = ReadingThresholds(),
             uptimeMs = { testScheduler.currentTime },

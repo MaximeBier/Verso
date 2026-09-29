@@ -78,7 +78,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 initialStyle = ReaderStyle(state.readingSettings, theme, state.scrollMode),
                 positions = state.readingPositions,
                 onReady = viewModel::onReaderReady,
-                onCenterTap = viewModel::toggleBars,
+                onTap = viewModel::toggleBars,
                 onInternalLink = viewModel::onInternalLinkFollowed,
                 onFailed = viewModel::onEngineFailed,
                 bottomInset = if (state.scrollMode == ScrollMode.PAGES) pageFooterReserve() else 0.dp,

@@ -52,7 +52,7 @@ class ReaderSurfaceFailureTest {
                 initialLocator = null,
                 initialStyle = ReaderStyle(ReadingSettings(), AppTheme.LIGHT, ScrollMode.CONTINUOUS),
                 onReady = { ready++ },
-                onCenterTap = {},
+                onTap = {},
                 onFailed = { failures++ },
             )
         }

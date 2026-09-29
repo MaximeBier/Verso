@@ -47,7 +47,7 @@ class FragmentReaderControllerTest {
     )
 
     private class Harness(scope: TestScope) {
-        var centerTaps = 0
+        var taps = 0
         val navigated = mutableListOf<Locator>()
         var edges: ChapterEdges? = null
         var visible: String? = null
@@ -69,7 +69,7 @@ class FragmentReaderControllerTest {
         val controller = FragmentReaderController(
             scope = scope.backgroundScope,
             readChapterHtml = { "<html><body><p>un deux trois quatre cinq six sept huit neuf dix</p></body></html>" },
-            onCenterTap = { centerTaps++ },
+            onTap = { taps++ },
             adjacentChapter = { _, _ -> adjacent },
             thresholds = ReadingThresholds(flingScreensPerSecond = 1.0),
             uptimeMs = { scope.testScheduler.currentTime },
@@ -367,10 +367,10 @@ class FragmentReaderControllerTest {
         advanceTimeBy(1_000)
         scrollFor(h, 300)
         h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(xFraction = 0.5f)
+        h.controller.onTapLikeGesture()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
 
-        assertThat(h.centerTaps).isEqualTo(0)
+        assertThat(h.taps).isEqualTo(0)
     }
 
     @Test
@@ -434,7 +434,7 @@ class FragmentReaderControllerTest {
         val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { null },
-            onCenterTap = {},
+            onTap = {},
             adjacentChapter = { _, _ -> null },
             thresholds = ReadingThresholds(), // flingScreensPerSecond = 1,0 (vitesse au relâchement)
             uptimeMs = { testScheduler.currentTime },
@@ -484,76 +484,110 @@ class FragmentReaderControllerTest {
     }
 
     /** Un tap physique : vu par l’observateur de l’app au lâcher, puis (sauf s’il est absorbé) par Readium. */
-    private fun Harness.tap(xFraction: Float, seenByReadium: Boolean = true) {
+    private fun Harness.tap(seenByReadium: Boolean = true) {
         controller.onPointerDown()
-        controller.onTapLikeGesture(xFraction)
-        if (seenByReadium) controller.onReadiumTap(xFraction)
+        controller.onTapLikeGesture()
+        if (seenByReadium) controller.onReadiumTap()
     }
 
     @Test
     fun sameTapSeenByBothPathsTogglesOnce() = runTest {
         val h = Harness(this)
-        h.tap(0.5f)
+        h.tap()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
 
-        assertThat(h.centerTaps).isEqualTo(1)
+        assertThat(h.taps).isEqualTo(1)
     }
 
     @Test
-    fun twoDistinctCenterTaps300MsApartToggleTwice() = runTest {
+    fun twoDistinctTaps300MsApartToggleTwice() = runTest {
         val h = Harness(this)
-        h.tap(0.5f)
+        h.tap()
         advanceTimeBy(300)
-        h.tap(0.5f)
+        h.tap()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
 
-        assertThat(h.centerTaps).isEqualTo(2)
+        assertThat(h.taps).isEqualTo(2)
     }
 
     @Test
-    fun twoDistinctSwallowedCenterTaps300MsApartToggleTwice() = runTest {
+    fun twoDistinctSwallowedTaps300MsApartToggleTwice() = runTest {
         val h = Harness(this)
-        h.tap(0.5f, seenByReadium = false)
+        h.tap(seenByReadium = false)
         advanceTimeBy(300)
-        h.tap(0.5f, seenByReadium = false)
+        h.tap(seenByReadium = false)
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
 
-        assertThat(h.centerTaps).isEqualTo(2)
+        assertThat(h.taps).isEqualTo(2)
     }
 
     @Test
-    fun edgeTapThenCenterTapTogglesOnce() = runTest {
+    fun readiumEchoArrivingAfterTheNextTouchIsNotCountedAgain() = runTest {
+        // Taps rapprochés (téléphone, 2026-09-29) : Readium signale le premier après l’appui suivant.
         val h = Harness(this)
-        h.tap(0.1f)
-        advanceTimeBy(300)
-        h.tap(0.5f)
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture()
+        advanceTimeBy(150)
+        h.controller.onPointerDown() // rattrape le premier tap
+        assertThat(h.taps).isEqualTo(1)
+        h.controller.onReadiumTap() // écho du premier, en retard : déjà compté
+        h.controller.onTapLikeGesture()
+        h.controller.onReadiumTap() // écho du second
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
 
-        assertThat(h.centerTaps).isEqualTo(1)
+        assertThat(h.taps).isEqualTo(2)
+    }
+
+    @Test
+    fun lateEchoOfAFallbackTapDoesNotSwallowTheNextTap() = runTest {
+        val h = Harness(this)
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture()
+        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS + 1) // rattrapé par l’app
+        h.controller.onPointerDown()
+        h.controller.onReadiumTap() // écho du premier, après l’appui suivant
+        h.controller.onTapLikeGesture()
+        h.controller.onReadiumTap()
+        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
+
+        assertThat(h.taps).isEqualTo(2)
+    }
+
+    @Test
+    fun anEchoNeverSentDoesNotSwallowAReadiumTapMuchLater() = runTest {
+        val h = Harness(this)
+        h.tap(seenByReadium = false)
+        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS + 1)
+        advanceTimeBy(ReaderGestures.TAP_ECHO_MAX_MS)
+        // Appui long : l’app n’y voit pas un tap, Readium si.
+        h.controller.onPointerDown()
+        h.controller.onReadiumTap()
+
+        assertThat(h.taps).isEqualTo(2)
     }
 
     @Test
     fun readiumTapTheAppDidNotSeeAsATapStillCounts() = runTest {
         val h = Harness(this)
         h.controller.onPointerDown()
-        h.controller.onReadiumTap(xFraction = 0.5f)
+        h.controller.onReadiumTap()
 
-        assertThat(h.centerTaps).isEqualTo(1)
+        assertThat(h.taps).isEqualTo(1)
     }
 
     @Test
     fun swallowedCenterTapIsRecoveredOnceWithoutDoubleToggle() = runTest {
         val h = Harness(this)
         h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(xFraction = 0.5f)
+        h.controller.onTapLikeGesture()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS - 1)
-        assertThat(h.centerTaps).isEqualTo(0)
+        assertThat(h.taps).isEqualTo(0)
         advanceTimeBy(2)
-        assertThat(h.centerTaps).isEqualTo(1)
+        assertThat(h.taps).isEqualTo(1)
 
         // Le tap de Readium arrive quand même, en retard : déjà traité.
-        h.controller.onReadiumTap(xFraction = 0.5f)
-        assertThat(h.centerTaps).isEqualTo(1)
+        h.controller.onReadiumTap()
+        assertThat(h.taps).isEqualTo(1)
     }
 
     @Test
@@ -562,15 +596,15 @@ class FragmentReaderControllerTest {
         h.controller.onDisplayed(at("ch1.xhtml", 0.3))
         advanceTimeBy(50)
         h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(xFraction = 0.5f)
+        h.controller.onTapLikeGesture()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
-        assertThat(h.centerTaps).isEqualTo(0)
+        assertThat(h.taps).isEqualTo(0)
 
         h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(xFraction = 0.5f)
+        h.controller.onTapLikeGesture()
         h.controller.onLinkActivated()
         advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 3)
-        assertThat(h.centerTaps).isEqualTo(0)
+        assertThat(h.taps).isEqualTo(0)
     }
 
     @Test
@@ -603,7 +637,7 @@ class FragmentReaderControllerTest {
         val controller = FragmentReaderController(
             scope = backgroundScope,
             readChapterHtml = { "<html><body><p>un deux trois quatre cinq</p></body></html>" },
-            onCenterTap = {},
+            onTap = {},
             adjacentChapter = { _, _ -> null },
             uptimeMs = { testScheduler.currentTime },
             wallClockMs = { testScheduler.currentTime },
@@ -738,32 +772,23 @@ class FragmentReaderControllerTest {
 
     // ---------- Mode pages ----------
 
-    private fun tap(h: Harness, xFraction: Float) {
-        h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(xFraction)
-        h.controller.onReadiumTap(xFraction)
-    }
-
     @Test
-    fun inPagesModeSideTapsTurnPagesAndTheCenterTogglesTheBars() = runTest {
+    fun inPagesModeTapsToggleTheBarsAndNeverTurnPages() = runTest {
         val h = Harness(this)
         h.controller.setScrollMode(ScrollMode.PAGES)
 
-        tap(h, 0.9f)
-        tap(h, 0.1f)
-        tap(h, 0.5f)
+        h.tap()
+        h.tap()
 
-        assertThat(h.turns).containsExactly(true, false).inOrder()
-        assertThat(h.centerTaps).isEqualTo(1)
+        assertThat(h.turns).isEmpty()
+        assertThat(h.taps).isEqualTo(2)
     }
 
     @Test
-    fun inContinuousModeSideTapsDoNothing() = runTest {
+    fun inContinuousModeTurnDoesNothing() = runTest {
         val h = Harness(this)
-        tap(h, 0.9f)
         h.controller.turn(forward = true)
         assertThat(h.turns).isEmpty()
-        assertThat(h.centerTaps).isEqualTo(0)
     }
 
     @Test
@@ -771,7 +796,7 @@ class FragmentReaderControllerTest {
         val h = Harness(this)
         h.controller.setScrollMode(ScrollMode.PAGES)
         h.controller.gestures.test {
-            tap(h, 0.9f)
+            h.controller.turn(forward = true)
             advanceTimeBy(100)
             h.controller.onDisplayed(at("ch1.xhtml", 0.2))
             expectNoEvents()
@@ -790,7 +815,7 @@ class FragmentReaderControllerTest {
         h.controller.onDisplayed(at("ch1.xhtml", 0.9))
         h.controller.gestures.test {
             // Dernière page du chapitre : le suivant se charge, sa position arrive tard.
-            tap(h, 0.9f)
+            h.controller.turn(forward = true)
             advanceTimeBy(ReaderGestures.POSITION_WAIT_MS + ReaderGestures.SETTLE_POLL_MS)
             runCurrent()
             expectNoEvents()
@@ -814,25 +839,12 @@ class FragmentReaderControllerTest {
         h.controller.setScrollMode(ScrollMode.PAGES)
         h.controller.onDisplayed(at("ch1.xhtml", 0.0))
         h.controller.gestures.test {
-            tap(h, 0.1f)
+            h.controller.turn(forward = false)
             advanceTimeBy(ReaderGestures.SETTLE_MAX_MS + ReaderGestures.SETTLE_POLL_MS)
             runCurrent()
             expectNoEvents()
         }
         assertThat(h.turns).containsExactly(false)
-    }
-
-    @Test
-    fun readiumEchoOfASideTapAlreadyHandledByTheFallbackTurnsOnce() = runTest {
-        val h = Harness(this)
-        h.controller.setScrollMode(ScrollMode.PAGES)
-        h.controller.onPointerDown()
-        h.controller.onTapLikeGesture(0.9f)
-        advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS)
-        runCurrent()
-        h.controller.onReadiumTap(0.9f)
-
-        assertThat(h.turns).containsExactly(true)
     }
 
     @Test

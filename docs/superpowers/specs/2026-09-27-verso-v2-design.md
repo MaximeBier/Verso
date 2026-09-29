@@ -58,7 +58,7 @@ Une étape par commit (`Étape N : …`), à la suite de la V1, poussée et inst
 ### Mode pages (étape 12)
 
 - `EpubPreferences.scroll = false` : pagination native de Readium en colonnes CSS (une ligne n'est jamais coupée en bas de page), changement de chapitre géré par Readium.
-- `FragmentReaderController` : en mode pages, les tours de page (swipe ou tap dans le tiers gauche ou droit) émettent `GestureSignal(isFling = false)` ; le tap au centre affiche la barre, comme en continu. L'enchaînement des chapitres au bord (propre au continu) est désactivé.
+- `FragmentReaderController` : en mode pages, les tours de page (swipe) émettent `GestureSignal(isFling = false)` ; un tap n’importe où affiche la barre, comme en continu (tap latéral retiré le 2026-09-29). L'enchaînement des chapitres au bord (propre au continu) est désactivé.
 - Pied de page Compose : chapitre à gauche, « Page 2 sur 9 » à droite, calculé à partir de la progression dans le chapitre et du nombre de colonnes (script JavaScript évalué dans la ressource).
 - Room : migration 1 → 2, colonnes `scrollMode` (TEXT nullable, null = défaut global) et `stateOverride` (TEXT nullable).
 

@@ -113,7 +113,7 @@ class ReaderEngineIntegrationTest {
             val controller = FragmentReaderController(
                 scope = backgroundScope,
                 readChapterHtml = { href -> readChapterHtml(publication, href) },
-                onCenterTap = {},
+                onTap = {},
                 adjacentChapter = { _, _ -> null },
             )
             val chapter = publication.readingOrder[publication.readingOrder.size / 2]

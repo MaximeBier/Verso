@@ -30,12 +30,13 @@ import org.readium.r2.shared.util.Url
 
 /**
  * Pont entre le navigateur classique de Readium et l’app : positions affichées, signaux de fin de geste (après la
- * fin réelle du défilement natif), taps, changement de chapitre au bord et extrait de la carte Reprendre.
+ * fin réelle du défilement natif), taps (n’importe où sur le texte : barre de lecture), changement de chapitre au bord
+ * et extrait de la carte Reprendre.
  */
 internal class FragmentReaderController(
     private val scope: CoroutineScope,
     private val readChapterHtml: suspend (Url) -> String?,
-    private val onCenterTap: () -> Unit,
+    private val onTap: () -> Unit,
     private val adjacentChapter: (current: Locator, next: Boolean) -> Locator?,
     private val thresholds: ReadingThresholds = ReadingThresholds(),
     private val uptimeMs: () -> Long = SystemClock::uptimeMillis,
@@ -72,7 +73,15 @@ internal class FragmentReaderController(
     private var detachedTurn: PendingGesture? = null
 
     private var touchStoppedScroll = false
-    private var tapToken: TapToken? = null
+
+    /** Tap vu par l’app, en attente du signal du navigateur ; le travail le rattrape s’il ne vient pas à temps. */
+    private var pendingTap: Job? = null
+
+    /**
+     * Instants des taps traités par l’app sans le signal du navigateur, du plus ancien au plus récent : les
+     * signaux qui arrivent ensuite sont d’abord les leurs, en retard ([ReaderGestures.TAP_ECHO_MAX_MS]).
+     */
+    private val echoesOwed = ArrayDeque<Long>()
 
     /** Bords du chapitre à l’appui du doigt en cours ; null tant qu’ils ne sont pas lus. */
     private var edgesAtDown: ChapterEdges? = null
@@ -196,7 +205,7 @@ internal class FragmentReaderController(
 
     /**
      * Continu : défilement vertical, changement de chapitre par un glissé au bord. Pages : tours de page par swipe
-     * (natif) ou tap sur les côtés, jamais de fling ni d’enchaînement au bord (Readium passe au chapitre suivant).
+     * (natif), jamais de fling ni d’enchaînement au bord (Readium passe au chapitre suivant).
      * Le compte des pages n’est pas lu ici : les préférences du nouveau mode ne sont pas encore appliquées (le
      * chapitre n’est pas encore en pages). Il l’est à la prochaine position publiée ou à la fin de la remise en
      * page qui suit la bascule ([relayout]).
@@ -288,13 +297,12 @@ internal class FragmentReaderController(
                 edgesAtDown = edges
             }
         }
-        // Le tap précédent est clos : rattrapé tout de suite s’il attendait encore (le navigateur signale
-        // un tap quelques millisecondes après le lâcher, jamais après l’appui suivant), écho oublié sinon.
-        val previous = tapToken
-        tapToken = null
-        if (previous is TapToken.Pending) {
-            previous.fallback.cancel()
-            handleTap(previous.xFraction)
+        // Le tap précédent est clos : rattrapé tout de suite s’il attendait encore le signal du navigateur
+        // (taps rapprochés : il peut arriver après cet appui, il ne sera pas compté deux fois).
+        pendingTap?.let {
+            it.cancel()
+            pendingTap = null
+            handleOwnTap()
         }
     }
 
@@ -399,55 +407,53 @@ internal class FragmentReaderController(
     }
 
     /**
-     * Appui bref sans glissement vu par l’app, au lâcher (toujours avant le signal du navigateur).
-     * Normalement, Readium signale aussi ce tap ([onReadiumTap]) ; s’il ne le fait pas à temps, l’app le
-     * traite elle-même. Un jeton par tap physique évite de le compter deux fois. Un appui qui arrête un
-     * défilement n’est pas un tap.
+     * Appui bref sans glissement vu par l’app, au lâcher (toujours avant le signal du navigateur), n’importe où
+     * sur le texte : affiche ou masque la barre de lecture, dans les deux modes. Normalement, Readium signale
+     * aussi ce tap ([onReadiumTap]) ; s’il ne le fait pas à temps, l’app le traite elle-même, sans le compter
+     * deux fois ([echoesOwed]). Un appui qui arrête un défilement n’est pas un tap.
      */
-    fun onTapLikeGesture(xFraction: Float) {
+    fun onTapLikeGesture() {
         if (touchStoppedScroll) return
-        (tapToken as? TapToken.Pending)?.fallback?.cancel()
-        val fallback = scope.launch {
+        pendingTap?.cancel()
+        pendingTap = scope.launch {
             delay(ReaderGestures.TAP_FALLBACK_DELAY_MS)
-            tapToken = TapToken.HandledByFallback
-            handleTap(xFraction)
+            pendingTap = null
+            handleOwnTap()
         }
-        tapToken = TapToken.Pending(xFraction, fallback)
     }
 
-    fun onReadiumTap(xFraction: Float) {
-        val token = tapToken
-        tapToken = null
-        when (token) {
-            is TapToken.Pending -> {
-                token.fallback.cancel()
-                handleTap(xFraction)
+    fun onReadiumTap() {
+        val now = uptimeMs()
+        while (echoesOwed.isNotEmpty() && now - echoesOwed.first() > ReaderGestures.TAP_ECHO_MAX_MS) {
+            echoesOwed.removeFirst()
+        }
+        val pending = pendingTap
+        when {
+            // Signal tardif d’un tap déjà traité par l’app.
+            echoesOwed.isNotEmpty() -> echoesOwed.removeFirst()
+            pending != null -> {
+                pending.cancel()
+                pendingTap = null
+                onTap()
             }
-            // Écho tardif d’un tap déjà rattrapé par l’app.
-            TapToken.HandledByFallback -> Unit
             // Tap que l’app n’a pas pris pour un tap (appui long, appui qui arrêtait un défilement) : Readium décide.
-            null -> handleTap(xFraction)
+            else -> onTap()
         }
     }
 
     fun onLinkActivated() {
-        (tapToken as? TapToken.Pending)?.fallback?.cancel()
-        tapToken = null
+        pendingTap?.cancel()
+        pendingTap = null
+    }
+
+    /** Tap traité sans le signal du navigateur : s’il arrive plus tard, il est ignoré. */
+    private fun handleOwnTap() {
+        echoesOwed.addLast(uptimeMs())
+        onTap()
     }
 
     /**
-     * Mode pages : tiers droit → page suivante, tiers gauche → page précédente (sens de lecture de gauche à droite ;
-     * les livres de droite à gauche sont hors du périmètre).
-     */
-    private fun handleTap(xFraction: Float) {
-        when {
-            xFraction in ReaderGestures.CENTER_TAP_RANGE -> onCenterTap()
-            scrollMode == ScrollMode.PAGES -> turn(forward = xFraction > ReaderGestures.CENTER_TAP_RANGE.endInclusive)
-        }
-    }
-
-    /**
-     * Tour de page (tap sur un côté, action TalkBack) : Readium tourne la page, puis un geste de lecture est signalé
+     * Tour de page (action TalkBack) : Readium tourne la page, puis un geste de lecture est signalé
      * une fois la nouvelle page affichée, comme pour un glissé. Sans effet en continu.
      */
     override fun turn(forward: Boolean) {
@@ -477,12 +483,6 @@ internal class FragmentReaderController(
             if (uptimeMs() - since >= ReaderGestures.SETTLE_MAX_MS) return
             delay(ReaderGestures.SETTLE_POLL_MS)
         }
-    }
-
-    /** Suivi d’un tap physique entre l’observateur de l’app et le signal du navigateur. */
-    private sealed interface TapToken {
-        class Pending(val xFraction: Float, val fallback: Job) : TapToken
-        data object HandledByFallback : TapToken
     }
 
     /** Saut sans animation ; le geste en attente est abandonné sans signal ([dropPendingGesture]). */
