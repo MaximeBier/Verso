@@ -123,6 +123,6 @@ class ReadingSettingsSheetTest {
         compose.onNodeWithContentDescription(s(R.string.reader_settings_text_smaller)).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         compose.onNodeWithContentDescription(s(R.string.reader_settings_text_larger)).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         compose.onNodeWithText(s(R.string.reader_settings_font_system)).assertHeightIsAtLeast(48.dp)
-        compose.onNodeWithText(s(R.string.reader_settings_theme_black)).assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText(s(R.string.reader_settings_theme_night)).assertHeightIsAtLeast(48.dp)
     }
 }

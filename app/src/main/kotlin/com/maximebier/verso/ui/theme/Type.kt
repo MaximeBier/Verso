@@ -7,7 +7,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.core.settings.ReadingFont
 
@@ -30,7 +29,6 @@ class VersoTypography(private val family: FontFamily) {
         lineHeightStyle = CenteredLineHeight,
     )
 
-    val logo: TextStyle = verso(28f, 700).copy(letterSpacing = (-0.01).em)
     val display: TextStyle = verso(28f, 700, 35f)
     val screenTitle: TextStyle = verso(22f, 700, 27.5f)
     val sheetTitle: TextStyle = verso(22f, 700, 28.6f)

@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import com.maximebier.verso.core.settings.ReadingFont
 import com.maximebier.verso.data.AppTheme
 
-/** Thème Verso : une des quatre palettes de tokens.json, dans la police choisie. */
+/** Thème Verso : une des quatre palettes de tokens.json (clair, sépia, sombre, nuit), dans la police choisie. */
 @Composable
 fun VersoTheme(
     theme: AppTheme = if (isSystemInDarkTheme()) AppTheme.DARK else AppTheme.LIGHT,
@@ -74,7 +74,7 @@ fun paletteOf(theme: AppTheme): VersoColors = when (theme) {
     AppTheme.LIGHT -> VersoPalette.Light
     AppTheme.SEPIA -> VersoPalette.Sepia
     AppTheme.DARK -> VersoPalette.Dark
-    AppTheme.BLACK -> VersoPalette.Black
+    AppTheme.NIGHT -> VersoPalette.Night
 }
 
 /** Traduction vers Material 3 pour les composants M3 (Switch, ModalBottomSheet, Snackbar…). */

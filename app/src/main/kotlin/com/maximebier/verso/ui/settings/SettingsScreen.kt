@@ -28,15 +28,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
+import com.maximebier.verso.data.DarkThemeVariant
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.ActionRow
+import com.maximebier.verso.ui.components.AppInfoRow
 import com.maximebier.verso.ui.components.DangerButton
 import com.maximebier.verso.ui.components.DetailTopBar
 import com.maximebier.verso.ui.components.RadioRow
+import com.maximebier.verso.ui.components.SegmentedRow
 import com.maximebier.verso.ui.components.SettingsParagraph
 import com.maximebier.verso.ui.components.SettingsSection
 import com.maximebier.verso.ui.components.SwitchRow
-import com.maximebier.verso.ui.components.ValueRow
 import com.maximebier.verso.ui.components.VersoDialog
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoTextButton
@@ -58,6 +60,7 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
         onBack = onBack,
         onReopenLastBookChange = viewModel::onReopenLastBookChange,
         onThemeModeChange = viewModel::onThemeModeChange,
+        onDarkThemeVariantChange = viewModel::onDarkThemeVariantChange,
         onClearJournalClick = viewModel::onClearJournalClick,
         onClearJournalConfirm = viewModel::onClearJournalConfirm,
         onClearJournalDismiss = viewModel::onClearJournalDismiss,
@@ -87,6 +90,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onReopenLastBookChange: (Boolean) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onDarkThemeVariantChange: (DarkThemeVariant) -> Unit,
     onClearJournalClick: () -> Unit,
     onClearJournalConfirm: () -> Unit,
     onClearJournalDismiss: () -> Unit,
@@ -113,7 +117,8 @@ fun SettingsScreen(
             }
             SettingsSection(title = stringResource(R.string.settings_section_display)) {
                 ThemeSelector(selected = state.themeMode, onSelect = onThemeModeChange)
-                SettingsParagraph(text = stringResource(R.string.settings_display_body))
+                SettingsParagraph(text = stringResource(R.string.settings_display_body), bottomPadding = 8.dp)
+                DarkThemeVariantSelector(selected = state.darkThemeVariant, onSelect = onDarkThemeVariantChange)
             }
             SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
                 SettingsParagraph(text = stringResource(R.string.settings_privacy_body))
@@ -126,7 +131,10 @@ fun SettingsScreen(
                 )
             }
             SettingsSection(title = stringResource(R.string.settings_section_about), showDivider = false) {
-                ValueRow(title = stringResource(R.string.settings_version), value = versionName)
+                AppInfoRow(
+                    title = stringResource(R.string.app_name),
+                    summary = stringResource(R.string.settings_version, versionName),
+                )
                 ActionRow(
                     title = stringResource(R.string.settings_source_code),
                     summary = stringResource(R.string.settings_source_code_url_label),
@@ -158,7 +166,7 @@ fun SettingsScreen(
     }
 }
 
-/** Thème Automatique / Clair / Sépia / Sombre / Noir, dans l'ordre de ThemeMode.entries (maquette 2.02). */
+/** Thème Automatique / Clair / Sépia / Sombre / Nuit, dans l'ordre de ThemeMode.entries (maquette 2.02). */
 @Composable
 private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val label = stringResource(R.string.settings_theme)
@@ -181,5 +189,23 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.LIGHT -> R.string.settings_theme_light
     ThemeMode.SEPIA -> R.string.settings_theme_sepia
     ThemeMode.DARK -> R.string.settings_theme_dark
-    ThemeMode.BLACK -> R.string.settings_theme_black
+    ThemeMode.NIGHT -> R.string.settings_theme_night
+}
+
+/** « Thème sombre : Sombre / Nuit » (1.09) : le thème foncé de l'automatique quand le téléphone est en sombre. */
+@Composable
+private fun DarkThemeVariantSelector(selected: DarkThemeVariant, onSelect: (DarkThemeVariant) -> Unit) {
+    val variants = DarkThemeVariant.entries
+    SegmentedRow(
+        title = stringResource(R.string.settings_dark_theme),
+        options = variants.map { stringResource(it.labelRes()) },
+        selectedIndex = variants.indexOf(selected),
+        onSelect = { onSelect(variants[it]) },
+    )
+}
+
+@StringRes
+private fun DarkThemeVariant.labelRes(): Int = when (this) {
+    DarkThemeVariant.DARK -> R.string.settings_dark_theme_dark
+    DarkThemeVariant.NIGHT -> R.string.settings_dark_theme_night
 }

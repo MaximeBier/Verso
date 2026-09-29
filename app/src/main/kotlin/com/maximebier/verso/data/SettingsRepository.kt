@@ -41,9 +41,15 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         prefs[LIBRARY_VIEW_MODE]?.let { stored -> LibraryViewMode.entries.firstOrNull { it.name == stored } } ?: LibraryViewMode.LIST
     }
 
-    /** Défaut : AUTO (suit le thème du téléphone). */
+    /** Défaut : AUTO (suit le thème du téléphone). L'ancien thème Noir, remplacé par Nuit, se lit comme Nuit. */
     val themeMode: Flow<ThemeMode> = preferences.map { prefs ->
-        prefs[THEME_MODE]?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } } ?: ThemeMode.AUTO
+        val stored = prefs[THEME_MODE]
+        if (stored == LEGACY_BLACK_THEME) ThemeMode.NIGHT else enumOrDefault(stored, ThemeMode.AUTO)
+    }
+
+    /** Thème foncé de l'automatique quand le téléphone est en sombre. Défaut : DARK (Sombre). */
+    val darkThemeVariant: Flow<DarkThemeVariant> = preferences.map { prefs ->
+        enumOrDefault(prefs[DARK_THEME_VARIANT], DarkThemeVariant.DARK)
     }
 
     suspend fun setReopenLastBook(value: Boolean) {
@@ -60,6 +66,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
     suspend fun setThemeMode(value: ThemeMode) {
         save { it[THEME_MODE] = value.name }
+    }
+
+    suspend fun setDarkThemeVariant(value: DarkThemeVariant) {
+        save { it[DARK_THEME_VARIANT] = value.name }
     }
 
     /** Réglages de lecture V2 (spec, « Réglages de la V2 ») ; valeur inconnue → défaut, taille bornée. */
@@ -103,6 +113,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val LIBRARY_SORT = stringPreferencesKey("library_sort")
         val LIBRARY_VIEW_MODE = stringPreferencesKey("library_view_mode")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DARK_THEME_VARIANT = stringPreferencesKey("dark_theme_variant")
+
+        /** Valeur écrite par le thème Noir (étape 10), remplacé par Nuit le 2026-09-29. */
+        const val LEGACY_BLACK_THEME = "BLACK"
         val READING_FONT = stringPreferencesKey("reading_font")
         val READING_FONT_SIZE = intPreferencesKey("reading_font_size")
         val READING_LINE_SPACING = stringPreferencesKey("reading_line_spacing")

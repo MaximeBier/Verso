@@ -18,7 +18,7 @@ class VersoThemeTest {
             AppTheme.LIGHT to VersoPalette.Light,
             AppTheme.SEPIA to VersoPalette.Sepia,
             AppTheme.DARK to VersoPalette.Dark,
-            AppTheme.BLACK to VersoPalette.Black,
+            AppTheme.NIGHT to VersoPalette.Night,
         )
         val seen = mutableMapOf<AppTheme, Triple<VersoColors, Boolean, AppTheme>>()
         composeRule.setContent {
@@ -36,14 +36,14 @@ class VersoThemeTest {
 
     @Test
     fun darkPalettesUseTheDarkCovers() {
-        var black: List<androidx.compose.ui.graphics.Color>? = null
+        var night: List<androidx.compose.ui.graphics.Color>? = null
         var sepia: List<androidx.compose.ui.graphics.Color>? = null
         composeRule.setContent {
-            VersoTheme(theme = AppTheme.BLACK) { black = VersoTheme.coverPalette }
+            VersoTheme(theme = AppTheme.NIGHT) { night = VersoTheme.coverPalette }
             VersoTheme(theme = AppTheme.SEPIA) { sepia = VersoTheme.coverPalette }
         }
         composeRule.waitForIdle()
-        assertThat(black).isEqualTo(VersoPalette.CoverDark)
+        assertThat(night).isEqualTo(VersoPalette.CoverDark)
         assertThat(sepia).isEqualTo(VersoPalette.CoverLight)
     }
 }

@@ -148,14 +148,17 @@
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_sepia">Sépia</string>
     <string name="settings_theme_dark">Sombre</string>
-    <string name="settings_theme_black">Noir</string>
+    <string name="settings_theme_night">Nuit</string>
+    <string name="settings_dark_theme">Thème sombre</string>
+    <string name="settings_dark_theme_dark">Sombre</string>
+    <string name="settings_dark_theme_night">Nuit</string>
     <string name="settings_display_body">En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture.</string>
     <string name="settings_section_privacy">Confidentialité</string>
     <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>
     <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
     <string name="settings_section_about">À propos</string>
-    <string name="settings_version">Version</string>
+    <string name="settings_version">Version %1$s</string>
     <string name="settings_source_code">Code source</string>
     <!-- À remplacer quand le dépôt existe (spec, Questions ouvertes) -->
     <string name="settings_source_code_url_label" translatable="false">github.com/MaximeBier/Verso</string>
@@ -215,7 +218,7 @@
     <string name="reader_settings_theme_light">Clair</string>
     <string name="reader_settings_theme_sepia">Sépia</string>
     <string name="reader_settings_theme_dark">Sombre</string>
-    <string name="reader_settings_theme_black">Noir</string>
+    <string name="reader_settings_theme_night">Nuit</string>
     <string name="reader_settings_line_spacing">Interligne</string>
     <string name="reader_settings_line_spacing_tight">Serré</string>
     <string name="reader_settings_line_spacing_normal">Normal</string>

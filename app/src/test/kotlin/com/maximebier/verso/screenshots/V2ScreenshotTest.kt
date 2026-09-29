@@ -37,13 +37,13 @@ class V2ScreenshotTest(
         captureScreenRoboImage("build/outputs/roborazzi/v2/${fixture.screen.id}-$suffix.png")
     }
 
-    /** Suffixe des fichiers : clair, sepia, sombre, noir. */
+    /** Suffixe des fichiers : clair, sepia, sombre, nuit. */
     private val AppTheme.fileSuffix: String
         get() = when (this) {
             AppTheme.LIGHT -> "clair"
             AppTheme.SEPIA -> "sepia"
             AppTheme.DARK -> "sombre"
-            AppTheme.BLACK -> "noir"
+            AppTheme.NIGHT -> "nuit"
         }
 
     companion object {

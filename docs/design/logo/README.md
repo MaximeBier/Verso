@@ -10,8 +10,8 @@ Logo retenu : **E1, variante Papier**. Deux pages se croisent à la reliure et d
 | Pages | Fond (jour) | `#F5F1E8` |
 | Traits de pages | Séparateur (jour) | `#D3CABB` |
 | V du logotype, fond clair | Accent (jour) | `#7A3021` |
-| V du logotype, fond sombre | Accent (nuit) | `#E8C48E` |
-| « erso », fond clair / sombre | Texte (jour) / Texte (nuit) | `#1F1B16` / `#E8E2D8` |
+| V du logotype, fond sombre | Accent (sombre) | `#CEB28A` |
+| « erso », fond clair / sombre | Texte (clair) / Texte (sombre) | `#1F1B16` / `#CBC5BC` |
 
 ## Contenu
 

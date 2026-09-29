@@ -25,10 +25,10 @@ data class V2ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
 
 /**
  * Écrans V2 dessinables par Compose. 2.03 et 2.04 : texte de lecture (rendu Compose ; le vrai rendu Readium est
- * vérifié sur le téléphone) et écrans V1 dans les palettes sépia et noire, pour « sans zone d'une autre couleur ».
+ * vérifié sur le téléphone) et écrans V1 dans les palettes sépia et nuit, pour « sans zone d'une autre couleur ».
  */
 object V2ScreenCatalog {
-    private val paperThemes = listOf(AppTheme.SEPIA, AppTheme.BLACK)
+    private val paperThemes = listOf(AppTheme.SEPIA, AppTheme.NIGHT)
 
     val fixtures: List<V2ScreenFixture> = listOf(
         V2ScreenFixture(

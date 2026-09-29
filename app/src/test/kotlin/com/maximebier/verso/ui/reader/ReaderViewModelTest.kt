@@ -589,15 +589,15 @@ class ReaderViewModelTest {
         val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
         viewModel.uiState.first { !it.loading }
 
-        viewModel.setThemeMode(ThemeMode.BLACK)
+        viewModel.setThemeMode(ThemeMode.NIGHT)
         runCurrent()
 
         // Écriture DataStore sur un autre fil : attente en temps réel, pas en temps virtuel.
         val saved = withContext(Dispatchers.Default) {
-            withTimeout(5_000) { testSettings().themeMode.first { it == ThemeMode.BLACK } }
+            withTimeout(5_000) { testSettings().themeMode.first { it == ThemeMode.NIGHT } }
         }
-        assertThat(saved).isEqualTo(ThemeMode.BLACK)
-        assertThat(viewModel.themeMode.first { it == ThemeMode.BLACK }).isEqualTo(ThemeMode.BLACK)
+        assertThat(saved).isEqualTo(ThemeMode.NIGHT)
+        assertThat(viewModel.themeMode.first { it == ThemeMode.NIGHT }).isEqualTo(ThemeMode.NIGHT)
         store.clear()
     }
 

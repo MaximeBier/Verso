@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,6 +24,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.maximebier.verso.R
+import com.maximebier.verso.ui.components.AppIcon
 import com.maximebier.verso.ui.components.LibraryTopBar
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
@@ -58,12 +57,7 @@ fun EmptyLibraryContent(onImport: () -> Unit, modifier: Modifier = Modifier) {
                 .padding(start = 32.dp, end = 32.dp, bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
         ) {
-            Icon(
-                imageVector = VersoIcons.BookOpenLarge,
-                contentDescription = null,
-                tint = colors.textSecondary,
-                modifier = Modifier.size(56.dp),
-            )
+            AppIcon(size = 64.dp)
             Text(
                 text = stringResource(R.string.library_empty_title),
                 style = VersoTheme.typography.display,

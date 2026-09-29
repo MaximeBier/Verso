@@ -1,6 +1,9 @@
 package com.maximebier.verso.ui.library
 
 import com.maximebier.verso.data.AppTheme
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
@@ -35,6 +38,20 @@ class EmptyLibraryScreenTest {
             .performClick()
         assertThat(imports).isEqualTo(1)
         compose.onAllNodesWithText("Importer").assertCountEquals(0)
+    }
+
+    /** En-tête : le logotype est une image lue « Verso », titre de l'écran ; l'icône de l'app (1.01) est décorative. */
+    @Test
+    fun logotypeIsReadAsVersoAndTheAppIconIsDecorative() {
+        compose.setContent {
+            VersoTheme(theme = AppTheme.NIGHT) { EmptyLibraryScreen(onOpenSettings = {}, onImport = {}) }
+        }
+        compose.onNodeWithContentDescription("Verso")
+            .assertIsDisplayed()
+            .assertHeightIsEqualTo(21.16.dp)
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription))
+            .assertCountEquals(2) // logotype et bouton Paramètres
     }
 
     @Test

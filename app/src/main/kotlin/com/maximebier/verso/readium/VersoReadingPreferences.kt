@@ -42,7 +42,7 @@ object VersoReadingPreferences {
         widthDp: Float = 0f,
     ): EpubPreferences {
         val colors = ReadingStyle.colors(theme)
-        val lineHeight = settings.lineSpacing.factor
+        val lineHeight = ReadingStyle.lineHeight(settings.lineSpacing.factor, theme.isDark)
         return EpubPreferences(
             backgroundColor = Color(colors.background),
             // Mode pages : une seule colonne, même en paysage ; les lignes ne sont jamais coupées entre deux pages
@@ -51,9 +51,9 @@ object VersoReadingPreferences {
             textColor = Color(colors.text),
             fontFamily = fontFamilyOf(settings.font),
             fontSize = ReadingStyle.fontSizeFactor(settings.fontSizeSp * fontScale),
-            fontWeight = ReadingStyle.fontWeightFactor(theme.isDark),
+            fontWeight = ReadingStyle.fontWeightFactor(theme.isDark, settings.font),
             hyphens = false,
-            letterSpacing = ReadingStyle.readiumLetterSpacing(theme.isDark),
+            letterSpacing = ReadingStyle.readiumLetterSpacing(theme.isDark, settings.font),
             lineHeight = lineHeight,
             pageMargins = ReadingStyle.fragmentPageMargins(settings.margins.dp, widthDp),
             paragraphSpacing = ReadingStyle.paragraphSpacingRem(lineHeight),
@@ -78,8 +78,7 @@ object VersoReadingPreferences {
      * Literata et Atkinson servies depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne
      * lui-même). Les insets sont posés par Verso (`readerContentInsets`) : Readium ajouterait la découpe de l’écran
      * une seconde fois. La couleur des liens est fixée à la création : elle est commune au clair et au sépia, et au
-     * sombre et au noir (`ReadingStyleTest.linkColorIsSharedWithinLightAndDarkFamilies`), et passer de l’un à
-     * l’autre groupe recrée l’activité.
+     * sombre et à la nuit (`ReadingStyle.linkTheme`), et passer de l’un à l’autre groupe recrée l’activité.
      */
     fun EpubNavigatorFragment.Configuration.applyVerso(theme: AppTheme) {
         servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)

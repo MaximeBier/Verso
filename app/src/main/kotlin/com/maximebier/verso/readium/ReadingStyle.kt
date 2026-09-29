@@ -4,6 +4,7 @@ import androidx.annotation.ColorInt
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
+import com.maximebier.verso.core.settings.ReadingFont
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.ui.theme.VersoColors
 import com.maximebier.verso.ui.theme.paletteOf
@@ -40,8 +41,18 @@ object ReadingStyle {
     const val FRAGMENT_PAGE_GUTTER_PX = 20.0
 
     const val NORMAL_FONT_WEIGHT = 400.0
-    const val DARK_FONT_WEIGHT = 380.0
-    const val DARK_LETTER_SPACING_EM = 0.01
+
+    /**
+     * Thèmes foncés (sombre et nuit, `typography.darkThemeAdjust` de tokens.json) : texte allégé et espacé contre le
+     * halo du texte clair sur fond foncé. La police du système suit les valeurs d’Atkinson (sans empattements).
+     */
+    const val DARK_FONT_WEIGHT_ATKINSON = 380.0
+    const val DARK_FONT_WEIGHT_LITERATA = 370.0
+    const val DARK_LETTER_SPACING_EM_ATKINSON = 0.02
+    const val DARK_LETTER_SPACING_EM_LITERATA = 0.015
+
+    /** Interligne ajouté en thème foncé : Normal 1,6 ⇒ 1,7 (Serré 1,5, Aéré 1,9). */
+    const val DARK_LINE_HEIGHT_BONUS = 0.1
 
     /**
      * Échelle du texte de lecture voulue par la taille de police d’Android : taille réelle de `fontSizeSp` (en dp)
@@ -56,13 +67,25 @@ object ReadingStyle {
     /** Readium pose la valeur en rem en marge haute et basse (fusionnées) : 0,5 × 1,6 = 0,8 rem. */
     fun paragraphSpacingRem(lineHeight: Double): Double = lineHeight * PARAGRAPH_SPACING_IN_LINES
 
-    /** Readium applique `400 × facteur` : 380 ⇒ 0,95. */
-    fun fontWeightFactor(dark: Boolean): Double =
-        (if (dark) DARK_FONT_WEIGHT else NORMAL_FONT_WEIGHT) / NORMAL_FONT_WEIGHT
+    /** Interligne du texte : celui du réglage, plus [DARK_LINE_HEIGHT_BONUS] en thème foncé. */
+    fun lineHeight(factor: Double, dark: Boolean): Double = if (dark) factor + DARK_LINE_HEIGHT_BONUS else factor
 
-    /** Readium divise la valeur par 2 (`Length.Rem(value / 2)`) : 0,01 em ⇒ 0,02. Rien en clair. */
-    fun readiumLetterSpacing(dark: Boolean): Double? =
-        if (dark) DARK_LETTER_SPACING_EM * 2 else null
+    /** Readium applique `400 × facteur` : 380 ⇒ 0,95. */
+    fun fontWeightFactor(dark: Boolean, font: ReadingFont): Double {
+        val weight = when {
+            !dark -> NORMAL_FONT_WEIGHT
+            font == ReadingFont.LITERATA -> DARK_FONT_WEIGHT_LITERATA
+            else -> DARK_FONT_WEIGHT_ATKINSON
+        }
+        return weight / NORMAL_FONT_WEIGHT
+    }
+
+    /** Readium divise la valeur par 2 (`Length.Rem(value / 2)`) : 0,02 em ⇒ 0,04. Rien en clair. */
+    fun readiumLetterSpacing(dark: Boolean, font: ReadingFont): Double? = when {
+        !dark -> null
+        font == ReadingFont.LITERATA -> DARK_LETTER_SPACING_EM_LITERATA * 2
+        else -> DARK_LETTER_SPACING_EM_ATKINSON * 2
+    }
 
     /**
      * Navigateur Fragment : marge voulue (16, 24 ou 32 dp) / gouttière de ReadiumCSS, qui s’élargit avec la largeur
@@ -82,12 +105,19 @@ object ReadingStyle {
 
     fun palette(theme: AppTheme): VersoColors = paletteOf(theme)
 
+    /**
+     * Les liens prennent l’accent du premier thème de leur famille (clair pour clair et sépia, sombre pour sombre et
+     * nuit) : leur couleur est fixée à la création du navigateur, qui n’est pas recréé d’un thème à l’autre de la
+     * même famille. `PaletteContrastTest` vérifie ce lien à 7:1 sur le fond de chaque thème.
+     */
+    fun linkTheme(theme: AppTheme): AppTheme = if (theme.isDark) AppTheme.DARK else AppTheme.LIGHT
+
     fun colors(theme: AppTheme): ReadingColors {
         val palette = palette(theme)
         return ReadingColors(
             background = palette.background.toArgb(),
             text = palette.text.toArgb(),
-            link = palette.accent.toArgb(),
+            link = palette(linkTheme(theme)).accent.toArgb(),
         )
     }
 }

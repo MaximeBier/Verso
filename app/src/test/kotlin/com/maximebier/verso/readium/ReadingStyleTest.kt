@@ -2,8 +2,10 @@ package com.maximebier.verso.readium
 
 import androidx.compose.ui.graphics.toArgb
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.ReadingFont
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.ui.theme.VersoPalette
+import com.maximebier.verso.ui.theme.paletteOf
 import org.junit.Test
 
 class ReadingStyleTest {
@@ -23,10 +25,21 @@ class ReadingStyleTest {
 
     @Test
     fun darkThemeIsLighterAndSpaced() {
-        assertThat(ReadingStyle.fontWeightFactor(dark = true)).isWithin(1e-9).of(0.95)
-        assertThat(ReadingStyle.fontWeightFactor(dark = false)).isWithin(1e-9).of(1.0)
-        assertThat(ReadingStyle.readiumLetterSpacing(dark = true)!!).isWithin(1e-9).of(0.02)
-        assertThat(ReadingStyle.readiumLetterSpacing(dark = false)).isNull()
+        // tokens.json, typography.darkThemeAdjust : Atkinson 380 et +0,02 em, Literata 370 et +0,015 em.
+        assertThat(ReadingStyle.fontWeightFactor(dark = true, ReadingFont.ATKINSON)).isWithin(1e-9).of(0.95)
+        assertThat(ReadingStyle.fontWeightFactor(dark = true, ReadingFont.LITERATA)).isWithin(1e-9).of(0.925)
+        assertThat(ReadingStyle.fontWeightFactor(dark = true, ReadingFont.SYSTEM)).isWithin(1e-9).of(0.95)
+        assertThat(ReadingStyle.fontWeightFactor(dark = false, ReadingFont.LITERATA)).isWithin(1e-9).of(1.0)
+        assertThat(ReadingStyle.readiumLetterSpacing(dark = true, ReadingFont.ATKINSON)!!).isWithin(1e-9).of(0.04)
+        assertThat(ReadingStyle.readiumLetterSpacing(dark = true, ReadingFont.LITERATA)!!).isWithin(1e-9).of(0.03)
+        assertThat(ReadingStyle.readiumLetterSpacing(dark = false, ReadingFont.ATKINSON)).isNull()
+    }
+
+    @Test
+    fun darkThemeAddsATenthOfLineHeight() {
+        assertThat(ReadingStyle.lineHeight(1.6, dark = true)).isWithin(1e-9).of(1.7)
+        assertThat(ReadingStyle.lineHeight(1.4, dark = true)).isWithin(1e-9).of(1.5)
+        assertThat(ReadingStyle.lineHeight(1.6, dark = false)).isWithin(1e-9).of(1.6)
     }
 
     @Test
@@ -47,23 +60,23 @@ class ReadingStyleTest {
             AppTheme.LIGHT to VersoPalette.Light,
             AppTheme.SEPIA to VersoPalette.Sepia,
             AppTheme.DARK to VersoPalette.Dark,
-            AppTheme.BLACK to VersoPalette.Black,
+            AppTheme.NIGHT to VersoPalette.Night,
         )
         for ((theme, palette) in palettes) {
             val colors = ReadingStyle.colors(theme)
             assertThat(colors.background).isEqualTo(palette.background.toArgb())
             assertThat(colors.text).isEqualTo(palette.text.toArgb())
-            assertThat(colors.link).isEqualTo(palette.accent.toArgb())
+            assertThat(colors.link).isEqualTo(paletteOf(ReadingStyle.linkTheme(theme)).accent.toArgb())
         }
     }
 
     /**
      * La couleur des liens est posée à la création du navigateur (configuration), pas par les préférences : elle
-     * doit être la même pour les palettes qui ne recréent pas l'activité entre elles (clair ↔ sépia, sombre ↔ noir).
+     * doit être la même pour les palettes qui ne recréent pas l'activité entre elles (clair ↔ sépia, sombre ↔ nuit).
      */
     @Test
     fun linkColorIsSharedWithinLightAndDarkFamilies() {
         assertThat(ReadingStyle.colors(AppTheme.SEPIA).link).isEqualTo(ReadingStyle.colors(AppTheme.LIGHT).link)
-        assertThat(ReadingStyle.colors(AppTheme.BLACK).link).isEqualTo(ReadingStyle.colors(AppTheme.DARK).link)
+        assertThat(ReadingStyle.colors(AppTheme.NIGHT).link).isEqualTo(ReadingStyle.colors(AppTheme.DARK).link)
     }
 }
