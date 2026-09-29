@@ -135,7 +135,7 @@ abstract class GenerateDesignTokensTask : DefaultTask() {
         val root = groovy.json.JsonSlurper().parse(tokensFile.get().asFile, "UTF-8") as Map<String, Any?>
         @Suppress("UNCHECKED_CAST")
         val color = root["color"] as? Map<String, Any?> ?: throw GradleException("tokens.json : section « color » absente")
-        val themes = linkedMapOf("Light" to "light", "Dark" to "dark", "Sepia" to "sepia", "Black" to "black")
+        val themes = linkedMapOf("Light" to "light", "Dark" to "dark", "Night" to "night", "Sepia" to "sepia")
         @Suppress("UNCHECKED_CAST")
         val values = themes.mapValues { (_, key) ->
             color[key] as? Map<String, Any?> ?: throw GradleException("tokens.json : thème « $key » absent")
@@ -180,7 +180,7 @@ abstract class GenerateDesignTokensTask : DefaultTask() {
             names.forEach { appendLine("    val $it: Color,") }
             appendLine(")")
             appendLine()
-            appendLine("/** Les quatre thèmes de tokens.json (V1 : Light et Dark) et la palette des vignettes générées. */")
+            appendLine("/** Les quatre thèmes de tokens.json (V1 : Light, Dark et Night ; V2 : Sepia) et la palette des vignettes générées. */")
             appendLine("object VersoPalette {")
             values.forEach { (theme, tokens) ->
                 appendLine("    val $theme: VersoColors = VersoColors(")

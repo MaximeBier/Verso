@@ -2,7 +2,10 @@ package com.maximebier.verso.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import com.google.common.truth.Truth.assertThat
+import com.google.common.collect.Range
 import com.google.common.truth.Truth.assertWithMessage
+import com.maximebier.verso.data.AppTheme
+import com.maximebier.verso.readium.ReadingStyle
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -12,12 +15,12 @@ class PaletteContrastTest {
 
     private class ColorPair(val label: String, val foreground: (VersoColors) -> Color, val background: (VersoColors) -> Color)
 
-    /** Les quatre palettes (V1 : clair et sombre ; V2 : sépia et noir). */
+    /** Les quatre palettes (V1 : clair, sombre et nuit ; V2 : sépia). */
     private val themes = listOf(
         "clair" to VersoPalette.Light,
         "sépia" to VersoPalette.Sepia,
         "sombre" to VersoPalette.Dark,
-        "noir" to VersoPalette.Black,
+        "nuit" to VersoPalette.Night,
     )
 
     /** Couples texte/fond réellement utilisés par les écrans : ≥ 7:1 (WCAG AAA). */
@@ -25,13 +28,13 @@ class PaletteContrastTest {
         ColorPair("text/background", { it.text }, { it.background }),
         ColorPair("text/surface", { it.text }, { it.surface }),
         ColorPair("text/surfaceHigh", { it.text }, { it.surfaceHigh }),
-        ColorPair("text/selection", { it.text }, { it.selection }),
         ColorPair("textSecondary/background", { it.textSecondary }, { it.background }),
         ColorPair("textSecondary/surface", { it.textSecondary }, { it.surface }),
         ColorPair("textSecondary/surfaceHigh", { it.textSecondary }, { it.surfaceHigh }),
         ColorPair("accent/background", { it.accent }, { it.background }),
         ColorPair("accent/surface", { it.accent }, { it.surface }),
         ColorPair("onAccent/accent", { it.onAccent }, { it.accent }),
+        // Sur la sélection, le texte est toujours onSelection (sommaire, segments, filtres) : text/selection n'est pas un couple.
         ColorPair("onSelection/selection", { it.onSelection }, { it.selection }),
         ColorPair("danger/background", { it.danger }, { it.background }),
         ColorPair("danger/surface", { it.danger }, { it.surface }),
@@ -55,9 +58,9 @@ class PaletteContrastTest {
     @Test
     fun paletteIsGeneratedFromTokensJson() {
         assertThat(VersoPalette.Light.background).isEqualTo(Color(0xFFF5F1E8))
-        assertThat(VersoPalette.Dark.accent).isEqualTo(Color(0xFFE8C48E))
+        assertThat(VersoPalette.Dark.accent).isEqualTo(Color(0xFFCEB28A))
         assertThat(VersoPalette.Sepia.background).isEqualTo(Color(0xFFEFE3CC))
-        assertThat(VersoPalette.Black.background).isEqualTo(Color(0xFF000000))
+        assertThat(VersoPalette.Night.background).isEqualTo(Color(0xFF1D1813))
         assertThat(VersoPalette.Light.scrim).isEqualTo(Color(0x6B1F1B16))
         assertThat(VersoPalette.Dark.scrim).isEqualTo(Color(0x94000000))
         assertThat(VersoPalette.CoverLight).hasSize(6)
@@ -72,6 +75,25 @@ class PaletteContrastTest {
                     .that(contrast(pair.foreground(colors), pair.background(colors)))
                     .isAtLeast(7.0)
             }
+        }
+    }
+
+    /** Spec, « Confort de lecture » : en thème foncé, le texte vise 9 à 10:1, pas plus (halo, astigmatisme). */
+    @Test
+    fun darkThemeTextStaysBelowTheHalationLimit() {
+        for (colors in listOf(VersoPalette.Dark, VersoPalette.Night)) {
+            assertWithMessage("$colors text/background")
+                .that(contrast(colors.text, colors.background))
+                .isIn(Range.closed(9.0, MAX_DARK_TEXT_CONTRAST))
+        }
+    }
+
+    /** Liens du texte : accent du premier thème de la famille (ReadingStyle.linkTheme), sur le fond de chaque thème. */
+    @Test
+    fun readingLinksReachSevenToOneInEveryTheme() {
+        for (theme in AppTheme.entries) {
+            val link = paletteOf(ReadingStyle.linkTheme(theme)).accent
+            assertWithMessage("$theme lien/background").that(contrast(link, paletteOf(theme).background)).isAtLeast(7.0)
         }
     }
 
@@ -99,8 +121,13 @@ class PaletteContrastTest {
             assertWithMessage("sépia $cover").that(contrast(VersoPalette.Sepia.onCover, cover)).isAtLeast(4.5)
         }
         for (cover in VersoPalette.CoverDark) {
-            assertWithMessage("noir $cover").that(contrast(VersoPalette.Black.onCover, cover)).isAtLeast(4.5)
+            assertWithMessage("nuit $cover").that(contrast(VersoPalette.Night.onCover, cover)).isAtLeast(4.5)
         }
+    }
+
+    private companion object {
+        /** « Environ 10:1 » : 10:1 au centième près. */
+        const val MAX_DARK_TEXT_CONTRAST = 10.01
     }
 
     private fun contrast(a: Color, b: Color): Double {

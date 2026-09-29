@@ -42,10 +42,9 @@ fun VersoIconButton(
 }
 
 /**
- * Barre de la bibliothèque : « Verso » (texte, pas le logo), Paramètres, et « Importer » sauf bibliothèque vide.
- * À 100 %, les trois tiennent sur une ligne. À grande taille de texte système, `FlowRow` passe le groupe
- * Paramètres/Importer à la ligne plutôt que de compresser le titre en dessous de la largeur du mot « Verso »
- * (contrainte « texte à 200 % sans coupure »).
+ * Barre de la bibliothèque : logotype, Paramètres, et « Importer » sauf bibliothèque vide. À 100 %, les trois
+ * tiennent sur une ligne. À grande taille de texte système, `FlowRow` passe le groupe Paramètres/Importer à la
+ * ligne plutôt que de le couper (contrainte « texte à 200 % sans coupure ») ; le logotype garde sa taille en dp.
  */
 @Composable
 fun LibraryTopBar(
@@ -65,12 +64,7 @@ fun LibraryTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = VersoTheme.typography.logo,
-            color = colors.text,
-            modifier = Modifier.align(Alignment.CenterVertically).semantics { heading() },
-        )
+        VersoLogotype(Modifier.align(Alignment.CenterVertically))
         Row(
             modifier = Modifier.align(Alignment.CenterVertically),
             horizontalArrangement = Arrangement.spacedBy(4.dp),

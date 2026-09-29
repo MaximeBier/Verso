@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
+import com.maximebier.verso.data.DarkThemeVariant
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.ThemeMode
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val reopenLastBook: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.AUTO,
+    val darkThemeVariant: DarkThemeVariant = DarkThemeVariant.DARK,
     val confirmingClearJournal: Boolean = false,
 )
 
@@ -31,8 +33,14 @@ class SettingsViewModel(
     private val confirming = MutableStateFlow(false)
 
     val state: StateFlow<SettingsUiState> =
-        combine(settings.reopenLastBook, settings.themeMode, confirming) { reopen, theme, confirmingClear ->
-            SettingsUiState(reopenLastBook = reopen, themeMode = theme, confirmingClearJournal = confirmingClear)
+        combine(settings.reopenLastBook, settings.themeMode, settings.darkThemeVariant, confirming) {
+                reopen, theme, darkVariant, confirmingClear ->
+            SettingsUiState(
+                reopenLastBook = reopen,
+                themeMode = theme,
+                darkThemeVariant = darkVariant,
+                confirmingClearJournal = confirmingClear,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun onReopenLastBookChange(value: Boolean) {
@@ -41,6 +49,10 @@ class SettingsViewModel(
 
     fun onThemeModeChange(value: ThemeMode) {
         viewModelScope.launch { settings.setThemeMode(value) }
+    }
+
+    fun onDarkThemeVariantChange(value: DarkThemeVariant) {
+        viewModelScope.launch { settings.setDarkThemeVariant(value) }
     }
 
     fun onClearJournalClick() {

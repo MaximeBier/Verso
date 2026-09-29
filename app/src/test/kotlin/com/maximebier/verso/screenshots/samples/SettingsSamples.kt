@@ -13,6 +13,7 @@ internal fun SettingsSample(state: SettingsUiState = SettingsUiState(reopenLastB
         onBack = {},
         onReopenLastBookChange = {},
         onThemeModeChange = {},
+        onDarkThemeVariantChange = {},
         onClearJournalClick = {},
         onClearJournalConfirm = {},
         onClearJournalDismiss = {},

@@ -21,7 +21,7 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 - **V2 en cours** (V1 terminée le 2026-09-27) : ne pas coder la V3 ou la V4 par anticipation tant que les critères d'acceptation V2 ne sont pas tous cochés.
 - **Position de lecture** : toujours un locator Readium, jamais des pixels. La logique lecture/navigation et la carte « Revenir » forment une machine à états sans dépendance Android, couverte par des tests unitaires. Les seuils sont des constantes nommées.
 - **Textes** : en français, dans `res/values/strings.xml`, repris mot pour mot des maquettes. Espace fine insécable avant `; : ! ?` et `%`, apostrophe typographique, « Environ » plutôt que « ≈ ».
-- **Accessibilité** : texte à au moins 7:1 de contraste, commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.
+- **Accessibilité** : texte à au moins 7:1 de contraste (et pas plus d'environ 10:1 en thème foncé), commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.
 - **Confidentialité** : aucune permission réseau, aucune analytics. Rien ne quitte le téléphone.
 - **Lecture** : alignement à gauche, sans justification ni césure, imposé par-dessus le CSS de l'éditeur.
 - Tout sur `master`, un commit par étape (`Étape N : …`), poussé et installé sur le téléphone à la fin de chaque étape. Pas de pull request. Toute décision qui change la spec est reportée dans `docs/SPEC.md` dans le même commit.
@@ -41,4 +41,4 @@ Objectif : moins de 10 minutes par tâche (code, tests, commit). Mesuré le 2026
 
 ## Vérifier un écran
 
-Comparer le rendu sur le téléphone ou l'émulateur (390 × 844 dp si possible) au PNG de l'écran, en clair et en sombre. 1 px de maquette = 1 dp ; les tailles de texte en px sont des sp.
+Comparer le rendu sur le téléphone ou l'émulateur (390 × 844 dp si possible) au PNG de l'écran, en clair, en sombre et en nuit. 1 px de maquette = 1 dp ; les tailles de texte en px sont des sp.

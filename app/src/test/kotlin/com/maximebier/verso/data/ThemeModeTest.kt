@@ -25,22 +25,36 @@ class ThemeModeTest {
     }
 
     @Test
-    fun onlyDarkAndBlackAreDark() {
-        assertThat(AppTheme.entries.filter { it.isDark }).containsExactly(AppTheme.DARK, AppTheme.BLACK)
+    fun onlyDarkAndNightAreDark() {
+        assertThat(AppTheme.entries.filter { it.isDark }).containsExactly(AppTheme.DARK, AppTheme.NIGHT)
     }
 
     @Test
-    fun sepiaAndBlackIgnoreThePhone() {
+    fun sepiaAndNightIgnoreThePhone() {
         assertThat(ThemeMode.SEPIA.resolve(systemDark = true)).isEqualTo(AppTheme.SEPIA)
-        assertThat(ThemeMode.BLACK.resolve(systemDark = false)).isEqualTo(AppTheme.BLACK)
+        assertThat(ThemeMode.NIGHT.resolve(systemDark = false)).isEqualTo(AppTheme.NIGHT)
         assertThat(ThemeMode.SEPIA.isDark(systemDark = true)).isFalse()
-        assertThat(ThemeMode.BLACK.isDark(systemDark = false)).isTrue()
+        assertThat(ThemeMode.NIGHT.isDark(systemDark = false)).isTrue()
+    }
+
+    @Test
+    fun autoAppliesTheChosenDarkThemeWhenThePhoneIsDark() {
+        assertThat(ThemeMode.AUTO.resolve(systemDark = true, darkVariant = DarkThemeVariant.NIGHT)).isEqualTo(AppTheme.NIGHT)
+        assertThat(ThemeMode.AUTO.resolve(systemDark = true, darkVariant = DarkThemeVariant.DARK)).isEqualTo(AppTheme.DARK)
+        assertThat(ThemeMode.AUTO.resolve(systemDark = false, darkVariant = DarkThemeVariant.NIGHT)).isEqualTo(AppTheme.LIGHT)
+    }
+
+    @Test
+    fun explicitThemesIgnoreTheDarkThemeChoice() {
+        assertThat(ThemeMode.DARK.resolve(systemDark = true, darkVariant = DarkThemeVariant.NIGHT)).isEqualTo(AppTheme.DARK)
+        assertThat(ThemeMode.NIGHT.resolve(systemDark = true, darkVariant = DarkThemeVariant.DARK)).isEqualTo(AppTheme.NIGHT)
+        assertThat(ThemeMode.SEPIA.resolve(systemDark = true, darkVariant = DarkThemeVariant.NIGHT)).isEqualTo(AppTheme.SEPIA)
     }
 
     @Test
     fun settingsOrderMatchesTheMockups() {
         assertThat(ThemeMode.entries).containsExactly(
-            ThemeMode.AUTO, ThemeMode.LIGHT, ThemeMode.SEPIA, ThemeMode.DARK, ThemeMode.BLACK,
+            ThemeMode.AUTO, ThemeMode.LIGHT, ThemeMode.SEPIA, ThemeMode.DARK, ThemeMode.NIGHT,
         ).inOrder()
     }
 }

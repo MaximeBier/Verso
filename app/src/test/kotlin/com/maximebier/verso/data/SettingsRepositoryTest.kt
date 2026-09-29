@@ -109,4 +109,23 @@ class SettingsRepositoryTest {
         store.edit { it[stringPreferencesKey("theme_mode")] = "DARK" }
         assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.DARK)
     }
+
+    /** Le thème Noir (étape 10) a été remplacé par Nuit : un choix enregistré avant reste un thème de nuit. */
+    @Test
+    fun blackThemeIsReadAsNight() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "black.preferences_pb") })
+        store.edit { it[stringPreferencesKey("theme_mode")] = "BLACK" }
+        assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.NIGHT)
+    }
+
+    @Test
+    fun darkThemeVariantDefaultsToDarkAndIsWrittenBack() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "variant.preferences_pb") })
+        val settings = SettingsRepository(store)
+        assertThat(settings.darkThemeVariant.first()).isEqualTo(DarkThemeVariant.DARK)
+        settings.setDarkThemeVariant(DarkThemeVariant.NIGHT)
+        assertThat(settings.darkThemeVariant.first()).isEqualTo(DarkThemeVariant.NIGHT)
+        store.edit { it[stringPreferencesKey("dark_theme_variant")] = "PURPLE" }
+        assertThat(settings.darkThemeVariant.first()).isEqualTo(DarkThemeVariant.DARK)
+    }
 }

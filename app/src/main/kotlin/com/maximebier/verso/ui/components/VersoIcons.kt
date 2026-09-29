@@ -57,8 +57,6 @@ object VersoIcons {
     private const val BOOK_LEFT = "M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 1 4 17z"
     private const val BOOK_RIGHT = "M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 0 1.5-1.5z"
     val BookOpen: ImageVector = strokeIcon("book-open", BOOK_LEFT, BOOK_RIGHT)
-    /** Écran vide : 56 dp, trait 1,5 (ajustement optique de la maquette, v1-ui-reference §4.1 n° 8). */
-    val BookOpenLarge: ImageVector = strokeIcon("book-open-large", BOOK_LEFT, BOOK_RIGHT, strokeWidth = 1.5f)
     val ExternalLink: ImageVector = strokeIcon(
         "external-link",
         "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",

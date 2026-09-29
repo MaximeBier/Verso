@@ -36,6 +36,7 @@ import com.maximebier.verso.reader.ReaderGestures
 import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
+import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.TocAnchors
 import com.maximebier.verso.ui.common.locationTexts
 import com.maximebier.verso.ui.common.percentOf
@@ -186,7 +187,7 @@ class ReaderViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Thème choisi (Automatique, Clair, Sépia, Sombre, Noir), pour la feuille « Aa ». */
+    /** Thème choisi (Automatique, Clair, Sépia, Sombre, Nuit), pour la feuille « Aa ». */
     val themeMode: StateFlow<ThemeMode> =
         settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.AUTO)
 
@@ -366,6 +367,8 @@ class ReaderViewModel(
         if (this.theme == theme) return
         this.theme = theme
         submitStyle()
+        // Les thèmes foncés espacent davantage les lignes (ReadingStyle.lineHeight).
+        refreshDistance()
     }
 
     /** Réglages courants vers le moteur : jamais un saut ni un geste pour la machine à états. */
@@ -384,7 +387,7 @@ class ReaderViewModel(
         val current = base.copy(
             viewportHeightPx = height,
             fontSizeSp = settings.fontSizeSp.toDouble(),
-            lineHeight = settings.lineSpacing.factor,
+            lineHeight = ReadingStyle.lineHeight(settings.lineSpacing.factor, dark = theme?.isDark == true),
             marginDp = settings.margins.dp,
         )
         if (current == appliedMetrics) return

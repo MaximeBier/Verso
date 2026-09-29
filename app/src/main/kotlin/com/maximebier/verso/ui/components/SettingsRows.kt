@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -61,12 +63,12 @@ fun SettingsSection(
 
 /** Phrase d'explication non cliquable (Affichage, Confidentialité). */
 @Composable
-fun SettingsParagraph(text: String, modifier: Modifier = Modifier) {
+fun SettingsParagraph(text: String, modifier: Modifier = Modifier, bottomPadding: Dp = 12.dp) {
     Text(
         text = text,
         style = VersoTheme.typography.body,
         color = VersoTheme.colors.textSecondary,
-        modifier = modifier.fillMaxWidth().padding(start = 24.dp, top = 4.dp, end = 24.dp, bottom = 12.dp),
+        modifier = modifier.fillMaxWidth().padding(start = 24.dp, top = 4.dp, end = 24.dp, bottom = bottomPadding),
     )
 }
 
@@ -188,23 +190,57 @@ fun RadioRow(
     }
 }
 
-/** Ligne de valeur non cliquable (« Version … 1.0.0 »). */
+/** Ligne « À propos » non cliquable : icône de l’app (40 dp), « Verso » et la version en dessous. */
 @Composable
-fun ValueRow(title: String, value: String, modifier: Modifier = Modifier) {
+fun AppInfoRow(title: String, summary: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
-            .then(rowModifier)
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
             .semantics(mergeDescendants = true) {}
             .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppIcon(size = 40.dp)
+        RowTexts(title, summary)
+    }
+}
+
+/**
+ * Libellé et choix segmenté sur une ligne (« Thème sombre : Sombre / Nuit »). TalkBack lit le libellé sur le
+ * groupe de segments ; le texte visible ne se lit pas une seconde fois.
+ */
+@Composable
+fun SegmentedRow(
+    title: String,
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .padding(start = 24.dp, end = 24.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RowTexts(title, summary = null)
         Text(
-            text = value,
-            style = VersoTheme.typography.body,
-            color = VersoTheme.colors.textSecondary,
-            modifier = Modifier.padding(end = 12.dp),
+            text = title,
+            style = VersoTheme.typography.rowTitle,
+            color = VersoTheme.colors.text,
+            modifier = Modifier.weight(1f).clearAndSetSemantics {},
+        )
+        VersoSegmentedButton(
+            options = options,
+            selectedIndex = selectedIndex,
+            onSelect = onSelect,
+            groupLabel = title,
+            modifier = Modifier.width(SegmentedRowControlWidth),
         )
     }
 }
+
+private val SegmentedRowControlWidth = 200.dp

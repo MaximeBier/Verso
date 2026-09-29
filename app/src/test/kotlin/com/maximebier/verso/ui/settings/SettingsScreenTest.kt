@@ -9,8 +9,11 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -26,6 +29,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
+import com.maximebier.verso.data.DarkThemeVariant
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
@@ -44,17 +48,24 @@ class SettingsScreenTest {
     private var reopen by mutableStateOf(true)
     private var confirming by mutableStateOf(false)
     private var theme by mutableStateOf(ThemeMode.AUTO)
+    private var darkVariant by mutableStateOf(DarkThemeVariant.DARK)
     private val events = mutableListOf<String>()
 
     private fun show() {
         composeRule.setContent {
             VersoTheme {
                 SettingsScreen(
-                    state = SettingsUiState(reopenLastBook = reopen, themeMode = theme, confirmingClearJournal = confirming),
+                    state = SettingsUiState(
+                        reopenLastBook = reopen,
+                        themeMode = theme,
+                        darkThemeVariant = darkVariant,
+                        confirmingClearJournal = confirming,
+                    ),
                     versionName = "1.0.0",
                     onBack = { events += "back" },
                     onReopenLastBookChange = { reopen = it; events += "reopen=$it" },
                     onThemeModeChange = { theme = it; events += "theme=$it" },
+                    onDarkThemeVariantChange = { darkVariant = it; events += "dark=$it" },
                     onClearJournalClick = { confirming = true; events += "clear?" },
                     onClearJournalConfirm = { confirming = false; events += "clear!" },
                     onClearJournalDismiss = { confirming = false; events += "dismiss" },
@@ -64,6 +75,14 @@ class SettingsScreenTest {
             }
         }
     }
+
+    private fun themeRow(label: Int) = composeRule.onNode(
+        hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_theme))),
+    )
+
+    private fun darkVariantSegment(label: Int) = composeRule.onNode(
+        hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_dark_theme))),
+    )
 
     @Test
     fun reopenSwitchExposesSwitchRoleAndState() {
@@ -80,9 +99,9 @@ class SettingsScreenTest {
     @Test
     fun themeSelectorSelectsTheChosenMode() {
         show()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_auto)).assertIsSelected()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).performScrollTo().performClick()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_dark)).assertIsSelected()
+        themeRow(R.string.settings_theme_auto).assertIsSelected()
+        themeRow(R.string.settings_theme_dark).performScrollTo().performClick()
+        themeRow(R.string.settings_theme_dark).assertIsSelected()
         assertThat(events).containsExactly("theme=DARK")
     }
 
@@ -91,17 +110,29 @@ class SettingsScreenTest {
         show()
         val labels = listOf(
             R.string.settings_theme_auto, R.string.settings_theme_light, R.string.settings_theme_sepia,
-            R.string.settings_theme_dark, R.string.settings_theme_black,
+            R.string.settings_theme_dark, R.string.settings_theme_night,
         ).map(ctx::getString)
         labels.forEach { label ->
-            composeRule.onNodeWithText(label).performScrollTo()
+            composeRule.onNode(hasText(label) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_theme))))
+                .performScrollTo()
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
                 .assertHeightIsAtLeast(48.dp)
         }
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_sepia)).performClick()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_sepia)).assertIsSelected()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme_black)).performScrollTo().performClick()
-        assertThat(events).containsExactly("theme=SEPIA", "theme=BLACK").inOrder()
+        themeRow(R.string.settings_theme_sepia).performClick()
+        themeRow(R.string.settings_theme_sepia).assertIsSelected()
+        themeRow(R.string.settings_theme_night).performScrollTo().performClick()
+        assertThat(events).containsExactly("theme=SEPIA", "theme=NIGHT").inOrder()
+    }
+
+    /** 1.09 : « Thème sombre », Sombre coché par défaut, Nuit au choix ; le libellé est celui du groupe pour TalkBack. */
+    @Test
+    fun darkThemeVariantIsASegmentedChoice() {
+        show()
+        darkVariantSegment(R.string.settings_dark_theme_dark).performScrollTo().assertIsSelected().assertHeightIsAtLeast(48.dp)
+        darkVariantSegment(R.string.settings_dark_theme_night).assertIsNotSelected().performClick()
+        darkVariantSegment(R.string.settings_dark_theme_night).assertIsSelected()
+        darkVariantSegment(R.string.settings_dark_theme_dark).assertIsNotSelected()
+        assertThat(events).containsExactly("dark=NIGHT")
     }
 
     @Test
@@ -110,10 +141,12 @@ class SettingsScreenTest {
         listOf(
             R.string.settings_section_startup, R.string.settings_section_display, R.string.settings_display_body,
             R.string.settings_section_privacy, R.string.settings_privacy_body, R.string.settings_clear_journal,
-            R.string.settings_section_about, R.string.settings_version, R.string.settings_source_code,
-            R.string.settings_licenses,
+            R.string.settings_section_about, R.string.settings_source_code, R.string.settings_licenses,
         ).forEach { composeRule.onNodeWithText(ctx.getString(it), substring = true).performScrollTo().assertExists() }
-        composeRule.onNodeWithText("1.0.0", substring = true).assertExists()
+        // À propos : « Verso » puis « Version 1.0.0 », lus d'un seul tenant par TalkBack.
+        composeRule.onNode(hasText(ctx.getString(R.string.app_name)) and hasText(ctx.getString(R.string.settings_version, "1.0.0")))
+            .performScrollTo()
+            .assertExists()
     }
 
     @Test

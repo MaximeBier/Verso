@@ -88,14 +88,18 @@ class VersoReadingPreferencesTest {
 
     @Test
     fun darkPalettesAreLighterAndSpaced() {
-        for (theme in listOf(AppTheme.DARK, AppTheme.BLACK)) {
+        for (theme in listOf(AppTheme.DARK, AppTheme.NIGHT)) {
             val p = prefs(theme = theme)
-            assertThat(p.fontWeight!!).isWithin(1e-9).of(0.95)
-            assertThat(p.letterSpacing!!).isWithin(1e-9).of(0.02)
+            // Réglages par défaut : Literata (370, +0,015 em), interligne Normal 1,6 + 0,1.
+            assertThat(p.fontWeight!!).isWithin(1e-9).of(0.925)
+            assertThat(p.letterSpacing!!).isWithin(1e-9).of(0.03)
+            assertThat(p.lineHeight!!).isWithin(1e-9).of(1.7)
+            assertThat(p.paragraphSpacing!!).isWithin(1e-9).of(0.85)
             assertThat(p.theme).isEqualTo(Theme.DARK)
             assertThat(p.backgroundColor?.int).isEqualTo(ReadingStyle.colors(theme).background)
         }
         assertThat(prefs(theme = AppTheme.SEPIA).fontWeight!!).isWithin(1e-9).of(1.0)
+        assertThat(prefs(theme = AppTheme.SEPIA).lineHeight!!).isWithin(1e-9).of(1.6)
         assertThat(prefs(theme = AppTheme.SEPIA).theme).isEqualTo(Theme.LIGHT)
     }
 
@@ -119,7 +123,7 @@ class VersoReadingPreferencesTest {
     @Test
     fun onlyColorsChangeKeepsTheLayout() {
         assertThat(VersoReadingPreferences.changesLayout(prefs(), prefs(theme = AppTheme.SEPIA))).isFalse()
-        assertThat(VersoReadingPreferences.changesLayout(prefs(theme = AppTheme.DARK), prefs(theme = AppTheme.BLACK))).isFalse()
+        assertThat(VersoReadingPreferences.changesLayout(prefs(theme = AppTheme.DARK), prefs(theme = AppTheme.NIGHT))).isFalse()
         assertThat(VersoReadingPreferences.changesLayout(prefs(), prefs())).isFalse()
     }
 

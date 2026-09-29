@@ -28,7 +28,7 @@ Différenciation visée par rapport aux lecteurs existants (Apple Books, Google 
 | Police V1 | **Atkinson Hyperlegible Next partout** (interface et lecture) | Une seule police dans toute l'app. Lettres très distinctes, conçue pour la basse vision. Préférence de l'utilisateur |
 | Police V2 | **Literata par défaut partout**, sélecteur : Literata / Atkinson Hyperlegible Next / police du système | Aucune police n'est la meilleure pour tout le monde (voir « Confort de lecture »). La police choisie s'applique à toute l'app, pas seulement au texte |
 | Choix de police au premier lancement | Non | Onboarding sans décision ; le sélecteur est dans les Paramètres et dans les réglages de lecture |
-| Thème | Automatique par défaut (suit le système), clair ou sombre au choix dans les Paramètres (V1) ; sépia et noir en plus (V2) | Le texte foncé sur fond clair se lit mieux de jour ; le sombre réduit la lumière totale la nuit |
+| Thème | Automatique par défaut (suit le système), clair, sombre ou nuit au choix dans les Paramètres ; en automatique, le téléphone en sombre donne le thème foncé choisi, Sombre (par défaut) ou Nuit (V1) ; sépia en plus (V2) | Le texte foncé sur fond clair se lit mieux de jour ; le sombre réduit la lumière totale la nuit. En thème foncé, le texte vise 9 à 10:1 et pas plus : au-delà, le texte clair crée un halo sur le fond foncé (halation), surtout avec un astigmatisme |
 | Progression | **Position de lecture distincte de la position affichée** + carte « Revenir » + journal des sessions | Remplace « 5 dernières positions » et le bouton « Revenir » minuté. Voir « Marque-page » |
 | Import | Sélecteur de fichiers Android (Storage Access Framework) | Couvre Fichiers, Drive et Nextcloud sans coder de synchro |
 | Catalogue | Titre/auteur extraits de l'EPUB, corrigeables à la main, couverture, progression. Affichage liste ou grille | Les métadonnées EPUB sont fiables, contrairement au PDF |
@@ -92,13 +92,13 @@ La V1 est finie quand je peux importer un EPUB, le lire d'un bout à l'autre en 
 | Alignement | À gauche, **pas de justification, pas de césure** | Imposé par-dessus le CSS de l'éditeur (réglages utilisateur Readium) |
 | Titres de chapitre | Centrés : partie en 14 sp, numéro en 28 sp | Rendu tel que l'EPUB le permet : le CSS de l'éditeur est gardé pour les titres, et quand le livre ne sépare pas partie et numéro (Gutenberg), ils restent alignés à gauche comme le texte |
 
-- Thème sombre : le texte est allégé (graisse 380 au lieu de 400, espacement des lettres +0,01 em), parce qu'un texte clair sur fond sombre paraît plus gras.
+- Thèmes foncés (Sombre et Nuit) : le texte est allégé et espacé (Atkinson : graisse 380 au lieu de 400, +0,02 em ; Literata : graisse 370, +0,015 em ; la police du système suit Atkinson) et l'interligne passe à 1,7 (+0,1 sur le réglage choisi en V2 ; l'espace entre paragraphes reste 0,5 × l'interligne, soit 16 dp en Atkinson 19 sp), parce qu'un texte clair sur fond foncé paraît plus gras et crée un halo. Ces valeurs sont imposées à Readium, comme les couleurs du thème.
 - Tap n’importe où sur le texte : affiche ou masque la barre de lecture, en continu comme en mode pages.
   - En haut : retour à la bibliothèque, titre du livre, chapitre courant.
   - En bas : « 31 % lu », temps restant estimé, barre de progression, boutons « Sommaire » et « Journal ».
 - Sommaire : feuille qui s'ouvre sur le chapitre en cours (surligné, « En cours · 31 % »). Les chapitres déjà lus portent « Lu » avec une coche. Tap sur un chapitre = saut direct.
 - Écran maintenu allumé pendant la lecture. L'app ne touche jamais à la luminosité.
-- Thème : automatique (suit le système) par défaut, ou clair ou sombre imposé dans les Paramètres (V1). Sépia et noir attendent la V2.
+- Thème : automatique (suit le système) par défaut, ou clair, sombre ou nuit imposé dans les Paramètres (V1). En automatique, quand le système est en sombre, l'app applique le thème foncé choisi dans Paramètres › Affichage › Thème sombre : Sombre (par défaut) ou Nuit. Le changement s'applique tout de suite, y compris dans un livre ouvert. Sépia attend la V2.
 - Temps restant : estimé avec une vitesse par défaut de 250 mots/min en V1, puis avec la vitesse mesurée en V2.
 - Livre impossible à ouvrir (EPUB à mise en page fixe que le moteur refuse, fichier devenu illisible) : retour à la bibliothèque avec le message « Impossible d’ouvrir « Titre ». », jamais un écran vide.
 
@@ -147,11 +147,11 @@ Règles :
 On y accède par la roue dentée dans l'en-tête de la bibliothèque.
 
 - **Au démarrage** : « Rouvrir le dernier livre », « Si vous l'avez lu il y a moins de 24 heures » (interrupteur, activé par défaut).
-- **Affichage** : « Thème », bouton segmenté Automatique / Clair / Sombre (Automatique par défaut), puis la phrase « En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture. » Le choix s’applique à toute l’app, lecture comprise.
+- **Affichage** : « Thème », boutons radio Automatique / Clair / Sombre / Nuit (Automatique par défaut ; Sépia s'y ajoute en V2), puis la phrase « En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture. », puis « Thème sombre », bouton segmenté Sombre / Nuit (Sombre par défaut) : le thème foncé de l'automatique quand le téléphone est en sombre. Le choix s’applique à toute l’app, lecture comprise.
 - **Confidentialité** :
   - phrase d'explication : « Verso n'utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone. » ;
   - action « Effacer le journal de lecture », « Vos positions de lecture sont conservées. », avec confirmation.
-- **À propos** : version, lien vers le code source sur GitHub, licences open source.
+- **À propos** : l'icône de l'app (40 dp, décorative), « Verso » et « Version 1.0.0 » en dessous ; lien vers le code source sur GitHub ; licences open source.
 
 ## Critères d'acceptation V1
 
@@ -172,6 +172,7 @@ Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domai
 - [x] Je corrige le titre d'un livre ; la correction survit à un redémarrage.
 - [x] Un fichier non-EPUB refusé affiche un message et ne laisse aucune trace dans le catalogue.
 - [x] Le thème sombre du système est respecté sans zone blanche éblouissante.
+- [ ] Téléphone en sombre, je choisis Nuit dans Paramètres › Affichage › Thème sombre : toute l'app et le texte de lecture passent en Nuit aussitôt, y compris dans un livre ouvert, et tout texte garde au moins 7:1 dans les deux thèmes foncés.
 - [x] Avec la taille de texte Android à 200 %, aucun texte n'est coupé et aucune ligne ne demande de scroll horizontal.
 - [x] Toutes les commandes font au moins 48 dp et tous les boutons à icône seule ont un intitulé lu par TalkBack.
 - [x] Aucune permission demandée hormis l'accès aux fichiers via le sélecteur (pas de réseau, pas de contacts, rien).
@@ -184,9 +185,9 @@ La V2 rend la lecture confortable pour moi ; la V3 ouvre aux formats et aux usag
 
 - **Police sélectionnée partout** : Literata par défaut ; Atkinson Hyperlegible Next et police du système au choix. La police choisie s'applique à toute l'app (interface et lecture).
 - **Réglages de lecture** (bouton « Aa » de la barre) : feuille ouverte à mi-hauteur, sans voile sur le texte, pour voir l'effet en direct.
-  - En haut : Police (3 cartes « Aa »), Taille du texte (boutons − et +), Thème (Auto, Clair, Sépia, Sombre, Noir).
+  - En haut : Police (3 cartes « Aa »), Taille du texte (boutons − et +), Thème (Auto, Clair, Sépia, Sombre, Nuit).
   - En dessous, en faisant glisser : Interligne (Serré 1,4 / Normal 1,6 / Aéré 1,8), Marges (Étroites / Normales / Larges), Défilement (Continu / Pages, mémorisé par livre).
-- **Thèmes** : clair, sépia, sombre, noir, et automatique (suit le système). Réglable indépendamment du système. Valeurs dans « Interface ».
+- **Thèmes** : clair, sépia, sombre, nuit, et automatique (suit le système ; en sombre, le thème foncé choisi dans les Paramètres). Réglable indépendamment du système. Valeurs dans « Interface ».
 - **Mode pages** : pages tournées par swipe (un tap affiche la barre, comme en continu), en alternative au scroll, choix mémorisé par livre. Le texte s'aligne sur une grille de lignes (jamais de ligne coupée en bas de page). Pied de page discret : chapitre à gauche, « Page 2 sur 9 » (dans le chapitre) à droite.
 - **Barre de lecture V2** : en bas, quatre outils avec texte sous l'icône : Sommaire, Journal, Rechercher, Réglages (« Aa »).
 - **États des livres** : à lire, en cours, terminé. L'état est calculé automatiquement à partir de la progression et modifiable dans la fiche (bouton segmenté). Dans la bibliothèque :
@@ -216,7 +217,7 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 - [x] Au premier lancement après la mise à jour, l'app et le texte de lecture sont en Literata ; la bibliothèque, les positions et le journal de la V1 sont intacts.
 - [x] Je choisis Atkinson puis la police du système dans les Paramètres : toute l'app et le texte de lecture changent de police, et le choix survit à un redémarrage (vérifié après un arrêt forcé ; le redémarrage complet du téléphone reste à faire par Maxime).
 - [x] Je change la taille, l'interligne et les marges pendant la lecture : le texte change aussitôt et le même paragraphe reste à l'écran.
-- [x] Les thèmes Sépia et Noir s'appliquent à toute l'app et au texte, sans zone d'une autre couleur ; Automatique suit le thème du téléphone (à vérifier par Maxime : changement du thème système).
+- [x] Les thèmes Sépia et Nuit s'appliquent à toute l'app et au texte, sans zone d'une autre couleur ; Automatique suit le thème du téléphone (à vérifier par Maxime : changement du thème système). Vérifié avec Noir le 2026-09-27 ; Nuit le remplace le 2026-09-29.
 - [x] Dans les cinq thèmes, tout texte a un contraste d'au moins 7:1 (captures vérifiées).
 - [ ] La barre de lecture montre Sommaire, Journal, Rechercher et Réglages, chacun avec son texte sous l'icône.
 - [x] « Aa » ouvre la feuille à mi-hauteur sans voile ; le texte derrière reste visible et change en direct ; Interligne, Marges et Défilement apparaissent en faisant glisser la feuille.
@@ -284,13 +285,13 @@ Pour lire les maquettes : 1 px = 1 dp, les tailles de texte en px sont des sp, l
 | 1.06 | Fichier refusé (pas un EPUB / DRM) | V1 |
 | 1.07 / 1.08 | Détails du livre / Supprimer un livre | V1 |
 | 1.09 | Paramètres | V1 |
-| 1.10 / 1.11 | Lecture / Lecture avec la barre affichée (+ sombre) | V1 |
+| 1.10 / 1.11 | Lecture / Lecture avec la barre affichée (+ sombre, + nuit pour 1.10) | V1 |
 | 1.12 | Sommaire (+ sombre) | V1 |
 | 1.13 | Journal de lecture (+ sombre) | V1 |
 | 1.14 | Retour à votre lecture (carte « Revenir ») | V1 |
 | 2.01 | Barre de lecture V2 | V2 |
 | 2.02 | Réglages de lecture (+ sombre) | V2 |
-| 2.03 / 2.04 | Thème sépia / Thème noir | V2 |
+| 2.03 / 2.04 | Thème sépia / Thème nuit | V2 |
 | 2.05 | Mode pages | V2 |
 | 2.06 | Recherche dans le livre | V2 |
 | 2.07 / 2.07b | Bibliothèque avec états / Trier et afficher | V2 |
@@ -304,26 +305,27 @@ Pour lire les maquettes : 1 px = 1 dp, les tailles de texte en px sont des sp, l
 
 Tous les couples texte/fond ont été vérifiés par calcul : chaque texte atteint au moins 7:1 (WCAG AAA), et les éléments non textuels au moins 3:1. Les mêmes valeurs, avec la typographie, les arrondis et les tailles, sont dans `design/tokens.json`. Le thème Compose se génère à partir de ce fichier.
 
-| Rôle | Clair | Sombre | Sépia (V2) | Noir (V2) |
+| Rôle | Clair | Sombre | Nuit | Sépia (V2) |
 | --- | --- | --- | --- | --- |
-| Fond | `#F5F1E8` | `#171513` | `#EFE3CC` | `#000000` |
-| Surface (cartes, barres, feuilles) | `#ECE5D9` | `#22201D` | `#ECE1CB` | `#141312` |
-| Surface haute | `#E4DCCE` | `#2B2825` | `#DDCDAF` | `#1E1C1A` |
-| Texte | `#1F1B16` (15,2:1) | `#E8E2D8` (14,1:1) | `#2E2419` (12:1) | `#D9D3C9` (14,1:1) |
-| Texte secondaire | `#4A433B` (8,6:1) | `#CFC7BB` (10,9:1) | `#443826` (7,3:1) | `#B8B0A4` (9,8:1) |
-| Accent | `#7A3021` (8,2:1) | `#E8C48E` (11:1) | `#7A3021` | `#E8C48E` |
-| Texte sur accent | `#FFFFFF` (9,2:1) | `#1B1510` (11:1) | `#FFFFFF` | `#1B1510` |
-| Piste des barres | `#DDD4C5` | `#3A3530` | `#D8C7A8` | `#2E2B28` |
-| Contour | `#7D7366` | `#8E857A` | `#7A6A52` | `#857D72` |
-| Séparateur | `#D3CABB` | `#3A3530` | `#D3C2A2` | `#2E2B28` |
-| Sélection (fond / texte) | `#EBD7C6` / `#2B170C` | `#463727` / `#F2E3D0` | `#E2C9AE` / `#2B170C` | `#3E3122` / `#F2E3D0` |
-| Danger | `#8A2318` | `#F2A99E` | `#7C2016` | `#F2A99E` |
-| Inverse (snackbar, carte de retour) | `#2E2A25` / `#F5F1E8` | `#E8E2D8` / `#1F1B16` | `#3A2E22` / `#EFE3CC` | `#D9D3C9` / `#141312` |
-| Accent sur inverse | `#F0C9A0` | `#7A3021` | `#F0C9A0` | `#68291C` |
-| Surlignage (V2/V3) | `#F3D9A4` | `#5A4520` | `#E9C98C` | `#4A3A1C` |
+| Fond | `#F5F1E8` | `#1E1B18` | `#1D1813` | `#EFE3CC` |
+| Surface (cartes, barres, feuilles) | `#ECE5D9` | `#25221E` | `#241E18` | `#ECE1CB` |
+| Surface haute | `#E4DCCE` | `#2D2924` | `#2C251E` | `#DDCDAF` |
+| Texte | `#1F1B16` (15,2:1) | `#CBC5BC` (10:1) | `#CFBCA0` (9,5:1) | `#2E2419` (12:1) |
+| Texte secondaire | `#4A433B` (8,6:1) | `#BBB5AD` (8,4:1) | `#C1B095` (8,3:1) | `#443826` (7,3:1) |
+| Accent | `#7A3021` (8,2:1) | `#CEB28A` (8,5:1) | `#D6AA7A` (8,3:1) | `#7A3021` |
+| Texte sur accent | `#FFFFFF` (9,2:1) | `#2E271F` (7,3:1) | `#2D2319` (7,2:1) | `#FFFFFF` |
+| Piste des barres | `#DDD4C5` | `#3D3933` | `#3C342B` | `#D8C7A8` |
+| Contour | `#7D7366` | `#7B7670` | `#7E7260` | `#7A6A52` |
+| Séparateur | `#D3CABB` | `#3D3933` | `#3C342B` | `#D3C2A2` |
+| Sélection (fond / texte) | `#EBD7C6` / `#2B170C` | `#534331` / `#EADFCF` | `#4E3B28` / `#E0D3C3` | `#E2C9AE` / `#2B170C` |
+| Danger | `#8A2318` | `#E8A89C` | `#E5A48D` | `#7C2016` |
+| Inverse (snackbar, carte de retour) | `#2E2A25` / `#F5F1E8` | `#CBC5BC` / `#1E1B18` | `#CFBCA0` / `#1D1813` | `#3A2E22` / `#EFE3CC` |
+| Accent sur inverse | `#F0C9A0` | `#4F2B22` | `#4C241A` | `#F0C9A0` |
+| Surlignage (V2/V3) | `#F3D9A4` | `#362D1D` | `#352A19` | `#E9C98C` |
 
-- Le fond clair n'est pas du blanc pur (environ 12 % de lumière en moins), et le fond sombre n'est pas du noir pur.
-- Le thème noir atténue le texte pour limiter l'éblouissement sur fond noir pur.
+- Le fond clair n'est pas du blanc pur (environ 12 % de lumière en moins), et les fonds foncés ne sont pas du noir pur.
+- **Thèmes foncés** : Sombre est un gris chaud, Nuit un brun au texte beige ambré. Le texte y vise 9 à 10:1 et pas plus (halo du texte clair sur fond foncé, surtout avec un astigmatisme) ; tout texte reste à au moins 7:1. Sur la sélection, le texte est toujours « texte sur sélection ». Les liens du texte de lecture prennent l'accent de Sombre dans les deux thèmes foncés (8,5:1 et 8,7:1) : leur couleur est fixée à la création du navigateur Readium, qui n'est pas recréé entre Sombre et Nuit.
+- Nuit remplace le thème Noir (V2) depuis le 2026-09-29 ; un choix Noir déjà enregistré se lit comme Nuit.
 - **Règle de l'accent** : l'accent sert uniquement :
   - au bouton principal de l'écran ;
   - à la progression du livre en cours (barre de 6 dp) ;
@@ -336,8 +338,8 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 
 | Élément | Valeurs |
 | --- | --- |
-| Échelle de texte (sp) | 14 légendes et méta · 16 texte d'interface, boutons · 18 titres de livres · 22 titres d'écran, de feuille et de fenêtre · 28 grands titres (logo, écran vide, numéro de chapitre) |
-| Texte de lecture | 19 sp en Atkinson, 20 sp en Literata, interligne 1,6 |
+| Échelle de texte (sp) | 14 légendes et méta · 16 texte d'interface, boutons · 18 titres de livres · 22 titres d'écran, de feuille et de fenêtre · 28 grands titres (écran vide, numéro de chapitre) |
+| Texte de lecture | 19 sp en Atkinson, 20 sp en Literata, interligne 1,6 (1,7 en thème foncé) |
 | Arrondis | 4 couvertures · 12 champs, pastilles, boutons segmentés, menus, petites cartes · 20 cartes · 28 feuilles et fenêtres · boutons en pilule |
 | Hauteurs | 48 dp pour toutes les commandes ; 56 dp seulement pour le bouton principal d'un écran vide |
 | Icônes | Trait de 2, extrémités arrondies, 20 à 24 dp |
@@ -360,7 +362,7 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 
 ### Accessibilité
 
-- Contraste d'au moins 7:1 pour tout texte, dans tous les thèmes. Au moins 3:1 pour les barres, contours et icônes.
+- Contraste d'au moins 7:1 pour tout texte, dans tous les thèmes, et pas plus d'environ 10:1 pour le texte en thème foncé. Au moins 3:1 pour les barres, contours et icônes.
 - Cibles tactiles de 48 dp minimum.
 - Tailles de texte **et interlignes** en sp. L'app reste utilisable avec le texte Android à 200 % (mise à l'échelle non linéaire d'Android 14). Le texte de lecture suit aussi la taille de police d'Android (19 sp convertis par le système) ; la V2 ajoutera son propre réglage « Taille du texte ».
 - Jamais la couleur seule pour porter une information : coches, texte (« Terminé », « À lire »), gras.
@@ -377,8 +379,8 @@ Le logo est un V formé par deux pages qui se croisent à la reliure : le livre 
 | Fond de l'icône | Accent clair `#7A3021` |
 | Pages | Fond clair `#F5F1E8` |
 | Traits de pages | Séparateur clair `#D3CABB` |
-| V du logotype | Accent du thème affiché (`#7A3021` en clair, `#E8C48E` en sombre) |
-| « erso » du logotype | Texte du thème affiché, en Atkinson Hyperlegible Next Bold |
+| V du logotype | Accent du thème affiché (`#7A3021` en clair, `#CEB28A` en sombre, `#D6AA7A` en nuit) |
+| « erso » du logotype | Texte du thème affiché, en Atkinson Hyperlegible Next Bold vectorisée |
 
 - **Géométrie**, sur le canevas de 108 unités de l'icône adaptative :
   - page de gauche de (30, 32)–(41, 32) en haut à (48, 78)–(60, 78) en bas ;
@@ -390,7 +392,9 @@ Le logo est un V formé par deux pages qui se croisent à la reliure : le livre 
 - **Icône adaptative** : fond `@color/ic_launcher_background`, premier plan `ic_launcher_foreground`, calque `monochrome` pour les icônes à thème d'Android 13+.
 - **Version une couleur** (icône à thème, notifications, V du logotype) : les traits sont découpés dans la forme, les deux pages restent séparées par l'espace.
 - **Petites tailles** : l'icône reste lisible jusqu'à 24 dp. La barre d'état et les notifications utilisent la version une couleur (`verso-v.svg`).
-- **Dans l'app**, le nom reste du texte (Atkinson, couleur Texte), comme dans les maquettes. Le logotype vectorisé sert hors de l'app : README, fiche Play Store.
+- **Dans l'app** (depuis le 2026-09-29) :
+  - l'en-tête de la bibliothèque montre le **logotype** (le V du logo et « erso », en tracés) : un seul vector drawable, `res/drawable/ic_logotype.xml`, converti de `design/logo/svg/verso-logotype-clair.svg`, environ 21 dp de haut, intitulé TalkBack « Verso ». La couleur de chaque tracé vient du thème (V en accent, « erso » en texte) ; il garde sa forme quelle que soit la police de l'app et sa taille en dp ne suit pas la taille de texte d'Android ;
+  - la bibliothèque vide (1.01) montre l'**icône de l'app** à 64 dp, et Paramètres › À propos (1.09) à 40 dp : les calques de l'icône de lancement (`ic_launcher_background` et `ic_launcher_foreground`) sous un masque aux coins arrondis (22 sur 72), décorative.
 - Ne pas redessiner le logo : les XML Android et les SVG sont générés à partir de la même géométrie.
 
 ## Confort de lecture
@@ -407,6 +411,7 @@ Les réglages par défaut de Verso reposent sur ce consensus :
 | Mise en page | Pas de justification, interligne ≥ 1,5, lignes courtes, texte agrandissable à 200 % (WCAG 1.4.8) | Aligné à gauche sans césure, interligne 1,6, environ 35 caractères par ligne |
 | Italique, majuscules | Ils ralentissent la lecture de passages longs | Extraits en romain, pas de libellés en capitales |
 | Pauses | La règle 20-20-20 réduit les symptômes tant qu'on l'applique | Hors V1 ; rappel optionnel possible plus tard |
+| Astigmatisme | Le texte clair sur fond foncé « bave » (halation), d'autant plus que le contraste est fort et que l'œil est astigmate | Thèmes foncés à 9–10:1 plutôt que 14:1, texte allégé et espacé, interligne 1,7 ; thème Nuit plus chaud au choix |
 
 Sources principales :
 
@@ -517,9 +522,9 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 | # | Étape | Écrans | Finie quand |
 | --- | --- | --- | --- |
 | 1 | **Prototype jetable** (branche `spike/readium`, jamais fusionnée) : un EPUB dans Readium en scroll continu, sauvegarde et restauration d'un locator, distinction entre scroll de lecture et fling | 1.10 | Les trois fonctionnent avec deux EPUB de Gutenberg. Les conclusions sont notées dans « Points de vigilance » |
-| 2 | **Squelette** : projet `com.maximebier.verso`, thème généré depuis `design/tokens.json` (clair et sombre en V1), typographie et Atkinson en TTF variable, icône copiée depuis `design/logo/`, Room, DataStore, navigation, CI | 1.01 | L'écran 1.01 ressemble à son PNG, en clair et en sombre, et la CI produit un APK |
+| 2 | **Squelette** : projet `com.maximebier.verso`, thème généré depuis `design/tokens.json` (clair, sombre et nuit en V1), typographie et Atkinson en TTF variable, icône copiée depuis `design/logo/`, Room, DataStore, navigation, CI | 1.01 | L'écran 1.01 ressemble à son PNG, en clair, en sombre et en nuit, et la CI produit un APK |
 | 3 | **Import et catalogue** : sélecteur de fichiers, « Ouvrir avec », empreinte SHA-256, doublon, refus, liste, grille, menu ⋮, fiche, suppression | 1.01 – 1.09 | Les critères d'import et de catalogue sont cochés |
-| 4 | **Lecture** : scroll continu, réglages imposés à Readium, barre de lecture, sommaire | 1.10 – 1.12 | Un chapitre entier se lit sans saccade, en clair et en sombre |
+| 4 | **Lecture** : scroll continu, réglages imposés à Readium, barre de lecture, sommaire | 1.10 – 1.12 | Un chapitre entier se lit sans saccade, en clair, en sombre et en nuit |
 | 5 | **Position de lecture et carte « Revenir »** : machine à états testée unitairement, sauvegarde au debounce et à `onStop` | 1.14 | Les critères de progression sont cochés, y compris la fermeture brutale et le redémarrage |
 | 6 | **Journal et Paramètres** : sessions, feuille du journal, « Reprendre ici », Paramètres | 1.09, 1.13 | Les critères du journal sont cochés |
 | 7 | **Passe d'acceptation** : tous les critères V1, TalkBack, texte à 200 %, aucune permission réseau | Tous les V1 | Toutes les cases des « Critères d'acceptation V1 » sont cochées |
@@ -528,7 +533,7 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 ### Règles de travail
 
 - Commencer chaque session par lire `CLAUDE.md` et la partie de la spec qui concerne l'étape.
-- Pour chaque écran, comparer le résultat à son PNG de `design/screens/`, en clair et en sombre.
+- Pour chaque écran, comparer le résultat à son PNG de `design/screens/`, en clair, en sombre et en nuit.
 - Ne rien coder de la V2 à la V4 avant la fin de l'étape 7. Le modèle de données et les réglages de lecture doivent seulement ne pas l'empêcher.
 - Toute décision qui modifie la spec est reportée dans ce fichier dans le même commit, avec une ligne dans « Historique ».
 
@@ -564,3 +569,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-28 (étape 12) : mode pages (2.05). Seuils de confirmation propres au mode pages (pause jusqu'à 90 s, dérive jusqu'à 2,5 écrans, `ReadingThresholds.forPages()`), posés à l'ouverture selon le mode du livre et à chaque bascule, sans changer les règles de la machine à états ; tours de page (swipe, tap latéral, actions TalkBack « Page suivante » / « Page précédente » portées par le pied de page, seul élément focalisable du mode pages) ; bascule continu ↔ pages par la remise en page du contrôleur (`relayout`, `MODE_SWITCH_SETTLE_MS` = 300 ms, suffisant sur le téléphone), sans saut ni geste pour la machine à états. « Page x sur y » compte les pages du chapitre même quand un fichier en contient plusieurs (parties de Madame Bovary chez Gutenberg) : pages et ancres du sommaire mesurées dans la WebView, et le chapitre du pied de page suit ces ancres. Défilement mémorisé par livre depuis la feuille « Aa ». Vérifié sur le téléphone : même paragraphe à la bascule dans les deux sens, un tour par tap, swipe, aucune ligne coupée, fin de chapitre et fin de fichier vers la page 1 du suivant, compte exact (Candide chapitre V : 7 pages ; Madame Bovary IX 21, X 19), chaque livre rouvre dans son mode après un arrêt forcé. Critères d'acceptation V2 7, 8 et 9 vérifiés ; 10 pas encore (quatre pages feuilletées vite restent de la lecture, voir `docs/acceptance-v2.md`).
 - 2026-09-29 (retour utilisateur) : un tap n’importe où sur le texte affiche ou masque la barre de lecture, en continu comme en mode pages ; le tap latéral ne tourne plus les pages (swipe seulement, plus les actions TalkBack du pied de page). Mesuré sur le téléphone : seule la bande centrale (30 à 70 % de la largeur) réagissait, les taps à côté semblaient perdus. Un tap déjà traité par l’app dont Readium envoie le signal après l’appui suivant (taps rapprochés) n’est plus compté deux fois (`TAP_ECHO_MAX_MS` = 1 s).
 - 2026-09-29 (retour utilisateur) : les sessions de moins de 30 s de temps actif (la durée affichée au journal) ne sont pas gardées, comme les sessions sans lecture : jamais écrites, et celles déjà enregistrées sont retirées à l'ouverture d'un livre. La session en cours reste affichée « En cours » au journal.
+- 2026-09-29 (maquettes, `docs/CHANGEMENTS.md`) : logo dans l'interface (logotype `ic_logotype` dans l'en-tête de la bibliothèque, icône de l'app en 1.01 et en 1.09 avec « Verso » / « Version 1.0.0 ») ; thème Sombre adouci (texte à 10:1 au lieu de 14:1) et thème Nuit, qui remplace Noir (un choix Noir enregistré se lit comme Nuit) ; « Thème sombre : Sombre / Nuit » dans Paramètres › Affichage (préférence `dark_theme_variant`), appliqué par l'automatique quand le téléphone est en sombre ; en thème foncé, Readium reçoit l'interligne +0,1 (1,7 en Normal), la graisse et l'espacement des lettres par police. Sépia garde ses jetons de l'étape 10 (l'export les ramenait aux valeurs d'avant l'ajustement à 7:1) ; les jetons propres au code (`onDanger`, `onCover`, `onInverseAccent`, `progressInk`, `scrim`, `coverPalette`), absents de l'export, sont gardés et définis pour Nuit. Le couple texte/sélection sort de `PaletteContrastTest` (le texte sur la sélection est toujours `onSelection`) ; un test borne le texte des thèmes foncés entre 9 et 10:1.

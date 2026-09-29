@@ -37,11 +37,12 @@ class MainActivity : FragmentActivity() {
         val settings = (application as VersoApplication).container.settings
         // Lu avant la première image : le thème choisi s'affiche d'emblée, sans passer par celui du téléphone.
         val initialThemeMode = runBlocking { settings.themeMode.first() }
+        val initialDarkVariant = runBlocking { settings.darkThemeVariant.first() }
         val initialReading = runBlocking { settings.readingSettings.first() }
         // Le navigateur EPUB est un Fragment sans constructeur vide : restauré par le système (rotation, thème), il
         // n’a pas sa fabrique. Il est recréé à vide puis retiré ; la surface de lecture en crée un vrai.
         supportFragmentManager.fragmentFactory = EpubNavigatorFragment.createDummyFactory()
-        enableEdgeToEdge(initialThemeMode.resolve(systemDark = isSystemNight()))
+        enableEdgeToEdge(initialThemeMode.resolve(systemDark = isSystemNight(), darkVariant = initialDarkVariant))
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) removeRestoredReaders()
         // Fichier reçu par « Ouvrir avec » / « Partager vers ». Après une recréation, l'intent a déjà été traité.
@@ -54,8 +55,9 @@ class MainActivity : FragmentActivity() {
         val reopenBookId = if (allowAutoReopen) runBlocking { bookToReopen() } else null
         setContent {
             val themeMode by settings.themeMode.collectAsState(initial = initialThemeMode)
+            val darkVariant by settings.darkThemeVariant.collectAsState(initial = initialDarkVariant)
             val reading by settings.readingSettings.collectAsState(initial = initialReading)
-            val theme = themeMode.resolve(systemDark = isSystemInDarkTheme())
+            val theme = themeMode.resolve(systemDark = isSystemInDarkTheme(), darkVariant = darkVariant)
             LaunchedEffect(themeMode) { applyWindowNightMode(themeMode) }
             LaunchedEffect(theme) { enableEdgeToEdge(theme) }
             VersoTheme(theme = theme, font = reading.font) {
@@ -103,7 +105,7 @@ class MainActivity : FragmentActivity() {
      * Icônes des barres système lisibles sur le fond du thème affiché (même voile que le défaut d'AndroidX).
      * La barre de navigation utilise `light`/`dark` (jamais `auto`) : avec `auto`, l'API 29+ force
      * `isNavigationBarContrastEnforced` à vrai et remplace notre voile par celui, blanc ou noir, du système,
-     * quelle que soit la couleur passée — la barre n'était alors plus teintée en sépia ni en noir.
+     * quelle que soit la couleur passée — la barre n’était alors plus teintée en sépia ni en nuit.
      */
     private fun enableEdgeToEdge(theme: AppTheme) {
         val scrim = navigationScrim(theme)
@@ -116,8 +118,8 @@ class MainActivity : FragmentActivity() {
     /**
      * Android 12+ : le thème choisi s'applique aussi à la fenêtre (fond au lancement, avant Compose), retenu par
      * le système. Changer ce réglage recrée l'activité ; Navigation restaure alors la pile. Avant Android 12,
-     * seul le rendu Compose suit le réglage. Sépia est un thème de jour et noir un thème de nuit pour la fenêtre :
-     * passer de clair à sépia (ou de sombre à noir) ne recrée pas l'activité.
+     * seul le rendu Compose suit le réglage. Sépia est un thème de jour et nuit un thème sombre pour la fenêtre :
+     * passer de clair à sépia (ou de sombre à nuit) ne recrée pas l’activité.
      */
     private fun applyWindowNightMode(mode: ThemeMode) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
@@ -125,7 +127,7 @@ class MainActivity : FragmentActivity() {
         val night = when (mode) {
             ThemeMode.AUTO -> UiModeManager.MODE_NIGHT_AUTO
             ThemeMode.LIGHT, ThemeMode.SEPIA -> UiModeManager.MODE_NIGHT_NO
-            ThemeMode.DARK, ThemeMode.BLACK -> UiModeManager.MODE_NIGHT_YES
+            ThemeMode.DARK, ThemeMode.NIGHT -> UiModeManager.MODE_NIGHT_YES
         }
         // Même valeur que la précédente : sans effet (pas de recréation).
         uiModeManager.setApplicationNightMode(night)

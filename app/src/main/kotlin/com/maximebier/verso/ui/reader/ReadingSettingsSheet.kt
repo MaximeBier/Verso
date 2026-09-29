@@ -367,7 +367,7 @@ private fun RoundOutlinedIconButton(icon: ImageVector, description: String, enab
 
 private val SwatchGap = 4.dp
 
-/** Cinq pastilles (2.02) dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Noir. */
+/** Cinq pastilles (2.02) dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Nuit. */
 @Composable
 private fun ThemeSwatches(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val labels = ThemeMode.entries.map { themeLabel(it) }
@@ -392,7 +392,7 @@ private fun themeLabel(mode: ThemeMode): String = stringResource(
         ThemeMode.LIGHT -> R.string.reader_settings_theme_light
         ThemeMode.SEPIA -> R.string.reader_settings_theme_sepia
         ThemeMode.DARK -> R.string.reader_settings_theme_dark
-        ThemeMode.BLACK -> R.string.reader_settings_theme_black
+        ThemeMode.NIGHT -> R.string.reader_settings_theme_night
     },
 )
 
@@ -401,7 +401,7 @@ private fun swatchPalette(mode: ThemeMode): VersoColors = when (mode) {
     ThemeMode.AUTO, ThemeMode.LIGHT -> VersoPalette.Light
     ThemeMode.SEPIA -> VersoPalette.Sepia
     ThemeMode.DARK -> VersoPalette.Dark
-    ThemeMode.BLACK -> VersoPalette.Black
+    ThemeMode.NIGHT -> VersoPalette.Night
 }
 
 @Composable

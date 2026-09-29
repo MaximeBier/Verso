@@ -204,6 +204,18 @@
     ]
   },
   {
+    "id": "1.10",
+    "title": "1.10 Lecture (nuit)",
+    "version": "V1",
+    "theme": "nuit",
+    "png": "screens/1.10-lecture-nuit.png",
+    "html": "html/1.10-lecture-nuit.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
     "id": "1.11",
     "title": "1.11 Barre affichée (sombre)",
     "version": "V1",
@@ -277,11 +289,11 @@
   },
   {
     "id": "2.04",
-    "title": "2.04 Thème noir",
+    "title": "2.04 Thème nuit",
     "version": "V2",
-    "theme": "noir",
-    "png": "screens/2.04-theme-noir.png",
-    "html": "html/2.04-theme-noir.html",
+    "theme": "nuit",
+    "png": "screens/2.04-theme-nuit.png",
+    "html": "html/2.04-theme-nuit.html",
     "size_dp": [
       390,
       844
