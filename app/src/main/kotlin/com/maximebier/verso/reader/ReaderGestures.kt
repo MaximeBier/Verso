@@ -2,9 +2,6 @@ package com.maximebier.verso.reader
 
 /** Seuils techniques des gestes sur la surface de lecture (les seuils de lecture sont dans `ReadingThresholds`). */
 object ReaderGestures {
-    /** Zone du tap qui affiche ou masque la barre de lecture, en fraction de la largeur. */
-    val CENTER_TAP_RANGE: ClosedFloatingPointRange<Float> = 0.3f..0.7f
-
     /** Sans images de défilement natif : le défilement est stabilisé après ce délai sans nouvelle position. */
     const val SETTLE_QUIET_MS = 250L
 
@@ -41,10 +38,16 @@ object ReaderGestures {
     const val TAP_MAX_DURATION_MS = 300L
 
     /**
-     * Tap au centre que le navigateur n’a pas signalé dans ce délai : l’app le traite elle-même
+     * Tap que le navigateur n’a pas signalé dans ce délai : l’app le traite elle-même
      * (prototype : le premier tap après une restauration peut être absorbé par un pré-défilement interne).
      */
     const val TAP_FALLBACK_DELAY_MS = 400L
+
+    /**
+     * Tap traité par l’app sans le signal du navigateur : un signal arrivé dans ce délai est le sien, en retard
+     * (taps rapprochés), et n’est pas compté une seconde fois ; au-delà, il n’est plus attendu.
+     */
+    const val TAP_ECHO_MAX_MS = 1_000L
 
     /**
      * Bascule continu ↔ pages : délai laissé à Readium pour remettre le chapitre en page avant de revenir au texte

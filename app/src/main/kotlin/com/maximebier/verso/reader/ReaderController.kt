@@ -33,7 +33,7 @@ interface ReaderController {
     /** Nouveaux réglages de lecture, appliqués sans recréer le lecteur ; le texte reste au même locator. */
     fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode)
 
-    /** Mode pages : page suivante ou précédente (action TalkBack du pied de page), comme un tap sur un côté. Sans effet en continu. */
+    /** Mode pages : page suivante ou précédente (action TalkBack du pied de page), comme un swipe. Sans effet en continu. */
     fun turn(forward: Boolean)
 }
 

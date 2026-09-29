@@ -116,7 +116,8 @@ fun ReaderSurface(
     initialLocator: Locator?,
     initialStyle: ReaderStyle,
     onReady: (ReaderController) -> Unit,
-    onCenterTap: () -> Unit,
+    /** Tap n’importe où sur le texte (affiche ou masque la barre de lecture). */
+    onTap: () -> Unit,
     modifier: Modifier = Modifier,
     positions: ReadingOrderPositions? = null,
     onInternalLink: (Url) -> Unit = {},
@@ -129,7 +130,7 @@ fun ReaderSurface(
     val densityInfo = LocalDensity.current
     val density = densityInfo.density
     val currentOnReady by rememberUpdatedState(onReady)
-    val currentOnCenterTap by rememberUpdatedState(onCenterTap)
+    val currentOnTap by rememberUpdatedState(onTap)
     val currentOnInternalLink by rememberUpdatedState(onInternalLink)
     val currentOnFailed by rememberUpdatedState(onFailed)
     val background = Color(ReadingStyle.colors(initialStyle.theme).background)
@@ -151,7 +152,7 @@ fun ReaderSurface(
         FragmentReaderController(
             scope = scope,
             readChapterHtml = { href -> readChapterHtml(publication, href) },
-            onCenterTap = { currentOnCenterTap() },
+            onTap = { currentOnTap() },
             adjacentChapter = { current, next -> adjacentChapter(publication, current, next) },
         ).apply {
             // Mode du fragment créé ci-dessous ; les bascules suivantes passent par submit.
@@ -206,8 +207,7 @@ fun ReaderSurface(
         val nav = navigator ?: return@DisposableEffect onDispose {}
         val listener = object : InputListener {
             override fun onTap(event: TapEvent): Boolean {
-                val width = nav.publicationView.width
-                if (width > 0) controller.onReadiumTap(xFraction = event.point.x / width)
+                controller.onReadiumTap()
                 return false
             }
         }
@@ -363,8 +363,7 @@ private fun Modifier.observeGestures(controller: FragmentReaderController): Modi
                     velocityYPxPerSecond = velocityTracker.calculateVelocity().y,
                     dragDyPx = upY - down.position.y,
                 )
-                releasedAt - down.uptimeMillis <= ReaderGestures.TAP_MAX_DURATION_MS && size.width > 0 ->
-                    controller.onTapLikeGesture(xFraction = down.position.x / size.width)
+                releasedAt - down.uptimeMillis <= ReaderGestures.TAP_MAX_DURATION_MS -> controller.onTapLikeGesture()
             }
         }
     }
