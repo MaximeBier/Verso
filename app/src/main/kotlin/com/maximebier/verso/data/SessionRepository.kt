@@ -1,5 +1,6 @@
 package com.maximebier.verso.data
 
+import com.maximebier.verso.core.journal.SessionThresholds
 import com.maximebier.verso.data.db.SessionDao
 import com.maximebier.verso.data.db.SessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,10 @@ class SessionRepository(private val dao: SessionDao) {
 
     suspend fun clearAll() = dao.clearAll()
 
-    /** Retire du journal les sessions sans lecture (dont celles écrites avant cette règle). */
-    suspend fun deleteEmpty() = dao.deleteEmpty()
+    /**
+     * Retire du journal les sessions qui n’y sont pas gardées (sans lecture, moins de 30 s de temps actif), dont
+     * celles écrites avant ces règles.
+     */
+    suspend fun deleteDiscarded(thresholds: SessionThresholds = SessionThresholds()) =
+        dao.deleteDiscarded(thresholds.minActiveMs)
 }

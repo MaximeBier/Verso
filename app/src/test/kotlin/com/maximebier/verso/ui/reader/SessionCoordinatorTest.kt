@@ -84,6 +84,33 @@ class SessionCoordinatorTest {
     }
 
     @Test
+    fun sessionShorterThanThirtySecondsIsNeverWritten() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 29_999; c.readingMove(0.10, 0.20)
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows).isEmpty()
+    }
+
+    @Test
+    fun sessionIsWrittenOnceItReachesThirtySecondsOfActiveTime() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 20_000; c.readingMove(0.10, 0.20)
+        runCurrent()
+        assertThat(store.rows).isEmpty()
+        now = 30_000; c.onInteraction()
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows.values.single().activeMs).isEqualTo(30_000)
+    }
+
+    @Test
     fun sessionWithOnlyJumpsIsNeverWritten() = runTest {
         var now = 0L
         val c = coordinator { now }
@@ -152,6 +179,7 @@ class SessionCoordinatorTest {
         c.readingMove(0.21, 0.22)                     // reprise : nouvelle session
         runCurrent()
         assertThat(c.current.value).isNotNull()
+        advanceTimeBy(40_000); c.readingMove(0.22, 0.23) // au moins 30 s : gardée
 
         c.close(); advanceUntilIdle()
         assertThat(store.rows).hasSize(2)
@@ -203,17 +231,17 @@ class SessionCoordinatorTest {
         val c = coordinator { now }
 
         c.onOpened(position(0.10))
-        now = 5_000; c.readingMove(0.10, 0.12)                                // un peu de lecture : session gardée
-        now = 10_000; c.onTrackerEffect(saved(0.30))                          // « Rester ici » : la lecture passe à 30 %
-        now = 20_000; c.onTrackerEffect(TrackerEffect.ScrollTo(position(0.10))) // « Revenir » : déplacement de l'affiché seul
-        now = 30_000; c.close()
+        now = 20_000; c.readingMove(0.10, 0.12)                               // un peu de lecture : session gardée
+        now = 40_000; c.onTrackerEffect(saved(0.30))                          // « Rester ici » : la lecture passe à 30 %
+        now = 50_000; c.onTrackerEffect(TrackerEffect.ScrollTo(position(0.10))) // « Revenir » : déplacement de l'affiché seul
+        now = 60_000; c.close()
         advanceUntilIdle()
 
         val row = store.rows.values.single()
         assertThat(row.endProgression).isWithin(1e-9).of(0.30)
         assertThat(row.wordsRead).isEqualTo((0.02 * TOTAL_WORDS).roundToLong())   // « Rester ici » n'ajoute aucun mot
-        assertThat(row.endedAt).isEqualTo(10_000L)                            // ScrollTo n'est pas une interaction
-        assertThat(row.activeMs).isEqualTo(10_000L)
+        assertThat(row.endedAt).isEqualTo(40_000L)                            // ScrollTo n'est pas une interaction
+        assertThat(row.activeMs).isEqualTo(40_000L)
     }
 
     @Test
@@ -222,16 +250,16 @@ class SessionCoordinatorTest {
         val c = coordinator { now }
 
         c.onOpened(position(0.10))
-        now = 10_000; c.readingMove(0.10, 0.12)
-        now = 20_000; c.onBackgrounded()
-        now = 21_000; c.onTrackerEffect(saved(0.15))    // repos constaté après onStop : aucune session fantôme
+        now = 40_000; c.readingMove(0.10, 0.12)
+        now = 50_000; c.onBackgrounded()
+        now = 51_000; c.onTrackerEffect(saved(0.15))    // repos constaté après onStop : aucune session fantôme
         advanceUntilIdle()
         assertThat(c.current.value).isNull()
         assertThat(store.rows).hasSize(1)
 
         now = 600_000; c.onStarted()
-        now = 610_000; c.readingMove(0.15, 0.16)
-        now = 620_000; c.close()
+        now = 640_000; c.readingMove(0.15, 0.16)
+        now = 650_000; c.close()
         advanceUntilIdle()
 
         val rows = store.rows.values.sortedBy { it.startedAt }
@@ -267,16 +295,16 @@ class SessionCoordinatorTest {
         )
 
         c.onOpened(position(0.10))
-        now = 10_000; c.readingMove(0.10, 0.11)         // écriture ratée : signalée, la lecture continue
+        now = 40_000; c.readingMove(0.10, 0.11)         // écriture ratée : signalée, la lecture continue
         advanceUntilIdle()
         failing = false
-        now = 20_000; c.readingMove(0.11, 0.12)         // l'écriture suivante crée la ligne
-        now = 30_000; c.close()
+        now = 50_000; c.readingMove(0.11, 0.12)         // l'écriture suivante crée la ligne
+        now = 60_000; c.close()
         advanceUntilIdle()
 
         assertThat(failures.map { it.message }).containsExactly("disque plein")
         assertThat(store.rows.keys).containsExactly(1L)
-        assertThat(store.rows.getValue(1L).endedAt).isEqualTo(20_000L)
+        assertThat(store.rows.getValue(1L).endedAt).isEqualTo(50_000L)
     }
 
     private companion object {

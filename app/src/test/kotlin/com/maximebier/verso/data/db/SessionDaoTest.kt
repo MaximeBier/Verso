@@ -44,17 +44,19 @@ class SessionDaoTest {
     }
 
     @Test
-    fun deleteEmptyRemovesOnlySessionsWithoutReading() = runTest {
+    fun deleteDiscardedRemovesSessionsWithoutReadingOrShorterThanTheMinimum() = runTest {
         val bookId = db.bookDao().insert(testBook("b"))
         val other = db.bookDao().insert(testBook("o"))
         val empty = testSession(bookId, startedAt = 1_000).copy(wordsRead = 0)
         db.sessionDao().upsert(empty)
         db.sessionDao().upsert(testSession(bookId, startedAt = 2_000))
+        db.sessionDao().upsert(testSession(bookId, startedAt = 3_000).copy(activeMs = 29_999))
+        db.sessionDao().upsert(testSession(bookId, startedAt = 4_000).copy(activeMs = 30_000))
         db.sessionDao().upsert(empty.copy(bookId = other))
 
-        db.sessionDao().deleteEmpty()
+        db.sessionDao().deleteDiscarded(minActiveMs = 30_000)
 
-        assertThat(db.sessionDao().observeForBook(bookId).first().map { it.startedAt }).containsExactly(2_000L)
+        assertThat(db.sessionDao().observeForBook(bookId).first().map { it.startedAt }).containsExactly(4_000L, 2_000L)
         assertThat(db.sessionDao().countForBook(other)).isEqualTo(0)
     }
 
