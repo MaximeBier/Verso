@@ -22,6 +22,7 @@ import com.maximebier.verso.screenshots.samples.ReaderToolsSample
 import com.maximebier.verso.screenshots.samples.ReadingSettingsSheetSample
 import com.maximebier.verso.screenshots.samples.ReturnCardSample
 import com.maximebier.verso.screenshots.samples.SampleReadingText
+import com.maximebier.verso.screenshots.samples.SearchSample
 import com.maximebier.verso.screenshots.samples.SettingsSample
 import com.maximebier.verso.screenshots.samples.SettingsV2Sample
 import com.maximebier.verso.screenshots.samples.TocSheetSample
@@ -71,5 +72,6 @@ object V2ScreenCatalog {
         V2ScreenFixture(ScreenFixture("2.07b-trier-et-afficher", afterContent = openSortSheet) { LibraryStatesSample() }),
         V2ScreenFixture(ScreenFixture("2.08-details-du-livre") { DetailsV2Sample() }),
         V2ScreenFixture(ScreenFixture("2.09-parametres") { SettingsV2Sample() }),
+        V2ScreenFixture(ScreenFixture("2.06-recherche-dans-le-livre") { SearchSample() }),
     )
 }

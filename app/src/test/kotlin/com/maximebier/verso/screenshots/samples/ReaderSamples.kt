@@ -57,7 +57,7 @@ internal val tocSample = listOf(
 internal fun ReaderBarsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
         SampleReadingText()
-        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onJournalClick = {}, onSettingsClick = {})
+        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onJournalClick = {}, onSearchClick = {}, onSettingsClick = {})
     }
 }
 
@@ -78,7 +78,7 @@ internal fun TocSheetSample() {
     )
 }
 
-/** 2.01 : barre V2 (Sommaire, Journal, Réglages ; Rechercher ajouté à l'étape 15). */
+/** 2.01 : barre V2 (Sommaire, Journal, Rechercher, Réglages). */
 @Composable
 internal fun ReaderToolsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -89,6 +89,7 @@ internal fun ReaderToolsSample() {
             onBack = {},
             onTocClick = {},
             onJournalClick = {},
+            onSearchClick = {},
             onSettingsClick = {},
         )
     }

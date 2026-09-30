@@ -995,4 +995,23 @@ class FragmentReaderControllerTest {
         runCurrent()
         assertThat(h.controller.pageInfo.value).isNull()
     }
+
+    @Test
+    fun showSearchMatchGoesToTheBoundDecorator() = runTest {
+        val controller = Harness(this).controller
+        val shown = mutableListOf<Locator?>()
+        controller.bindSearchMatch { shown += it }
+        val target = at("ch2.xhtml", 0.2, total = 0.6)
+
+        controller.showSearchMatch(target)
+        controller.showSearchMatch(null)
+
+        assertThat(shown).containsExactly(target, null).inOrder()
+    }
+
+    @Test
+    fun showSearchMatchWithoutNavigatorDoesNothing() = runTest {
+        // Aucune exception, rien à marquer : la surface n’a pas encore branché les décorations.
+        Harness(this).controller.showSearchMatch(at("ch1.xhtml", 0.5))
+    }
 }

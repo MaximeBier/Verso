@@ -10,6 +10,7 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.AppTheme
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.css.Color as CssColor
 import org.readium.r2.navigator.preferences.ColumnCount
@@ -17,6 +18,9 @@ import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.Url
+import org.readium.r2.shared.util.mediatype.MediaType
 
 // Robolectric : Color de Readium s’appuie sur android.graphics.Color.
 @OptIn(ExperimentalReadiumApi::class)
@@ -135,6 +139,14 @@ class VersoReadingPreferencesTest {
         assertThat(VersoReadingPreferences.changesLayout(prefs(), prefs(ReadingSettings(margins = Margins.NARROW)))).isTrue()
         // Graisse et approche du texte sombre : les lignes se coupent ailleurs.
         assertThat(VersoReadingPreferences.changesLayout(prefs(), prefs(theme = AppTheme.DARK))).isTrue()
+    }
+
+    @Test
+    fun searchMatchesUseTheVersoHighlightTemplate() {
+        val configuration = EpubNavigatorFragment.Configuration { with(VersoReadingPreferences) { applyVerso(AppTheme.LIGHT) } }
+        val template = configuration.decorationTemplates[Decoration.Style.Highlight::class]
+        val decoration = SearchMatchDecoration.decorations(Locator(Url("c1.xhtml")!!, MediaType.XHTML), AppTheme.LIGHT).single()
+        assertThat(template?.element?.invoke(decoration)).isEqualTo(SearchMatchDecoration.element(decoration))
     }
 
     @Test

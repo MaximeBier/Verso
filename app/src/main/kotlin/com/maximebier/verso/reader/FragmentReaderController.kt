@@ -203,6 +203,17 @@ internal class FragmentReaderController(
         this.readPageLayout = pageLayout
     }
 
+    private var searchMatch: (suspend (Locator?) -> Unit)? = null
+
+    /** Branche la marque de recherche sur le navigateur (décorations Readium), une fois celui-ci créé. */
+    fun bindSearchMatch(show: suspend (Locator?) -> Unit) {
+        searchMatch = show
+    }
+
+    override suspend fun showSearchMatch(locator: Locator?) {
+        searchMatch?.invoke(locator)
+    }
+
     /**
      * Continu : défilement vertical, changement de chapitre par un glissé au bord. Pages : tours de page par swipe
      * (natif), jamais de fling ni d’enchaînement au bord (Readium passe au chapitre suivant).
@@ -258,6 +269,8 @@ internal class FragmentReaderController(
         }
         val filled = withTotalProgression(locator)
         if (filled == displayedState.value) return
+        // Autre fichier : les pages mesurées dans l’ancien ne valent plus (pied de page et chapitre).
+        if (displayedState.value?.let { sameResource(it.href, filled.href) } == false) pageInfoState.value = null
         lastDisplayedChangeAt = uptimeMs()
         displayedState.value = filled
         if (scrollMode == ScrollMode.PAGES) refreshPageInfo()

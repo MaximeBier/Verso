@@ -289,6 +289,7 @@ class ReadingPositionCoordinatorTest {
                 displayed.value = anchor
             }
             override suspend fun excerptLocator(): Locator? = displayed.value
+            override suspend fun showSearchMatch(locator: Locator?) = Unit
             override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) = Unit
             override fun turn(forward: Boolean) = Unit
         }

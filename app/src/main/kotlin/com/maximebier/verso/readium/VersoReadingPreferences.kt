@@ -88,6 +88,8 @@ object VersoReadingPreferences {
         readiumCssRsProperties = readiumCssRsProperties.copy(linkColor = link, visitedColor = link)
         disablePageTurnsWhileScrolling = true
         shouldApplyInsetsPadding = false
+        // Mot trouvé par la recherche : fond opaque fondu et soulignement, texte inchangé (7:1).
+        decorationTemplates = SearchMatchDecoration.templates()
         declareVariableFont(
             LITERATA,
             ReadingStyle.LITERATA_ASSET_REGULAR,

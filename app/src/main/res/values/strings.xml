@@ -301,6 +301,26 @@
     <!-- « Page 2 sur 9 » : page du chapitre affiché ; « Page 1 sur 1 » n’est pas un pluriel. -->
     <string name="reader_page_of" tools:ignore="PluralsCandidate">Page %1$d sur %2$d</string>
 
+    <!-- V2 · écran 2.06 : recherche dans le livre -->
+    <string name="reader_search">Rechercher</string>
+    <string name="search_field">Rechercher dans le livre</string>
+    <string name="search_close">Fermer la recherche</string>
+    <string name="search_clear">Effacer la recherche</string>
+    <string name="search_in_progress">Recherche en cours</string>
+    <string name="search_status_running_empty">Recherche dans tout le livre…</string>
+    <plurals name="search_status_running">
+        <item quantity="one">Recherche dans tout le livre… %d résultat pour l’instant</item>
+        <item quantity="many">Recherche dans tout le livre… %d résultats pour l’instant</item>
+        <item quantity="other">Recherche dans tout le livre… %d résultats pour l’instant</item>
+    </plurals>
+    <!-- Absents des maquettes (formulés dans leur esprit, signalés à Maxime) ; 0 a sa chaîne : « one » couvre 0 en français. -->
+    <string name="search_status_done_none">Aucun résultat dans le livre</string>
+    <plurals name="search_status_done">
+        <item quantity="one">%d résultat dans le livre</item>
+        <item quantity="many">%d résultats dans le livre</item>
+        <item quantity="other">%d résultats dans le livre</item>
+    </plurals>
+
     <!-- ===================== Sommaire (1.12) ===================== -->
     <string name="toc_title">Sommaire</string>
     <string name="toc_chapters_group">Chapitres</string>

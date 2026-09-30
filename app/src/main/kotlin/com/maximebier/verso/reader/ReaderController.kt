@@ -30,6 +30,9 @@ interface ReaderController {
     /** Locator affiché enrichi du texte visible (extrait de 2 lignes de la carte Reprendre). */
     suspend fun excerptLocator(): Locator?
 
+    /** Marque le mot trouvé par la recherche à [locator] (fond et soulignement) ; null efface la marque. */
+    suspend fun showSearchMatch(locator: Locator?)
+
     /** Nouveaux réglages de lecture, appliqués sans recréer le lecteur ; le texte reste au même locator. */
     fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode)
 

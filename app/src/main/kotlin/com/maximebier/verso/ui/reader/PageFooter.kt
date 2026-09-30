@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.reader
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -31,13 +32,31 @@ object PageFooterMetrics {
     val gap: Dp = 16.dp
     /** Écart entre le chapitre et « Page 2 sur 9 » (maquette : 12 px). */
     val between: Dp = 12.dp
+
+    /**
+     * À partir de cette échelle de police Android, le chapitre passe sur toute la largeur (deux lignes au plus) et
+     * « Page 2 sur 9 » en dessous : sur une seule ligne, le chapitre serait coupé à 200 %.
+     */
+    const val STACKED_FONT_SCALE: Float = 1.5f
+
+    /** Lignes du chapitre quand le pied est empilé. */
+    const val STACKED_CHAPTER_LINES: Int = 2
 }
 
-/** Hauteur réservée sous le texte en mode pages : une ligne de légende (suit la taille de police) et ses marges. */
+/** Vrai quand le pied de page s'empile (voir [PageFooterMetrics.STACKED_FONT_SCALE]). */
 @Composable
-fun pageFooterReserve(): Dp = with(LocalDensity.current) {
-    VersoTheme.typography.caption.lineHeight.toDp()
-} + PageFooterMetrics.bottom + PageFooterMetrics.gap
+private fun footerIsStacked(): Boolean = LocalDensity.current.fontScale >= PageFooterMetrics.STACKED_FONT_SCALE
+
+/**
+ * Hauteur réservée sous le texte en mode pages : une ligne de légende (suit la taille de police) et ses marges ;
+ * trois lignes quand le pied s'empile (chapitre sur deux lignes, puis la page).
+ */
+@Composable
+fun pageFooterReserve(): Dp {
+    val lines = if (footerIsStacked()) PageFooterMetrics.STACKED_CHAPTER_LINES + 1 else 1
+    return with(LocalDensity.current) { VersoTheme.typography.caption.lineHeight.toDp() } * lines +
+        PageFooterMetrics.bottom + PageFooterMetrics.gap
+}
 
 /**
  * Pied de page discret du mode pages (2.05) : chapitre à gauche, « Page 2 sur 9 » à droite. Pour TalkBack, un seul
@@ -54,36 +73,47 @@ fun PageFooter(
     val colors = VersoTheme.colors
     val nextLabel = stringResource(R.string.reader_page_next)
     val previousLabel = stringResource(R.string.reader_page_previous)
-    Row(
-        modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
-            .padding(start = PageFooterMetrics.side, end = PageFooterMetrics.side, bottom = PageFooterMetrics.bottom)
-            .semantics(mergeDescendants = true) {
-                if (onTurn != null) {
-                    customActions = listOf(
-                        CustomAccessibilityAction(nextLabel) { onTurn(true); true },
-                        CustomAccessibilityAction(previousLabel) { onTurn(false); true },
-                    )
-                }
-            },
-        horizontalArrangement = Arrangement.spacedBy(PageFooterMetrics.between),
-    ) {
-        Text(
-            text = chapter.orEmpty(),
-            style = VersoTheme.typography.caption,
-            color = colors.textSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        if (pageInfo != null) {
+    val stacked = footerIsStacked()
+    val footerModifier = modifier
+        .fillMaxWidth()
+        .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+        .padding(start = PageFooterMetrics.side, end = PageFooterMetrics.side, bottom = PageFooterMetrics.bottom)
+        .semantics(mergeDescendants = true) {
+            // Sans chapitre ni page (avant la première mesure), pas de nœud TalkBack vide.
+            if (onTurn != null && (!chapter.isNullOrEmpty() || pageInfo != null)) {
+                customActions = listOf(
+                    CustomAccessibilityAction(nextLabel) { onTurn(true); true },
+                    CustomAccessibilityAction(previousLabel) { onTurn(false); true },
+                )
+            }
+        }
+    val pageText = pageInfo?.let { stringResource(R.string.reader_page_of, it.page, it.pageCount) }
+    if (stacked) {
+        Column(footerModifier) {
             Text(
-                text = stringResource(R.string.reader_page_of, pageInfo.page, pageInfo.pageCount),
+                text = chapter.orEmpty(),
+                style = VersoTheme.typography.caption,
+                color = colors.textSecondary,
+                maxLines = PageFooterMetrics.STACKED_CHAPTER_LINES,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (pageText != null) {
+                Text(text = pageText, style = VersoTheme.typography.caption, color = colors.textSecondary, maxLines = 1)
+            }
+        }
+    } else {
+        Row(footerModifier, horizontalArrangement = Arrangement.spacedBy(PageFooterMetrics.between)) {
+            Text(
+                text = chapter.orEmpty(),
                 style = VersoTheme.typography.caption,
                 color = colors.textSecondary,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
+            if (pageText != null) {
+                Text(text = pageText, style = VersoTheme.typography.caption, color = colors.textSecondary, maxLines = 1)
+            }
         }
     }
 }

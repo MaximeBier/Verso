@@ -13,6 +13,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +48,7 @@ class ReaderBarsTest {
         onBack: () -> Unit = {},
         onToc: () -> Unit = {},
         onJournal: () -> Unit = {},
+        onSearch: () -> Unit = {},
         onSettings: () -> Unit = {},
     ) {
         compose.setContent {
@@ -56,6 +59,7 @@ class ReaderBarsTest {
                     onBack = onBack,
                     onTocClick = onToc,
                     onJournalClick = onJournal,
+                    onSearchClick = onSearch,
                     onSettingsClick = onSettings,
                 )
             }
@@ -103,11 +107,15 @@ class ReaderBarsTest {
     }
 
     @Test
-    fun barShowsThreeToolsUntilSearchArrives() {
-        show(visible = true)
-        // Étape 11 : Sommaire, Journal, Réglages ; Rechercher s'ajoute à l'étape 15 (jamais de commande inactive).
-        compose.onAllNodes(hasClickAction() and hasText(context.getString(R.string.reader_settings))).assertCountEquals(1)
-        compose.onAllNodes(hasClickAction() and hasText("Rechercher")).assertCountEquals(0)
+    fun searchToolIsBetweenJournalAndSettings() {
+        var searched = 0
+        show(visible = true, onSearch = { searched++ })
+        val labels = compose.onAllNodes(hasClickAction()).fetchSemanticsNodes()
+            .mapNotNull { it.config.getOrNull(SemanticsProperties.Text)?.joinToString() }
+        assertThat(labels.filter { it in setOf("Sommaire", "Journal", "Rechercher", "Réglages") })
+            .containsExactly("Sommaire", "Journal", "Rechercher", "Réglages").inOrder()
+        compose.onNodeWithText("Rechercher").performClick()
+        assertThat(searched).isEqualTo(1)
     }
 
     @Test

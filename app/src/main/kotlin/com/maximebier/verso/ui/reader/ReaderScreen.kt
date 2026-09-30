@@ -29,6 +29,7 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
+import com.maximebier.verso.ui.reader.search.SearchScreen
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
@@ -42,6 +43,7 @@ fun ReaderDestination(bookId: Long, onBack: () -> Unit, onOpenFailed: () -> Unit
 fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpenFailed: () -> Unit = onBackToLibrary) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val journal by viewModel.journal.collectAsStateWithLifecycle()
+    val search by viewModel.search.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val activity = LocalActivity.current
     var bottomBarHeightPx by remember { mutableIntStateOf(0) }
@@ -64,6 +66,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     ImmersiveSystemBars(showSystemBars = state.barsVisible)
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
     BackHandler(enabled = state.settingsVisible) { viewModel.hideReadingSettings() }
+    BackHandler(enabled = state.searchVisible) { viewModel.hideSearch() }
     if (state.failed) {
         LaunchedEffect(Unit) { onOpenFailed() }
     }
@@ -111,6 +114,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             onTocClick = viewModel::showToc,
             // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas.
             onJournalClick = viewModel::showJournal,
+            onSearchClick = viewModel::showSearch,
             onBottomBarHeightChanged = { bottomBarHeightPx = it },
         )
         state.returnCard?.let { card ->
@@ -129,6 +133,15 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                     .align(Alignment.BottomCenter)
                     .then(placement)
                     .padding(horizontal = 16.dp),
+            )
+        }
+        if (state.searchVisible) {
+            SearchScreen(
+                state = search,
+                onQueryChange = viewModel::onSearchQueryChange,
+                onClear = viewModel::clearSearch,
+                onClose = viewModel::hideSearch,
+                onResultClick = viewModel::openSearchResult,
             )
         }
     }
