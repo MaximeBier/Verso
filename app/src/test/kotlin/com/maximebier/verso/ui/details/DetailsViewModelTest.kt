@@ -12,6 +12,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
@@ -19,7 +20,9 @@ import com.maximebier.verso.data.db.VersoDatabase
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -219,6 +222,22 @@ class DetailsViewModelTest {
         books.saveReadingPosition(id, """{"href":"ch1.xhtml","type":"application/xhtml+xml"}""", 0.4)
         advanceUntilIdle()
         assertThat(vm.state.value.status).isEqualTo(BookStatus.FINISHED)
+    }
+
+    @Test
+    fun statsAreShownWithMeasuredRemainingTimeAndHiddenWhenSwitchedOff() = runTest(dispatcher) {
+        val id = insertBovary()
+        val stats = ReadingStats(totalActiveMs = 148 * 60_000L, sessionCount = 5, wordsPerMinute = 240)
+        val shown = MutableStateFlow(true)
+        val vm = DetailsViewModel(bookId = id, books = books, saveScope = this, statsOf = { flowOf(stats) }, showStatistics = shown)
+        advanceUntilIdle()
+        assertThat(vm.state.value.stats).isEqualTo(stats)
+        assertThat(vm.state.value.remainingMinutes).isEqualTo(remainingMinutes(150_000, 0.0, 240))
+
+        shown.value = false
+        advanceUntilIdle()
+        assertThat(vm.state.value.stats).isNull()
+        assertThat(vm.state.value.remainingMinutes).isEqualTo(remainingMinutes(150_000, 0.0, 240))
     }
 
     @Test

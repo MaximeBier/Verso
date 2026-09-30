@@ -55,4 +55,10 @@ class StringsTest {
         assertThat(context.getString(R.string.library_open_failed, "Album"))
             .isEqualTo("Impossible d’ouvrir « Album ».")
     }
+
+    @Test
+    fun readingHelpUsesNarrowNoBreakSpacesAroundTheGlyphInsideGuillemets() {
+        assertThat(context.getString(R.string.settings_reading_help))
+            .isEqualTo("Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.")
+    }
 }

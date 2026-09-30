@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.core.stats.readingStats
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.status
@@ -16,9 +18,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -43,6 +48,8 @@ data class DetailsUiState(
     val originalFileName: String = "",
     val showDeleteDialog: Boolean = false,
     val deleted: Boolean = false,
+    /** Section « Statistiques » (2.08) ; null = section masquée (interrupteur désactivé). */
+    val stats: ReadingStats? = null,
 )
 
 /**
@@ -54,6 +61,8 @@ class DetailsViewModel(
     private val books: BookRepository,
     private val saveScope: CoroutineScope,
     private val debounceMs: Long = AUTOSAVE_DEBOUNCE_MS,
+    private val statsOf: (Long) -> Flow<ReadingStats> = { flowOf(readingStats(emptyList())) },
+    private val showStatistics: Flow<Boolean> = flowOf(true),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DetailsUiState(bookId = bookId))
@@ -68,32 +77,34 @@ class DetailsViewModel(
 
     init {
         viewModelScope.launch {
-            books.observeBook(bookId).collect { book ->
-                if (book == null) {
-                    _state.update { it.copy(loaded = true, missing = true) }
-                } else {
-                    _state.update { current ->
-                        current.copy(
-                            loaded = true,
-                            missing = false,
-                            // Champs initialisés une seule fois : une réémission n'écrase pas la frappe en cours.
-                            titleField = if (current.loaded) current.titleField else book.title,
-                            authorField = if (current.loaded) current.authorField else book.author,
-                            savedTitle = book.title,
-                            savedAuthor = book.author,
-                            colorSeed = book.sha256,
-                            coverPath = book.coverPath,
-                            percent = percentOf(book.progression),
-                            status = book.status(),
-                            hasStarted = book.readingLocatorJson != null,
-                            remainingMinutes = remainingMinutes(book.totalWords, book.progression),
-                            importedAt = book.importedAt,
-                            sizeBytes = book.sizeBytes,
-                            originalFileName = book.originalFileName,
-                        )
+            combine(books.observeBook(bookId), statsOf(bookId), showStatistics) { book, stats, shown -> Triple(book, stats, shown) }
+                .collect { (book, stats, shown) ->
+                    if (book == null) {
+                        _state.update { it.copy(loaded = true, missing = true) }
+                    } else {
+                        _state.update { current ->
+                            current.copy(
+                                loaded = true,
+                                missing = false,
+                                // Champs initialisés une seule fois : une réémission n'écrase pas la frappe en cours.
+                                titleField = if (current.loaded) current.titleField else book.title,
+                                authorField = if (current.loaded) current.authorField else book.author,
+                                savedTitle = book.title,
+                                savedAuthor = book.author,
+                                colorSeed = book.sha256,
+                                coverPath = book.coverPath,
+                                percent = percentOf(book.progression),
+                                status = book.status(),
+                                hasStarted = book.readingLocatorJson != null,
+                                remainingMinutes = remainingMinutes(book.totalWords, book.progression, stats.effectiveWordsPerMinute),
+                                importedAt = book.importedAt,
+                                sizeBytes = book.sizeBytes,
+                                originalFileName = book.originalFileName,
+                                stats = stats.takeIf { shown },
+                            )
+                        }
                     }
                 }
-            }
         }
     }
 
@@ -190,6 +201,8 @@ class DetailsViewModel(
                     bookId = bookId,
                     books = app.container.books,
                     saveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                    statsOf = app.container.sessions::observeStats,
+                    showStatistics = app.container.settings.showStatistics,
                 )
             }
         }

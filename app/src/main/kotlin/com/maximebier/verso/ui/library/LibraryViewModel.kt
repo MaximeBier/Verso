@@ -8,6 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.core.stats.readingStats
+import com.maximebier.verso.core.text.DEFAULT_WORDS_PER_MINUTE
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.LibrarySort
@@ -24,12 +27,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -114,6 +119,8 @@ class LibraryViewModel(
     private val takeOpenFailure: () -> String? = { null },
     /** Requêtes aux fournisseurs de fichiers (nom affiché d’un fichier refusé). */
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    /** Statistiques d'un livre (vitesse mesurée du temps restant de la carte « Reprendre »). */
+    private val statsOf: (Long) -> Flow<ReadingStats> = { flowOf(readingStats(emptyList())) },
 ) : ViewModel() {
 
     private data class Transient(
@@ -134,7 +141,9 @@ class LibraryViewModel(
     val state: StateFlow<LibraryUiState> = combine(
         settings.librarySort.flatMapLatest { sort -> books.observeBooks(sort).map { list -> sort to list } },
         settings.libraryViewMode,
-        books.observeLastOpened(),
+        books.observeLastOpened().flatMapLatest { entity ->
+            if (entity == null) flowOf(null) else statsOf(entity.id).map { stats -> entity to stats }
+        },
         transient,
     ) { (sort, list), viewMode, lastOpened, t ->
         LibraryUiState(
@@ -143,7 +152,7 @@ class LibraryViewModel(
             sort = sort,
             viewMode = viewMode,
             filter = t.filter,
-            resume = lastOpened?.let(::resumeInfoOf),
+            resume = lastOpened?.let { (entity, stats) -> resumeInfoOf(entity, stats.effectiveWordsPerMinute) },
             importing = t.importing,
             dialog = t.dialog,
             snackbar = t.snackbar,
@@ -288,6 +297,7 @@ class LibraryViewModel(
                     takeIncoming = IncomingImports::take,
                     openFailures = OpenFailures.pending,
                     takeOpenFailure = OpenFailures::take,
+                    statsOf = container.sessions::observeStats,
                 )
             }
         }
@@ -310,7 +320,7 @@ private fun toLibraryBook(entity: BookEntity) = LibraryBook(
  * est le texte visible enregistré avec la position (`Locators.excerptOf` : `highlight`, sinon `after`, là où le
  * moteur le range).
  */
-internal fun resumeInfoOf(entity: BookEntity): ResumeInfo {
+internal fun resumeInfoOf(entity: BookEntity, wordsPerMinute: Int = DEFAULT_WORDS_PER_MINUTE): ResumeInfo {
     val locator = entity.readingLocatorJson?.let { json ->
         try {
             Locator.fromJSON(JSONObject(json))
@@ -322,6 +332,6 @@ internal fun resumeInfoOf(entity: BookEntity): ResumeInfo {
         book = toLibraryBook(entity),
         chapter = locator?.title?.trim()?.takeIf { it.isNotEmpty() },
         excerpt = locator?.let(Locators::excerptOf)?.let(::excerptOf)?.takeIf { it.isNotEmpty() },
-        remainingMinutes = remainingMinutes(entity.totalWords, entity.progression),
+        remainingMinutes = remainingMinutes(entity.totalWords, entity.progression, wordsPerMinute),
     )
 }

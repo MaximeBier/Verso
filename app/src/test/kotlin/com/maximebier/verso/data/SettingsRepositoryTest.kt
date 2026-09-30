@@ -128,4 +128,13 @@ class SettingsRepositoryTest {
         store.edit { it[stringPreferencesKey("dark_theme_variant")] = "PURPLE" }
         assertThat(settings.darkThemeVariant.first()).isEqualTo(DarkThemeVariant.DARK)
     }
+
+    @Test
+    fun statisticsAreShownByDefaultAndCanBeHidden() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "stats.preferences_pb") })
+        val settings = SettingsRepository(store)
+        assertThat(settings.showStatistics.first()).isTrue()
+        settings.setShowStatistics(false)
+        assertThat(settings.showStatistics.first()).isFalse()
+    }
 }

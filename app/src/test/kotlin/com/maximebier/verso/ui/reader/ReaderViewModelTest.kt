@@ -18,12 +18,14 @@ import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.core.text.TocProgress
 import com.maximebier.verso.core.text.preorder
+import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.data.db.BookEntity
+import com.maximebier.verso.data.testSession
 import com.maximebier.verso.data.db.VersoDatabase
 import com.maximebier.verso.importer.EpubFixtures
 import com.maximebier.verso.reader.FakeReaderController
@@ -845,6 +847,33 @@ class ReaderViewModelTest {
         return viewModel.uiState.value.returnCard == null
     }
 
+    @Test
+    fun remainingTimeUsesTheMeasuredSpeed() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.40, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        SessionRepository(db.sessionDao()).upsert(testSession(id, startedAt = 0).copy(activeMs = 10 * 60_000, wordsRead = 1_000))
+
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading && it.wordsPerMinute == 100 }
+        viewModel.onReaderReady(FakeReaderController(start))
+        runCurrent()
+        val expected = remainingMinutes(totalWords = 100_000, progression = 0.30, wordsPerMinute = 100)
+        assertThat(viewModel.uiState.first { it.remainingMinutes == expected }.remainingMinutes).isEqualTo(expected)
+        store.clear()
+    }
+
+    @Test
+    fun openingFromTheDetailsJournalShowsTheJournal() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id, openJournal = true))[ReaderViewModel::class]
+        assertThat(viewModel.uiState.first { !it.loading && it.journalVisible }.journalVisible).isTrue()
+        store.clear()
+    }
+
     /** Ouvre un livre de défilement [bookMode] (`books.scrollMode`) avec [defaultMode] dans les Paramètres ; mode soumis au lecteur. */
     private suspend fun TestScope.openedScrollMode(defaultMode: ScrollMode, bookMode: String): ScrollMode {
         testSettings().updateReadingSettings { it.copy(defaultScrollMode = defaultMode) }
@@ -866,6 +895,7 @@ class ReaderViewModelTest {
         bookId: Long,
         open: suspend (File) -> Result<Publication> = { Result.success(testPublication()) },
         clock: () -> Long = { testScheduler.currentTime },
+        openJournal: Boolean = false,
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -877,6 +907,7 @@ class ReaderViewModelTest {
                 locationTexts = ApplicationProvider.getApplicationContext<Context>().resources.locationTexts(),
                 reportOpenFailure = { title -> openFailures += title },
                 settings = testSettings(),
+                openJournalOnLoad = openJournal,
             ).also { viewModels += it }
         }
     }

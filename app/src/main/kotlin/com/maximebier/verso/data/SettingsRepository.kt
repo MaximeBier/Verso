@@ -99,6 +99,13 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     private inline fun <reified E : Enum<E>> enumOrDefault(stored: String?, default: E): E =
         stored?.let { value -> enumValues<E>().firstOrNull { it.name == value } } ?: default
 
+    /** Défaut : true. Le journal est toujours tenu ; seul l'affichage des statistiques se désactive. */
+    val showStatistics: Flow<Boolean> = preferences.map { it[SHOW_STATISTICS] ?: true }
+
+    suspend fun setShowStatistics(value: Boolean) {
+        save { it[SHOW_STATISTICS] = value }
+    }
+
     /** Écriture ratée (disque plein) : journalisée, le réglage garde sa valeur précédente ; jamais de plantage. */
     private suspend fun save(change: (MutablePreferences) -> Unit) {
         try {
@@ -122,6 +129,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val READING_LINE_SPACING = stringPreferencesKey("reading_line_spacing")
         val READING_MARGINS = stringPreferencesKey("reading_margins")
         val DEFAULT_SCROLL_MODE = stringPreferencesKey("default_scroll_mode")
+        val SHOW_STATISTICS = booleanPreferencesKey("show_statistics")
         const val TAG = "SettingsRepository"
     }
 }

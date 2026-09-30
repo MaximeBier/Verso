@@ -54,6 +54,9 @@ fun VersoNavHost(
                 bookId = route.bookId,
                 onBack = { if (entry.resumed()) navController.popBackStack() },
                 onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
+                onOpenJournal = { bookId ->
+                    if (entry.resumed()) navController.navigate(ReaderRoute(bookId, openJournal = true)) { launchSingleTop = true }
+                },
             )
         }
         composable<ReaderRoute> { entry ->
@@ -63,6 +66,7 @@ fun VersoNavHost(
                 onBack = { if (entry.resumed()) navController.popBackStack() },
                 // Échec d’ouverture : toujours la bibliothèque, qui affiche le message (même ouvert depuis la fiche).
                 onOpenFailed = { navController.popBackStack<LibraryRoute>(inclusive = false) },
+                openJournal = route.openJournal,
             )
         }
         composable<SettingsRoute> { entry ->

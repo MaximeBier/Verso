@@ -1,14 +1,23 @@
 package com.maximebier.verso.data
 
 import com.maximebier.verso.core.journal.SessionThresholds
+import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.core.stats.SessionStat
+import com.maximebier.verso.core.stats.readingStats
 import com.maximebier.verso.data.db.SessionDao
 import com.maximebier.verso.data.db.SessionEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class SessionRepository(private val dao: SessionDao) {
 
     /** Plus récentes d'abord. */
     fun observeSessions(bookId: Long): Flow<List<SessionEntity>> = dao.observeForBook(bookId)
+
+    /** Statistiques du livre, recalculées à chaque session écrite. */
+    fun observeStats(bookId: Long): Flow<ReadingStats> = dao.observeForBook(bookId).map { list ->
+        readingStats(list.map { SessionStat(activeMs = it.activeMs, wordsRead = it.wordsRead) })
+    }
 
     /** Renvoie l'id de la session (nouvel id à la première insertion, id inchangé ensuite). */
     suspend fun upsert(session: SessionEntity): Long {

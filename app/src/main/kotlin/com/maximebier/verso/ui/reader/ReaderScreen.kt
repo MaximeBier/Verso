@@ -33,8 +33,8 @@ import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
 @Composable
-fun ReaderDestination(bookId: Long, onBack: () -> Unit, onOpenFailed: () -> Unit = onBack) {
-    val viewModel: ReaderViewModel = viewModel(key = "reader-$bookId", factory = ReaderViewModel.factory(bookId))
+fun ReaderDestination(bookId: Long, onBack: () -> Unit, onOpenFailed: () -> Unit = onBack, openJournal: Boolean = false) {
+    val viewModel: ReaderViewModel = viewModel(key = "reader-$bookId", factory = ReaderViewModel.factory(bookId, openJournal))
     ReaderScreen(viewModel = viewModel, onBackToLibrary = onBack, onOpenFailed = onOpenFailed)
 }
 

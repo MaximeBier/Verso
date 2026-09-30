@@ -35,9 +35,15 @@ fun VersoIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = VersoTheme.colors.text,
+    enabled: Boolean = true,
 ) {
-    IconButton(onClick = onClick, modifier = modifier.size(VersoDimens.controlMin)) {
-        Icon(imageVector = icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(VersoDimens.icon))
+    IconButton(onClick = onClick, modifier = modifier.size(VersoDimens.controlMin), enabled = enabled) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (enabled) tint else VersoTheme.colors.outline,
+            modifier = Modifier.size(VersoDimens.icon),
+        )
     }
 }
 
