@@ -427,11 +427,13 @@ class ReadingPositionTracker(
     }
 
     /**
-     * Ajoute l'échantillon à la fenêtre glissante et renvoie l'instant du plus ancien échantillon situé à plus de
+     * Ajoute l’échantillon à la fenêtre glissante et renvoie l’instant du plus ancien échantillon situé à plus de
      * [ReadingThresholds.navigationWindowScreens] de la position actuelle (début de la navigation), ou null.
+     * Le dernier échantillon d’avant la fenêtre reste : c’est la position affichée à son début (une page lue
+     * 30 s avant de feuilleter), sans quoi le premier mouvement ne compterait pas.
      */
     private fun recordSample(timeMs: Long, position: BookPosition): Long? {
-        while (samples.isNotEmpty() && samples.first().timeMs < timeMs - thresholds.navigationWindowMs) {
+        while (samples.size > 1 && samples[1].timeMs < timeMs - thresholds.navigationWindowMs) {
             samples.removeFirst()
         }
         samples.addLast(Stamped(timeMs, position))

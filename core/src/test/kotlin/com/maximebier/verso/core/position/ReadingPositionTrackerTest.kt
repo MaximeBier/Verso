@@ -741,6 +741,30 @@ class ReadingPositionTrackerTest {
     }
 
     @Test
+    fun afterALongRestFourFastPagesAreANavigationBackToTheRestingPage() {
+        val tracker = tracker(ReadingThresholds.forPages())
+        // Page 10 lue 30 s, puis quatre pages en deux secondes : le déplacement se compte depuis la page affichée au
+        // début de la fenêtre (la page de repos), pas depuis le premier tour, qui n’est pas de la lecture.
+        (1..4).forEach { i -> tracker.feed(*pageTurn(atMs = 30_000L + 500L * i, page = 10.0 + i)) }
+        tracker.onEvent(Tick(34_000))
+
+        assertThat(tracker.state.reading).isEqualTo(pos(10.0))
+        assertThat(tracker.state.showReturnCard).isTrue()
+        assertThat(tracker.onEvent(GoBack(35_000))).containsExactly(ScrollTo(pos(10.0)))
+        assertThat(tracker.state).isEqualTo(following(10.0))
+    }
+
+    @Test
+    fun afterALongRestThreePagesInAFewSecondsAreStillReading() {
+        val tracker = tracker(ReadingThresholds.forPages())
+        // Trois écrans en moins de 5 s ne dépassent pas navigationWindowScreens : c’est encore de la lecture.
+        (1..3).forEach { i -> tracker.feed(*pageTurn(atMs = 30_000L + 1_500L * i, page = 10.0 + i)) }
+        tracker.onEvent(Tick(40_000))
+
+        assertThat(tracker.state).isEqualTo(following(13.0))
+    }
+
+    @Test
     fun inPagesModeTwoPagesReadAtTheNewPlaceConfirmIt() {
         val tracker = tracker()
         tracker.updateThresholds(ReadingThresholds.forPages())
