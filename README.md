@@ -10,19 +10,23 @@
 Verso est un lecteur d’EPUB pour Android, minimaliste et entièrement hors ligne. Il distingue la position que vous **lisez** de celle que vous **regardez** : un scroll accidentel ne fait jamais perdre votre page.
 
 <p align="center">
-  <img src="docs/readme/bibliotheque.png" alt="Bibliothèque avec la carte Reprendre" width="200">
+  <img src="docs/readme/bibliotheque.png" alt="Bibliothèque avec états et carte Reprendre" width="200">
   <img src="docs/readme/lecture.png" alt="Lecture avec la barre affichée" width="200">
+  <img src="docs/readme/reglages-de-lecture.png" alt="Réglages de lecture en direct" width="200">
+  <img src="docs/readme/mode-pages.png" alt="Mode pages" width="200">
+  <img src="docs/readme/recherche.png" alt="Recherche dans le livre" width="200">
   <img src="docs/readme/carte-revenir.png" alt="Carte Revenir après un scroll accidentel" width="200">
-  <img src="docs/readme/journal.png" alt="Journal de lecture" width="200">
 </p>
 
-## Ce que fait la V1
+## Ce que fait Verso
 
 - **Import sans friction** : sélecteur de fichiers Android (téléphone, Drive, Nextcloud) ou « Ouvrir avec Verso » depuis n’importe quelle application ; doublons détectés par empreinte SHA-256, fichiers non EPUB et DRM refusés proprement.
-- **Bibliothèque** en liste ou en grille, triée par récents, titre ou auteur, avec une carte « Reprendre » qui montre l’extrait où vous vous êtes arrêté et le temps restant.
-- **Lecture en scroll continu**, réglée d’après la recherche sur le confort de lecture : Atkinson Hyperlegible Next 19 sp, interligne 1,6, aligné à gauche sans césure, thème clair ou sombre selon le téléphone.
+- **Bibliothèque** en liste ou en grille, triée par récents, titre ou auteur, filtrée par état, avec une carte « Reprendre » qui montre l’extrait où vous vous êtes arrêté et le temps restant.
+- **Lecture confortable**, réglée d’après la recherche : Literata par défaut (Atkinson Hyperlegible Next ou la police du téléphone au choix, dans toute l’app), taille, interligne et marges réglables en direct, aligné à gauche sans césure, thèmes Clair, Sépia, Sombre et Nuit, en scroll continu ou en pages, mémorisé par livre.
 - **Une progression qui ne se perd pas** : un fling, un grand saut ou un passage par le sommaire ne déplacent pas la position de lecture ; une carte « Revenir » vous y ramène en un tap.
 - **Journal de lecture** : chaque session avec ses heures, sa durée, le passage lu et « Reprendre ici ».
+- **États et statistiques** : livres à lire, en cours ou terminés, filtres et tri ; temps de lecture, vitesse moyenne et temps restant à votre rythme.
+- **Recherche plein texte** : résultats au fil de la recherche, groupés par chapitre, mot marqué par un fond, du gras et un soulignement, carte « Revenir » après le saut.
 - **Accessible** : contraste d’au moins 7:1, commandes de 48 dp, texte à 200 % sans coupure, intitulés TalkBack.
 - **Privé** : aucune permission, pas d’Internet, pas d’analytics. Rien ne quitte le téléphone.
 
@@ -32,12 +36,12 @@ Kotlin 2.4 · Jetpack Compose (Material 3) · Navigation Compose · Readium Kotl
 
 ## Architecture
 
-- `:core`, Kotlin pur sans Android : la machine à états « lecture ou navigation » et la carte « Revenir », le suivi des sessions, les calculs (temps restant, libellés), testés en JUnit.
+- `:core`, Kotlin pur sans Android : la machine à états « lecture ou navigation » et la carte « Revenir », le suivi des sessions, les réglages de lecture, l’état d’un livre, les statistiques, les extraits de recherche et les calculs (temps restant, libellés, pages), testés en JUnit.
 - `:app`, une seule activité Compose, MVVM, injection manuelle par `AppContainer`.
 - Readium ouvre et affiche les EPUB derrière l’interface `ReaderController`, qui isole le moteur du reste de l’app.
 - La position est un *locator* Readium (chapitre, progression, extrait), jamais des pixels : elle survit à un changement de taille de texte.
 - Room garde livres, positions et sessions ; DataStore les préférences ; tous les seuils sont des constantes nommées.
-- 544 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le suivi des sessions et les écrans clés, en clair comme en sombre.
+- 890 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le suivi des sessions, la recherche et les écrans clés, dans les cinq thèmes et à 200 %.
 
 La spécification complète, avec les décisions et les critères d’acceptation, est dans [`docs/SPEC.md`](docs/SPEC.md).
 
@@ -56,4 +60,4 @@ echo "sdk.dir=/chemin/vers/Android/Sdk" > local.properties
 
 ## Licence
 
-Code sous licence [Apache 2.0](LICENSE). Readium est sous licence BSD à 3 clauses, la police Atkinson Hyperlegible Next sous SIL Open Font License 1.1 ; la liste complète est dans l’écran « Licences open source » de l’application.
+Code sous licence [Apache 2.0](LICENSE). Readium est sous licence BSD à 3 clauses, les polices Literata et Atkinson Hyperlegible Next sous SIL Open Font License 1.1 ; la liste complète est dans l’écran « Licences open source » de l’application.
