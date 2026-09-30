@@ -8,7 +8,7 @@ Verso est un lecteur d'ebook Android minimaliste dont la promesse tient en une p
 
 Utilisateur cible : moi, lecteur de romans et de livres du domaine public sur mon téléphone. Pas de public externe en V1 ; le code est publié sur GitHub comme pièce de portfolio.
 
-Ce que l'app n'est pas : ni un lecteur de PDF fidèle, ni un outil d'annotation pour articles universitaires, ni une librairie en ligne. Le PDF arrive plus tard, converti en texte, et reste secondaire.
+Ce que l'app n'est pas : ni un lecteur de PDF fidèle, ni un outil d'annotation pour articles universitaires, ni une librairie en ligne. Le PDF viendra peut-être un jour, converti en texte, et reste secondaire (voir « Plus tard »).
 
 Différenciation visée par rapport aux lecteurs existants (Apple Books, Google Play Livres, Moon+ Reader) :
 
@@ -41,7 +41,7 @@ Différenciation visée par rapport aux lecteurs existants (Apple Books, Google 
 | Ouverture au lancement | Rouvre le dernier livre s'il a été lu il y a moins de 24 h, **activé par défaut** | Confirmé le 2026-09-25 : on retombe dans sa lecture. Réglable dans les Paramètres |
 | Logo | V formé de deux pages, variante Papier | Voir « Logo et icône » |
 | Distribution | APK installé à la main, code sur GitHub | Usage perso, pas de contrainte Play Store |
-| PDF | Repoussé en V3, converti en texte, marqué expérimental | Aucun PDF concret à lire aujourd'hui ; le nettoyage du texte coûterait autant que toute la V1 |
+| PDF | Sorti de la V3 le 2026-09-30, gardé pour une version indéterminée (voir « Plus tard ») | Aucun PDF concret à lire aujourd'hui, et les livres visés existent légalement en EPUB ; le nettoyage du texte coûterait autant que toute la V1 |
 | Collections | Ajoutées en V4 | Regrouper une série (ex. Les Rougon-Macquart) avec une progression d'ensemble |
 
 ## V1 — Fonctionnalités
@@ -179,7 +179,7 @@ Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domai
 
 ## V2, V3 et V4
 
-La V2 rend la lecture confortable pour moi ; la V3 ouvre aux formats et aux usages secondaires ; la V4 organise la bibliothèque. Rien ici ne doit être codé avant que la V1 passe tous ses critères.
+La V2 rend la lecture confortable pour moi ; la V3 ouvre aux formats texte et aux usages secondaires ; la V4 organise la bibliothèque. Rien ici ne doit être codé avant que la V1 passe tous ses critères.
 
 ### V2 — Confort de lecture
 
@@ -237,10 +237,6 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 
 ### V3 — Formats et extras
 
-- **Import PDF converti en texte** : extraction du texte, reconstitution des paragraphes, suppression des numéros de page et en-têtes courants, recollage des césures.
-  - Après l'import : fenêtre « PDF converti en texte », badge « Expérimental », boutons « Fermer » et « Commencer ».
-  - En lecture : bandeau « Texte extrait d'un PDF · expérimental » avec le bouton « Pages fidèles ».
-  - Mode « pages fidèles » de repli : page rendue telle quelle, boutons « Précédente » / « Suivante », « 3 / 64 », bouton « Texte » pour revenir au texte extrait.
 - **TXT, Markdown et HTML** : conversion triviale en EPUB à l'import.
 - **Surlignages et notes** :
   - la sélection de texte ouvre une barre en bas : « Surligner », « Note », « Copier » ;
@@ -296,7 +292,7 @@ Pour lire les maquettes : 1 px = 1 dp, les tailles de texte en px sont des sp, l
 | 2.06 | Recherche dans le livre | V2 |
 | 2.07 / 2.07b | Bibliothèque avec états / Trier et afficher | V2 |
 | 2.08 / 2.09 | Détails du livre (états, statistiques) / Paramètres | V2 |
-| 3.01 – 3.03 | PDF importé / Lecture d'un PDF converti / Pages fidèles | V3 |
+| 3.01 – 3.03 | PDF importé / Lecture d'un PDF converti / Pages fidèles | Plus tard (numérotées V3 dans les maquettes) |
 | 3.04 – 3.06 | Texte sélectionné / Ajouter une note / Notes et surlignages | V3 |
 | 3.07 | Sauvegarde | V3 |
 | 4.01 – 4.04 | Collections / Une collection / Nouvelle collection / Ajouter à une collection | V4 |
@@ -350,7 +346,7 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 
 | Action | Mot | Où |
 | --- | --- | --- |
-| Ouvrir un livre jamais lu | **Commencer** | Snackbar d'import, fiche d'un livre à 0 %, PDF converti |
+| Ouvrir un livre jamais lu | **Commencer** | Snackbar d'import, fiche d'un livre à 0 %, PDF converti (plus tard) |
 | Continuer un livre entamé | **Reprendre** | Carte Reprendre, fiche, collection |
 | Revenir à la position de lecture après un saut | **Revenir** | Carte de retour |
 | Faire de l'endroit affiché la position de lecture | **Rester ici** | Carte de retour |
@@ -538,6 +534,19 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - Ne rien coder de la V2 à la V4 avant la fin de l'étape 7. Le modèle de données et les réglages de lecture doivent seulement ne pas l'empêcher.
 - Toute décision qui modifie la spec est reportée dans ce fichier dans le même commit, avec une ligne dans « Historique ».
 
+## Plus tard (version indéterminée)
+
+Idées gardées de côté, sans version prévue. Les coder demande une décision explicite.
+
+### Import PDF converti en texte
+
+Sorti de la V3 le 2026-09-30 : les livres que je lis existent légalement en EPUB, la lecture de PDF ne sert presque pas. Maquettes 3.01 à 3.03, numérotées V3 dans l'export, qui n'est pas refait.
+
+- Extraction du texte, reconstitution des paragraphes, suppression des numéros de page et en-têtes courants, recollage des césures. Marqué expérimental.
+- Après l'import : fenêtre « PDF converti en texte », badge « Expérimental », boutons « Fermer » et « Commencer ».
+- En lecture : bandeau « Texte extrait d'un PDF · expérimental » avec le bouton « Pages fidèles ».
+- Mode « pages fidèles » de repli : page rendue telle quelle, boutons « Précédente » / « Suivante », « 3 / 64 », bouton « Texte » pour revenir au texte extrait.
+
 ## Historique
 
 - 2026-09-20 : première version (V1 à V3).
@@ -576,3 +585,4 @@ Tout se fait sur `master`, avec un commit par étape, poussé sur GitHub et inst
 - 2026-09-30 (étape 14) : vitesse mesurée utilisée pour tous les temps restants, même statistiques masquées ; « Voir le journal de lecture » ouvre le livre avec le journal ; section « Statistiques » absente sans session, vitesse et temps restant absents sans vitesse mesurée (moins d’une minute de lecture active) ; Paramètres : « Affichage » remplacé par la section Lecture (thème, taille et défilement par dialogues). « Thème sombre : Sombre / Nuit » (maquettes du 2026-09-29) passe dans la section Lecture, sous « Thème », la maquette 2.09 étant antérieure à ce réglage. Vérifié sur le téléphone (`build/acceptance/20260930/`) : critères V2 11 à 16.
 - 2026-09-30 (étape 15) : recherche par le service de Readium (casse et accents ignorés, deux caractères au moins) ; statuts de fin « N résultats dans le livre » et « Aucun résultat dans le livre » (absents des maquettes) ; le mot trouvé est marqué dans le texte jusqu’au geste suivant ; la recherche rouverte garde sa requête. Sur le téléphone, le fond de la marque n’apparaissait pas : ReadiumCSS rend transparent le `background-color` de tout élément du texte dès qu’une couleur de fond est choisie (`--USER__backgroundColor`), décorations comprises ; le fond est posé par une ombre intérieure (`box-shadow: inset`), fondue comme avant (`darken` / `lighten`), texte inchangé. Relectures : pied de page du mode pages empilé à 200 % (le chapitre était coupé), écran de recherche qui ne laisse plus passer les touchers au texte dessous. Critères V2 6, 17 et 18 vérifiés.
 - 2026-09-30 (étape 16) : passe d’acceptation V2 ; README mis à jour (captures en Clair et Literata, sans barre d’état). Critère 10 : la fenêtre glissante « plus de 3 écrans en moins de 5 s » mesure désormais le déplacement depuis la position affichée au début de la fenêtre (le dernier échantillon d’avant la fenêtre est gardé) ; avant, une page lue plus de 5 s sortait de la fenêtre au premier tour, et quatre pages feuilletées vite restaient de la lecture. Critères 2, 12 et 13 vérifiés après un arrêt forcé puis confirmés par Maxime après un redémarrage complet ; critère 19 vérifié par `AccessibilityTreeTest` à 200 % puis confirmé par Maxime sur le téléphone (texte Android à 200 % et TalkBack). Écart accepté : « Thème sombre » placé sous « Thème » dans la section Lecture (2.09 date d’avant ce réglage).
+- 2026-09-30 : l'import PDF sort de la V3 et passe dans « Plus tard » (version indéterminée) : les livres visés existent légalement en EPUB. La V3 garde TXT, Markdown et HTML, les surlignages et notes, la sauvegarde et la restauration. Les maquettes 3.01 à 3.03 ne sont pas réexportées.
