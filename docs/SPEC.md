@@ -179,7 +179,7 @@ Chaque critère se vérifie à la main sur le téléphone, avec un EPUB du domai
 
 ## V2, V3 et V4
 
-La V2 rend la lecture confortable pour moi ; la V3 ouvre aux formats texte et aux usages secondaires ; la V4 organise la bibliothèque. Rien ici ne doit être codé avant que la V1 passe tous ses critères.
+La V2 rend la lecture confortable pour moi ; la V3 ajoute les notes et la sauvegarde ; la V4 organise la bibliothèque. Rien ici ne doit être codé avant que la V1 passe tous ses critères.
 
 ### V2 — Confort de lecture
 
@@ -235,9 +235,10 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 - [x] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé, et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
 - [x] Toujours aucune permission réseau ni autre permission.
 
-### V3 — Formats et extras
+### V3 — Notes et sauvegarde
 
-- **TXT, Markdown et HTML** : conversion triviale en EPUB à l'import.
+Verso ne lit que des EPUB : le PDF, le TXT, le Markdown et le HTML sont dans « Plus tard » (décidé le 2026-09-30).
+
 - **Surlignages et notes** :
   - la sélection de texte ouvre une barre en bas : « Surligner », « Note », « Copier » ;
   - « Note » ouvre une feuille avec le passage et un champ « Votre note » ;
@@ -246,6 +247,37 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 - **Sauvegarde et restauration** : un fichier unique (livres, positions, notes, journal, réglages), premier pas vers une synchro entre appareils.
   - L'écran affiche la dernière sauvegarde (date, taille, nom du fichier) et deux boutons : « Créer une sauvegarde » et « Restaurer une sauvegarde ».
   - Avertissement : la restauration remplace la bibliothèque actuelle, avec confirmation.
+
+#### Décisions de la V3 (prises le 2026-09-30)
+
+- Sélection : un appui long sélectionne ; la barre 3.04 remplace le menu natif d'Android, en continu comme en mode pages. « Surligner » crée le surlignage aussitôt, sans snackbar ; « Note » ouvre la feuille 3.05 et ne crée rien si on l'annule ; « Copier » met le passage dans le presse-papiers.
+- Un passage qui recoupe un surlignage existant fusionne avec lui, notes mises bout à bout.
+- Pour la machine à états, sélectionner (appui long, poignées, défilement pendant la sélection, toucher qui l'annule) n'est ni lecture ni navigation.
+- Toucher un surlignage dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier ». La suppression est immédiate, avec « Annuler » dans une snackbar.
+- « Notes et surlignages » s'ouvre depuis la fiche (ligne sous « Voir le journal de lecture ») et depuis un 5ᵉ outil « Notes » de la barre de lecture ; si cinq outils ne tiennent pas à 200 %, la fiche seule. Menu ⋮ d'un élément : « Aller au passage », « Modifier la note », « Supprimer » ; aller au passage est un saut explicite (carte « Revenir »).
+- Export : fichier `<Titre> – notes.md` enregistré par le sélecteur Android, groupé par chapitre, chaque passage en citation suivi de sa note.
+- Sauvegarde : ligne « Sauvegarde » dans les Paramètres. Un zip `verso-sauvegarde-AAAA-MM-JJ.zip` avec les EPUB, les couvertures, les données en JSON (pas une copie de la base) et les réglages, enregistré par le sélecteur Android. La restauration valide tout le fichier avant de remplacer quoi que ce soit, demande confirmation avec le nombre de livres, et remplace tout ou rien.
+
+Design et découpage : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`.
+
+#### Critères d'acceptation V3
+
+Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels de test.
+
+- [ ] Un appui long sur un passage affiche la barre « Surligner / Note / Copier » à la place du menu d'Android, avec le début de la sélection.
+- [ ] « Surligner » marque le passage d'un fond et d'un soulignement, dans les cinq thèmes ; le surlignage survit à un redémarrage, en continu comme en mode pages.
+- [ ] « Copier » met le passage dans le presse-papiers.
+- [ ] « Note » ouvre la feuille avec le passage ; « Enregistrer » crée le surlignage et sa note, « Annuler » ne crée rien.
+- [ ] Surligner un passage qui en recoupe un autre n'en laisse qu'un, notes gardées.
+- [ ] Toucher un surlignage dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier » ; « Annuler » après « Supprimer » le rétablit.
+- [ ] Sélectionner, déplacer les poignées ou toucher un surlignage ne change jamais la position de lecture et n'affiche pas la carte « Revenir ».
+- [ ] « Notes et surlignages » s'ouvre depuis la fiche et depuis la barre de lecture ; les éléments sont dans l'ordre du livre avec chapitre et pourcentage ; toucher un élément ouvre le passage, et la carte « Revenir » me ramène où j'étais.
+- [ ] « Exporter » enregistre à l'endroit choisi un fichier Markdown lisible, groupé par chapitre.
+- [ ] « Créer une sauvegarde » enregistre un zip à l'endroit choisi ; la carte affiche sa date, sa taille et son nom.
+- [ ] Je supprime deux livres puis je restaure : après confirmation, bibliothèque, positions, états, journal, notes et réglages reviennent à l'identique.
+- [ ] Restaurer un fichier invalide, ou une restauration interrompue, laisse la bibliothèque actuelle intacte, avec un message.
+- [ ] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé (barre de lecture comprise), et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
+- [ ] Toujours aucune permission réseau ni autre permission.
 
 ### V4 — Collections
 
@@ -464,7 +496,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 | --- | --- |
 | `books` | id, titre, auteur, chemin du fichier copié, empreinte SHA-256, chemin de la couverture, taille, nom du fichier d'origine, date d'import, date de dernière ouverture, **locator de lecture** (JSON Readium), progression (0–1), nombre de mots total ; V2 : état (à lire / en cours / terminé, avec indicateur « modifié à la main »), mode de défilement du livre |
 | `sessions` | id, book_id, début, fin, temps actif (ms), locator de début, locator de fin, progression de début et de fin, mots lus |
-| `highlights` (V3) | id, book_id, locator de la plage, texte, note (facultative), date de création |
+| `highlights` (V3) | id, book_id, locator de la plage, texte, note (facultative), progression dans le livre, dates de création et de modification |
 | `collections` (V4) | id, nom, date de création |
 | `collection_books` (V4) | collection_id, book_id, position dans la collection |
 
@@ -547,6 +579,17 @@ Sorti de la V3 le 2026-09-30 : les livres que je lis existent légalement en EPU
 - En lecture : bandeau « Texte extrait d'un PDF · expérimental » avec le bouton « Pages fidèles ».
 - Mode « pages fidèles » de repli : page rendue telle quelle, boutons « Précédente » / « Suivante », « 3 / 64 », bouton « Texte » pour revenir au texte extrait.
 
+### Import TXT, Markdown et HTML
+
+Sorti de la V3 le 2026-09-30 : je ne lis que des EPUB. Règles de conversion déjà décidées, pour le jour où on le fera :
+
+- Conversion en EPUB à l'import, stocké comme un EPUB importé ; l'empreinte des doublons porte sur le fichier d'origine.
+- Titre : `<title>` en HTML, premier `#` en Markdown, sinon le nom du fichier sans extension ; auteur vide ; les deux corrigeables dans la fiche.
+- Chapitres : un par titre de premier niveau (`#` en Markdown, `<h1>` / `<h2>` en HTML). Un TXT est un seul chapitre, découpé en paragraphes aux lignes vides.
+- Encodage des TXT : UTF-8, sinon Windows-1252.
+- HTML : fichier `.html` isolé seulement ; images et CSS externes ignorés, scripts retirés.
+- Pas de couverture générée (couverture typographique de la bibliothèque). Le bouton reste « Importer » ; « Ouvrir avec Verso » accepte ces types ; la bibliothèque vide garde « Importer un EPUB ».
+
 ## Historique
 
 - 2026-09-20 : première version (V1 à V3).
@@ -586,3 +629,4 @@ Sorti de la V3 le 2026-09-30 : les livres que je lis existent légalement en EPU
 - 2026-09-30 (étape 15) : recherche par le service de Readium (casse et accents ignorés, deux caractères au moins) ; statuts de fin « N résultats dans le livre » et « Aucun résultat dans le livre » (absents des maquettes) ; le mot trouvé est marqué dans le texte jusqu’au geste suivant ; la recherche rouverte garde sa requête. Sur le téléphone, le fond de la marque n’apparaissait pas : ReadiumCSS rend transparent le `background-color` de tout élément du texte dès qu’une couleur de fond est choisie (`--USER__backgroundColor`), décorations comprises ; le fond est posé par une ombre intérieure (`box-shadow: inset`), fondue comme avant (`darken` / `lighten`), texte inchangé. Relectures : pied de page du mode pages empilé à 200 % (le chapitre était coupé), écran de recherche qui ne laisse plus passer les touchers au texte dessous. Critères V2 6, 17 et 18 vérifiés.
 - 2026-09-30 (étape 16) : passe d’acceptation V2 ; README mis à jour (captures en Clair et Literata, sans barre d’état). Critère 10 : la fenêtre glissante « plus de 3 écrans en moins de 5 s » mesure désormais le déplacement depuis la position affichée au début de la fenêtre (le dernier échantillon d’avant la fenêtre est gardé) ; avant, une page lue plus de 5 s sortait de la fenêtre au premier tour, et quatre pages feuilletées vite restaient de la lecture. Critères 2, 12 et 13 vérifiés après un arrêt forcé puis confirmés par Maxime après un redémarrage complet ; critère 19 vérifié par `AccessibilityTreeTest` à 200 % puis confirmé par Maxime sur le téléphone (texte Android à 200 % et TalkBack). Écart accepté : « Thème sombre » placé sous « Thème » dans la section Lecture (2.09 date d’avant ce réglage).
 - 2026-09-30 : l'import PDF sort de la V3 et passe dans « Plus tard » (version indéterminée) : les livres visés existent légalement en EPUB. La V3 garde TXT, Markdown et HTML, les surlignages et notes, la sauvegarde et la restauration. Les maquettes 3.01 à 3.03 ne sont pas réexportées.
+- 2026-09-30 : l'import TXT, Markdown et HTML sort aussi de la V3 (« Plus tard », avec ses règles de conversion) ; la V3 devient « Notes et sauvegarde ». Décisions et critères d'acceptation V3, étapes 17 à 21 dans `docs/superpowers/specs/2026-09-30-verso-v3-design.md`.
