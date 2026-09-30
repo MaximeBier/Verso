@@ -45,7 +45,16 @@ class PaletteContrastTest {
         ColorPair("text/highlight", { it.text }, { it.highlight }),
     )
 
-    /** Éléments non textuels (contours, barres, interrupteur) : ≥ 3:1. */
+    /**
+     * Éléments non textuels (contours, barres, interrupteur) : ≥ 3:1.
+     *
+     * `accent/surface` (texte, `ResumeCard` : libellé « Reprendre » sur la carte) est dans `textPairs`, à 7:1.
+     * `accent/surfaceHigh` reste ici : dans l'UI actuelle, l'accent n'apparaît sur `surfaceHigh` qu'en non-texte
+     * (coche de `FontCard`/`ThemeSwatch`, `ReadingSettingsSheet` — icône, pas texte) ; les feuilles elles-mêmes
+     * (`VersoBottomSheet`, `ReadingSettingsSheet`) ont pour fond `surface`, pas `surfaceHigh`. Si un écran peint un
+     * jour du texte en accent sur `surfaceHigh`, déplacer la paire dans `textPairs` — attention : l'accent Clair
+     * (`#7A3021`) n'y tient qu'à 6,79:1, sous 7:1 (vérifié le 2026-09-28, revue du correctif sépia).
+     */
     private val nonTextPairs = listOf(
         ColorPair("outline/background", { it.outline }, { it.background }),
         ColorPair("outline/surface", { it.outline }, { it.surface }),
@@ -65,6 +74,26 @@ class PaletteContrastTest {
         assertThat(VersoPalette.Dark.scrim).isEqualTo(Color(0x94000000))
         assertThat(VersoPalette.CoverLight).hasSize(6)
         assertThat(VersoPalette.CoverDark).hasSize(6)
+    }
+
+    /**
+     * Couleur des liens de lecture (`ReadingStyle`, famille claire) : l'accent de la palette Clair, posé une seule
+     * fois par famille de thème (voir `ReadingStyleTest.linkColorIsSharedWithinLightAndDarkFamilies`). Doit tenir
+     * 7:1 sur le fond sépia, pas seulement sur le fond clair.
+     */
+    @Test
+    fun readingLinkColorReachesSevenToOneOnSepiaBackground() {
+        assertThat(contrast(VersoPalette.Light.accent, VersoPalette.Sepia.background)).isAtLeast(7.0)
+    }
+
+    /** Une feuille ou une carte (`surface`) doit rester visuellement distincte du fond (`background`). */
+    @Test
+    fun surfaceIsDistinctFromBackground() {
+        for ((theme, colors) in themes) {
+            assertWithMessage(theme)
+                .that(contrast(colors.background, colors.surface))
+                .isAtLeast(MIN_BACKGROUND_SURFACE_CONTRAST)
+        }
     }
 
     @Test

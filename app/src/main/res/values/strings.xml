@@ -78,8 +78,25 @@
 
     <!-- États d’un livre -->
     <string name="library_state_finished">Terminé</string>
-    <!-- Spec : état « Nouveau » (absent des maquettes) -->
-    <string name="library_state_new">Nouveau</string>
+    <string name="library_state_to_read">À lire</string>
+
+    <!-- V2 · écran 2.07 : filtres par état -->
+    <string name="library_filter_group">Filtrer par état</string>
+    <string name="library_filter_all">Tous</string>
+    <string name="library_filter_in_progress">En cours</string>
+    <string name="library_filter_to_read">À lire</string>
+    <string name="library_filter_finished">Terminés</string>
+    <string name="library_filter_empty">Aucun livre pour ce filtre.</string>
+
+    <!-- V2 · écran 2.07b : bouton « Récents ▾ » et feuille « Trier et afficher » -->
+    <string name="library_sort_sheet_title">Trier et afficher</string>
+    <!-- Intitulé TalkBack du bouton : %1$s = library_sort_state_*, %2$s = library_view_state_* -->
+    <string name="library_sort_button_description">Trier et afficher, actuellement : %1$s, %2$s</string>
+    <string name="library_sort_state_recent">récents</string>
+    <string name="library_sort_state_title">titre</string>
+    <string name="library_sort_state_author">auteur</string>
+    <string name="library_view_state_list">en liste</string>
+    <string name="library_view_state_grid">en grille</string>
 
     <!-- Bouton ⋮ et son menu (1.02b) -->
     <string name="library_book_options">Options pour « %1$s »</string>
@@ -118,6 +135,14 @@
 
     <!-- ===================== Détails du livre (1.07 – 1.08) ===================== -->
     <string name="details_title">Détails du livre</string>
+
+    <!-- V2 · écran 2.08 : état du livre -->
+    <string name="details_state_label">État</string>
+    <string name="details_state_group">État du livre</string>
+    <string name="details_state_to_read">À lire</string>
+    <string name="details_state_in_progress">En cours</string>
+    <string name="details_state_finished">Terminé</string>
+
     <string name="details_field_title">Titre</string>
     <string name="details_field_author">Auteur</string>
     <string name="details_autosave_hint">Les modifications sont enregistrées automatiquement.</string>

@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.status
 import com.maximebier.verso.ui.common.percentOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +35,7 @@ data class DetailsUiState(
     val colorSeed: String = "",
     val coverPath: String? = null,
     val percent: Int = 0,
+    val status: BookStatus = BookStatus.TO_READ,
     val hasStarted: Boolean = false,
     val remainingMinutes: Int = 0,
     val importedAt: Long = 0,
@@ -81,6 +84,7 @@ class DetailsViewModel(
                             colorSeed = book.sha256,
                             coverPath = book.coverPath,
                             percent = percentOf(book.progression),
+                            status = book.status(),
                             hasStarted = book.readingLocatorJson != null,
                             remainingMinutes = remainingMinutes(book.totalWords, book.progression),
                             importedAt = book.importedAt,
@@ -117,6 +121,12 @@ class DetailsViewModel(
         authorJob?.cancel()
         _state.update { if (it.loaded && it.titleField.isBlank()) it.copy(titleField = it.savedTitle) else it }
         saveScope.launch { saveAll() }
+    }
+
+    /** Choix manuel de l'état (bouton segmenté) : il l'emporte sur l'état calculé jusqu'au choix suivant. */
+    fun onStatusChange(status: BookStatus) {
+        if (deleting) return
+        viewModelScope.launch { books.setStateOverride(bookId, status) }
     }
 
     fun onDeleteClick() {

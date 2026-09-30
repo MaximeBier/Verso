@@ -9,9 +9,22 @@ class LibraryRulesTest {
     private val hour = 60L * 60 * 1000
 
     @Test
-    fun neverOpenedBookIsNew() {
-        assertThat(LibraryRules.status(hasReadingLocator = false, progression = 0.0)).isEqualTo(BookStatus.NEW)
-        assertThat(LibraryRules.status(hasReadingLocator = false, progression = 0.5)).isEqualTo(BookStatus.NEW)
+    fun neverOpenedBookIsToRead() {
+        assertThat(LibraryRules.status(hasReadingLocator = false, progression = 0.0)).isEqualTo(BookStatus.TO_READ)
+        assertThat(LibraryRules.status(hasReadingLocator = false, progression = 0.5)).isEqualTo(BookStatus.TO_READ)
+    }
+
+    @Test
+    fun manualChoiceWinsOverTheComputedState() {
+        assertThat(LibraryRules.status(false, 0.0, override = BookStatus.FINISHED)).isEqualTo(BookStatus.FINISHED)
+        assertThat(LibraryRules.status(true, 0.995, override = BookStatus.TO_READ)).isEqualTo(BookStatus.TO_READ)
+        assertThat(LibraryRules.status(true, 0.995, override = BookStatus.IN_PROGRESS)).isEqualTo(BookStatus.IN_PROGRESS)
+    }
+
+    @Test
+    fun noManualChoiceKeepsTheComputedState() {
+        assertThat(LibraryRules.status(true, 0.31, override = null)).isEqualTo(BookStatus.IN_PROGRESS)
+        assertThat(LibraryRules.status(true, 0.99, override = null)).isEqualTo(BookStatus.FINISHED)
     }
 
     @Test

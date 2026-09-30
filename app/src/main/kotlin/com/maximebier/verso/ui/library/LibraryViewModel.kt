@@ -8,13 +8,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.model.BookStatus
-import com.maximebier.verso.core.model.LibraryRules
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.LibrarySort
 import com.maximebier.verso.data.LibraryViewMode
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.db.BookEntity
+import com.maximebier.verso.data.status
 import com.maximebier.verso.importer.ImportResult
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.importer.RejectReason
@@ -65,6 +65,7 @@ data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
     val sort: LibrarySort = LibrarySort.RECENT,
     val viewMode: LibraryViewMode = LibraryViewMode.LIST,
+    val filter: LibraryFilter = LibraryFilter.ALL,
     val resume: ResumeInfo? = null,
     val importing: Boolean = false,
     val dialog: ImportDialog? = null,
@@ -73,9 +74,13 @@ data class LibraryUiState(
     /** Titre du livre que le lecteur n’a pas pu ouvrir (message), null sinon. */
     val openFailed: String? = null,
 ) {
-    /** Livres de la liste : sans celui de la carte « Reprendre », déjà affiché au-dessus (maquette 1.02). */
+    /** Livres du filtre choisi (compteur « 7 livres »). */
+    val filteredBooks: List<LibraryBook>
+        get() = books.filter { filter.accepts(it.status) }
+
+    /** Livres de la liste : ceux du filtre, sans celui de la carte « Reprendre », déjà affiché au-dessus (1.02). */
     val listedBooks: List<LibraryBook>
-        get() = resume?.let { r -> books.filterNot { it.id == r.book.id } } ?: books
+        get() = resume?.let { r -> filteredBooks.filterNot { it.id == r.book.id } } ?: filteredBooks
 }
 
 /** Opérations d'import, injectées pour tester sans Readium (EpubImporter au cycle 5). */
@@ -117,6 +122,7 @@ class LibraryViewModel(
         val snackbar: ImportSnackbar? = null,
         val pendingDelete: LibraryBook? = null,
         val openFailed: String? = null,
+        val filter: LibraryFilter = LibraryFilter.ALL,
     )
 
     private val transient = MutableStateFlow(Transient())
@@ -136,6 +142,7 @@ class LibraryViewModel(
             books = list.map(::toLibraryBook),
             sort = sort,
             viewMode = viewMode,
+            filter = t.filter,
             resume = lastOpened?.let(::resumeInfoOf),
             importing = t.importing,
             dialog = t.dialog,
@@ -204,6 +211,10 @@ class LibraryViewModel(
 
     fun onViewModeChange(mode: LibraryViewMode) {
         viewModelScope.launch { settings.setLibraryViewMode(mode) }
+    }
+
+    fun onFilterChange(filter: LibraryFilter) {
+        transient.update { it.copy(filter = filter) }
     }
 
     /** Message « Impossible d’ouvrir » affiché : le suivant (s’il y en a un) prend sa place. */
@@ -289,7 +300,7 @@ private fun toLibraryBook(entity: BookEntity) = LibraryBook(
     author = entity.author,
     coverPath = entity.coverPath,
     colorSeed = entity.sha256,
-    status = LibraryRules.status(hasReadingLocator = entity.readingLocatorJson != null, progression = entity.progression),
+    status = entity.status(),
     progression = entity.progression,
     percent = percentOf(entity.progression),
 )

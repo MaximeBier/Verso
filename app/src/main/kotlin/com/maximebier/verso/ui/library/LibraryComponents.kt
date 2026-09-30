@@ -3,25 +3,23 @@ package com.maximebier.verso.ui.library
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -43,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookStatus
-import com.maximebier.verso.data.LibraryViewMode
 import com.maximebier.verso.ui.components.BookCover
 import com.maximebier.verso.ui.components.CoverSize
 import com.maximebier.verso.ui.components.VersoIcons
@@ -173,67 +169,13 @@ fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, 
             Icon(VersoIcons.Check, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
             Text(stringResource(R.string.library_state_finished), style = VersoTheme.typography.captionSemiBold, color = colors.textSecondary)
         }
-        BookStatus.NEW -> Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.library_state_new), style = VersoTheme.typography.captionSemiBold, color = colors.textSecondary)
-        }
-    }
-}
-
-/** Bascule Liste / Grille (§3.6) : deux segments 52 × 48, icônes seules, intitulés TalkBack, état sélectionné exposé. */
-@Composable
-fun ViewModeToggle(selected: LibraryViewMode, onSelect: (LibraryViewMode) -> Unit, modifier: Modifier = Modifier) {
-    val colors = VersoTheme.colors
-    val groupLabel = stringResource(R.string.library_view_mode_group)
-    Row(
-        modifier = modifier
-            .height(IntrinsicSize.Min)
-            .clip(VersoShapes.small)
-            .border(1.dp, colors.outline, VersoShapes.small)
-            .semantics { contentDescription = groupLabel }
-            .selectableGroup(),
-    ) {
-        ViewModeSegment(
-            icon = VersoIcons.List,
-            label = stringResource(R.string.library_view_list),
-            selected = selected == LibraryViewMode.LIST,
-            onClick = { onSelect(LibraryViewMode.LIST) },
-        )
-        Box(Modifier.width(1.dp).fillMaxHeight().background(colors.outline))
-        ViewModeSegment(
-            icon = VersoIcons.Grid,
-            label = stringResource(R.string.library_view_grid),
-            selected = selected == LibraryViewMode.GRID,
-            onClick = { onSelect(LibraryViewMode.GRID) },
-        )
-    }
-}
-
-@Composable
-private fun ViewModeSegment(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    val colors = VersoTheme.colors
-    Box(
-        modifier = Modifier
-            .size(width = 52.dp, height = VersoDimens.controlMin)
-            .background(if (selected) colors.selection else Color.Transparent)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (selected) colors.onSelection else colors.text,
-            modifier = Modifier.size(VersoDimens.iconSmall),
-        )
-        // Marque du mode choisi en plus du fond : jamais la couleur seule (spec, « Sélection »).
-        if (selected) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 7.dp)
-                    .size(width = 20.dp, height = 2.dp)
-                    .background(colors.onSelection, CircleShape),
-            )
+        BookStatus.TO_READ -> Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(VersoIcons.Bookmark, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.library_state_to_read), style = VersoTheme.typography.captionSemiBold, color = colors.textSecondary)
         }
     }
 }
@@ -264,4 +206,64 @@ fun BookOptionsMenuItem(text: String, icon: ImageVector, onClick: () -> Unit, de
         modifier = Modifier.heightIn(min = VersoDimens.controlMin),
         contentPadding = PaddingValues(horizontal = 16.dp),
     )
+}
+
+/**
+ * Pastilles de filtre (2.07) : 40 dp de haut dans une cible de 48 dp ; choisie = fond selection, gras et coche,
+ * jamais la couleur seule ; les autres ont un contour. La rangée défile horizontalement (« Terminés » dépasse).
+ */
+@Composable
+fun LibraryFilterChips(selected: LibraryFilter, onSelect: (LibraryFilter) -> Unit, modifier: Modifier = Modifier) {
+    val labels = listOf(
+        R.string.library_filter_all,
+        R.string.library_filter_in_progress,
+        R.string.library_filter_to_read,
+        R.string.library_filter_finished,
+    )
+    val groupLabel = stringResource(R.string.library_filter_group)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .semantics { contentDescription = groupLabel }
+            .selectableGroup()
+            .padding(start = 20.dp, end = 16.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LibraryFilter.entries.forEachIndexed { index, filter ->
+            FilterChip(label = stringResource(labels[index]), selected = filter == selected, onClick = { onSelect(filter) })
+        }
+    }
+}
+
+@Composable
+private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = VersoTheme.colors
+    Box(
+        modifier = Modifier
+            .heightIn(min = VersoDimens.controlMin)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        val shape = VersoShapes.small
+        val chip = if (selected) {
+            Modifier.clip(shape).background(colors.selection).padding(start = 10.dp, end = 14.dp)
+        } else {
+            Modifier.clip(shape).border(1.dp, colors.outline, shape).padding(horizontal = 14.dp)
+        }
+        Row(
+            modifier = Modifier.heightIn(min = 40.dp).then(chip),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (selected) {
+                Icon(VersoIcons.Check, contentDescription = null, tint = colors.onSelection, modifier = Modifier.size(18.dp))
+            }
+            Text(
+                text = label,
+                style = if (selected) VersoTheme.typography.segmentSelected else VersoTheme.typography.segment,
+                color = if (selected) colors.onSelection else colors.text,
+            )
+        }
+    }
 }

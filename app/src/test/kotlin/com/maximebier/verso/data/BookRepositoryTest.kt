@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.data.db.VersoDatabase
 import java.io.File
 import kotlinx.coroutines.flow.first
@@ -119,5 +120,29 @@ class BookRepositoryTest {
         assertThat(book.title).isEqualTo("Titre corrigé")
         assertThat(book.author).isEqualTo("Autrice")
         assertThat(repository.findBySha256("p")?.id).isEqualTo(id)
+    }
+
+    @Test
+    fun manualStateWinsAndSurvivesRereading() = runTest {
+        val id = repository.insert(testBook(sha256 = "etat"))
+        assertThat(repository.book(id)!!.status()).isEqualTo(BookStatus.TO_READ)
+
+        repository.setStateOverride(id, BookStatus.FINISHED)
+        assertThat(repository.book(id)!!.stateOverride).isEqualTo("FINISHED")
+        assertThat(repository.book(id)!!.status()).isEqualTo(BookStatus.FINISHED)
+
+        // Relire le livre (nouvelle position de lecture) ne change pas un choix manuel.
+        repository.saveReadingPosition(id, """{"href":"ch1.xhtml","type":"application/xhtml+xml"}""", 0.3)
+        assertThat(repository.book(id)!!.status()).isEqualTo(BookStatus.FINISHED)
+
+        repository.setStateOverride(id, null)
+        assertThat(repository.book(id)!!.status()).isEqualTo(BookStatus.IN_PROGRESS)
+    }
+
+    @Test
+    fun unknownStoredStateFallsBackToTheComputedOne() = runTest {
+        val id = repository.insert(testBook(sha256 = "inconnu"))
+        db.bookDao().setStateOverride(id, "EN_PAUSE")
+        assertThat(repository.book(id)!!.status()).isEqualTo(BookStatus.TO_READ)
     }
 }

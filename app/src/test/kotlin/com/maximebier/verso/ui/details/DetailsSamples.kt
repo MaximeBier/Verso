@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.details
 
+import com.maximebier.verso.core.model.BookStatus
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -18,6 +19,7 @@ object DetailsSamples {
         colorSeed = "sha-1",
         coverPath = null,
         percent = 31,
+        status = BookStatus.IN_PROGRESS,
         hasStarted = true,
         remainingMinutes = 330,
         importedAt = importedAt,
@@ -25,7 +27,7 @@ object DetailsSamples {
         originalFileName = "madame-bovary.epub",
     )
 
-    val neverOpened = bovary.copy(percent = 0, hasStarted = false, remainingMinutes = 478)
+    val neverOpened = bovary.copy(percent = 0, status = BookStatus.TO_READ, hasStarted = false, remainingMinutes = 478)
 
     val deleteDialog = bovary.copy(showDeleteDialog = true)
 }

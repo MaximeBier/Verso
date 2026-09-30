@@ -2,7 +2,8 @@ package com.maximebier.verso.ui.library
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
@@ -97,7 +98,7 @@ class LibraryScreenshotTest {
         show { LibraryListSample() }
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.02-bibliotheque-liste-200pc.png")
         // Défile jusqu'à une ligne de livre « en cours » pour vérifier aussi le pourcentage de BookStatusLine.
-        compose.onNode(hasScrollAction()).performScrollToIndex(4)
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToIndex(4)
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.02-bibliotheque-liste-200pc-defile.png")
     }
 
@@ -107,7 +108,7 @@ class LibraryScreenshotTest {
         RuntimeEnvironment.setFontScale(2f)
         show { LibraryGridSample() }
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.03-bibliotheque-grille-200pc.png")
-        compose.onNode(hasScrollAction()).performScrollToIndex(5)
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToIndex(5)
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.03-bibliotheque-grille-200pc-defile.png")
     }
 }

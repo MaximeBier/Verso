@@ -31,6 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.R
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.ui.common.DeleteBookDialog
 import com.maximebier.verso.ui.common.formatDate
 import com.maximebier.verso.ui.common.remainingTimeText
@@ -40,6 +41,7 @@ import com.maximebier.verso.ui.components.DangerOutlinedButton
 import com.maximebier.verso.ui.components.DetailTopBar
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
+import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.theme.VersoTheme
 import java.util.Locale
 
@@ -95,6 +97,7 @@ fun DetailsScreen(
             onDeleteClick = viewModel::onDeleteClick,
             onDeleteConfirm = viewModel::onDeleteConfirm,
             onDeleteDismiss = viewModel::onDeleteDismiss,
+            onStatusChange = viewModel::onStatusChange,
         ),
     )
 }
@@ -109,6 +112,7 @@ data class DetailsActions(
     val onDeleteClick: () -> Unit = {},
     val onDeleteConfirm: () -> Unit = {},
     val onDeleteDismiss: () -> Unit = {},
+    val onStatusChange: (BookStatus) -> Unit = {},
 )
 
 /** Écrans 1.07 (fiche) et 1.08 (confirmation de suppression), sans ViewModel. */
@@ -156,6 +160,24 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
                             icon = VersoIcons.BookOpen,
                         )
                     }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.details_state_label),
+                        style = VersoTheme.typography.captionBold,
+                        color = colors.textSecondary,
+                    )
+                    val statuses = listOf(BookStatus.TO_READ, BookStatus.IN_PROGRESS, BookStatus.FINISHED)
+                    VersoSegmentedButton(
+                        options = listOf(
+                            stringResource(R.string.details_state_to_read),
+                            stringResource(R.string.details_state_in_progress),
+                            stringResource(R.string.details_state_finished),
+                        ),
+                        selectedIndex = statuses.indexOf(state.status),
+                        onSelect = { index -> actions.onStatusChange(statuses[index]) },
+                        groupLabel = stringResource(R.string.details_state_group),
+                    )
                 }
                 DetailsTextField(
                     value = state.titleField,

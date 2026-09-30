@@ -59,7 +59,6 @@ import com.maximebier.verso.ui.components.GridBookCover
 import com.maximebier.verso.ui.components.LibraryTopBar
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
-import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoSnackbarHost
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -104,6 +103,7 @@ fun LibraryScreen(
             onDeleteDismiss = viewModel::onDeleteDismiss,
             onSortChange = viewModel::onSortChange,
             onViewModeChange = viewModel::onViewModeChange,
+            onFilterChange = viewModel::onFilterChange,
             onDuplicateReplace = viewModel::onDuplicateReplace,
             onDuplicateIgnore = viewModel::onDuplicateIgnore,
             onRejectedDismiss = viewModel::onRejectedDismiss,
@@ -125,6 +125,7 @@ data class LibraryActions(
     val onDeleteDismiss: () -> Unit = {},
     val onSortChange: (LibrarySort) -> Unit = {},
     val onViewModeChange: (LibraryViewMode) -> Unit = {},
+    val onFilterChange: (LibraryFilter) -> Unit = {},
     val onDuplicateReplace: () -> Unit = {},
     val onDuplicateIgnore: () -> Unit = {},
     val onRejectedDismiss: () -> Unit = {},
@@ -137,6 +138,7 @@ data class LibraryActions(
 @Composable
 fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
+    var sortSheetVisible by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbar = state.snackbar
     if (snackbar != null) {
@@ -186,8 +188,8 @@ fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Mod
                 state.loading -> Unit
                 // Corps de l'écran 1.01 (tâche 2.2) : la barre du haut, déjà affichée, n'a pas de bouton « Importer ».
                 state.books.isEmpty() -> EmptyLibraryContent(onImport = actions.onImport, modifier = Modifier.fillMaxSize())
-                state.viewMode == LibraryViewMode.LIST -> LibraryList(state, actions)
-                else -> LibraryGrid(state, actions)
+                state.viewMode == LibraryViewMode.LIST -> LibraryList(state, actions) { sortSheetVisible = true }
+                else -> LibraryGrid(state, actions) { sortSheetVisible = true }
             }
             if (state.importing) {
                 LinearProgressIndicator(
@@ -213,10 +215,19 @@ fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Mod
     state.pendingDelete?.let { book ->
         DeleteBookDialog(title = book.title, onConfirm = actions.onDeleteConfirm, onDismiss = actions.onDeleteDismiss)
     }
+    if (sortSheetVisible) {
+        SortAndDisplaySheet(
+            sort = state.sort,
+            viewMode = state.viewMode,
+            onSortChange = actions.onSortChange,
+            onViewModeChange = actions.onViewModeChange,
+            onDismiss = { sortSheetVisible = false },
+        )
+    }
 }
 
 @Composable
-private fun LibraryList(state: LibraryUiState, actions: LibraryActions) {
+private fun LibraryList(state: LibraryUiState, actions: LibraryActions, onOpenSortSheet: () -> Unit) {
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 16.dp)) {
         state.resume?.let { resume ->
@@ -225,21 +236,20 @@ private fun LibraryList(state: LibraryUiState, actions: LibraryActions) {
             }
         }
         item(key = "header") {
-            LibraryHeader(state, actions, Modifier.padding(start = 24.dp, top = 20.dp, end = 16.dp, bottom = 4.dp))
+            LibraryHeader(state, onOpenSortSheet = onOpenSortSheet, modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 8.dp, bottom = 4.dp))
         }
-        item(key = "sort") {
-            SortSelector(
-                selected = state.sort,
-                onSelect = actions.onSortChange,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-            )
+        item(key = "filters") {
+            LibraryFilterChips(selected = state.filter, onSelect = actions.onFilterChange)
+        }
+        if (state.filteredBooks.isEmpty()) {
+            item(key = "filter-empty") { FilterEmptyText(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) }
         }
         items(state.listedBooks, key = { it.id }) { book -> BookRow(book, actions) }
     }
 }
 
 @Composable
-private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions) {
+private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions, onOpenSortSheet: () -> Unit) {
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -254,10 +264,15 @@ private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions) {
             }
         }
         item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-            LibraryHeader(state, actions, Modifier.padding(start = 8.dp))
+            LibraryHeader(state, onOpenSortSheet = onOpenSortSheet, modifier = Modifier.padding(start = 8.dp))
         }
-        item(key = "sort", span = { GridItemSpan(maxLineSpan) }) {
-            SortSelector(selected = state.sort, onSelect = actions.onSortChange)
+        item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
+            LibraryFilterChips(selected = state.filter, onSelect = actions.onFilterChange, modifier = Modifier.padding(start = 4.dp))
+        }
+        if (state.filteredBooks.isEmpty()) {
+            item(key = "filter-empty", span = { GridItemSpan(maxLineSpan) }) {
+                FilterEmptyText(Modifier.padding(start = 8.dp, top = 16.dp))
+            }
         }
         itemsIndexed(state.listedBooks, key = { _, book -> book.id }) { index, book ->
             // Marge extérieure de 20 dp comme la maquette : 16 dp de la grille + 4 dp.
@@ -265,23 +280,6 @@ private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions) {
             BookGridCell(book, actions, edge)
         }
     }
-}
-
-/** Tri Récents / Titre / Auteur (§3.5) : le segmenté partagé de 2.2, dans l'ordre de LibrarySort.entries. */
-@Composable
-private fun SortSelector(selected: LibrarySort, onSelect: (LibrarySort) -> Unit, modifier: Modifier = Modifier) {
-    val sorts = LibrarySort.entries
-    VersoSegmentedButton(
-        options = listOf(
-            stringResource(R.string.library_sort_recent),
-            stringResource(R.string.library_sort_title),
-            stringResource(R.string.library_sort_author),
-        ),
-        selectedIndex = sorts.indexOf(selected),
-        onSelect = { index -> onSelect(sorts[index]) },
-        groupLabel = stringResource(R.string.library_sort_group),
-        modifier = modifier,
-    )
 }
 
 @Composable
@@ -303,9 +301,6 @@ private fun ResumeCardItem(resume: ResumeInfo, actions: LibraryActions, modifier
     )
 }
 
-/** Largeur intrinsèque de ViewModeToggle : deux segments de 52 dp + le séparateur de 1 dp (la bordure ne prend pas de place de mise en page). */
-private val ToggleWidth = 105.dp
-
 @Composable
 private fun HeaderTitle(text: String, color: Color, modifier: Modifier = Modifier) {
     Text(text = text, style = VersoTheme.typography.screenTitle, color = color, modifier = modifier)
@@ -324,23 +319,30 @@ private fun HeaderCount(text: String, color: Color, modifier: Modifier = Modifie
  * côte à côte, en passant le titre seul sur sa propre ligne.
  */
 @Composable
-private fun LibraryHeader(state: LibraryUiState, actions: LibraryActions, modifier: Modifier) {
+private fun LibraryHeader(state: LibraryUiState, onOpenSortSheet: () -> Unit, modifier: Modifier) {
     val colors = VersoTheme.colors
     val titleText = stringResource(R.string.library_title)
-    val countText = pluralStringResource(R.plurals.library_book_count, state.books.size, state.books.size)
+    val countText = pluralStringResource(R.plurals.library_book_count, state.filteredBooks.size, state.filteredBooks.size)
+    val buttonLabel = sortLabel(state.sort)
+    val buttonDescription = sortButtonDescription(state.sort, state.viewMode)
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
+    val sortButton = @Composable {
+        SortButton(label = buttonLabel, description = buttonDescription, onClick = onOpenSortSheet)
+    }
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val maxWidthPx = with(density) { maxWidth.roundToPx() }
         val titleWidthPx = measurer.measure(titleText, VersoTheme.typography.screenTitle).size.width
         val countWidthPx = measurer.measure(countText, countStyle()).size.width
-        val toggleWidthPx = with(density) { ToggleWidth.roundToPx() }
+        // Bouton : texte + icônes (20 + 18 dp) + écarts (2 × 6 dp) + marges (14 + 12 dp).
+        val buttonWidthPx = measurer.measure(buttonLabel, VersoTheme.typography.bodyStrong).size.width +
+            with(density) { 76.dp.roundToPx() }
         val smallGapPx = with(density) { 10.dp.roundToPx() }
         val bigGapPx = with(density) { 8.dp.roundToPx() }
 
         val titleAndCountFit = titleWidthPx + smallGapPx + countWidthPx <= maxWidthPx
-        val everythingFits = titleAndCountFit && titleWidthPx + smallGapPx + countWidthPx + bigGapPx + toggleWidthPx <= maxWidthPx
+        val everythingFits = titleAndCountFit && titleWidthPx + smallGapPx + countWidthPx + bigGapPx + buttonWidthPx <= maxWidthPx
 
         when {
             everythingFits -> Row(
@@ -352,25 +354,19 @@ private fun LibraryHeader(state: LibraryUiState, actions: LibraryActions, modifi
                     HeaderTitle(titleText, colors.text, Modifier.alignByBaseline())
                     HeaderCount(countText, colors.textSecondary, Modifier.alignByBaseline())
                 }
-                ViewModeToggle(selected = state.viewMode, onSelect = actions.onViewModeChange)
+                sortButton()
             }
             titleAndCountFit -> Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     HeaderTitle(titleText, colors.text, Modifier.alignByBaseline())
                     HeaderCount(countText, colors.textSecondary, Modifier.alignByBaseline())
                 }
-                ViewModeToggle(selected = state.viewMode, onSelect = actions.onViewModeChange)
+                sortButton()
             }
             else -> Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 HeaderTitle(titleText, colors.text)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    HeaderCount(countText, colors.textSecondary, Modifier.weight(1f))
-                    ViewModeToggle(selected = state.viewMode, onSelect = actions.onViewModeChange)
-                }
+                HeaderCount(countText, colors.textSecondary)
+                sortButton()
             }
         }
     }
@@ -432,6 +428,16 @@ private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: M
             BookOptions(book, actions)
         }
     }
+}
+
+@Composable
+private fun FilterEmptyText(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.library_filter_empty),
+        style = VersoTheme.typography.body,
+        color = VersoTheme.colors.textSecondary,
+        modifier = modifier,
+    )
 }
 
 /** Bouton ⋮ « Options pour « Titre » » et son menu (1.02b). */

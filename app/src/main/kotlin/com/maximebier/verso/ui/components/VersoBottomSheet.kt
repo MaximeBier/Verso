@@ -34,19 +34,23 @@ import com.maximebier.verso.ui.theme.TintDialogNavigationBar
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Feuille modale (Sommaire, Journal) : hauteur fixe = écran − 88 dp, voile du thème, bouton Fermer. */
+/**
+ * Feuille modale (Sommaire, Journal, Trier et afficher) : voile du thème, bouton Fermer.
+ * [fitContent] : true = hauteur du contenu (feuille « Trier et afficher ») au lieu de l'écran − 88 dp.
+ */
 @Composable
 fun VersoBottomSheet(
     title: String,
     subtitle: String?,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    fitContent: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = VersoTheme.colors
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        modifier = modifier.padding(top = 88.dp),
+        modifier = if (fitContent) modifier else modifier.padding(top = 88.dp),
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         sheetMaxWidth = Dp.Unspecified,
         shape = VersoShapes.sheetTop,
@@ -64,7 +68,7 @@ fun VersoBottomSheet(
         TintDialogNavigationBar(color = colors.surface, dark = VersoTheme.isDark)
         Column(
             Modifier
-                .fillMaxSize()
+                .then(if (fitContent) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(bottom = 24.dp),
         ) {

@@ -26,7 +26,7 @@ object LibrarySamples {
         book(3, "Bel-Ami", "Guy de Maupassant", BookStatus.IN_PROGRESS, 0.47),
         book(4, "Germinal", "Émile Zola", BookStatus.IN_PROGRESS, 0.12),
         book(5, "Le Grand Meaulnes", "Alain-Fournier", BookStatus.FINISHED, 1.0),
-        book(6, "Le Rouge et le Noir", "Stendhal", BookStatus.NEW, 0.0),
+        book(6, "Le Rouge et le Noir", "Stendhal", BookStatus.TO_READ, 0.0),
         book(7, "Les Misérables", "Victor Hugo", BookStatus.IN_PROGRESS, 0.08),
     )
 
@@ -35,6 +35,21 @@ object LibrarySamples {
         chapter = "Deuxième partie, chapitre I",
         excerpt = "Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins dont les ruines n’existent même plus)",
         remainingMinutes = 330,
+    )
+
+    /** Bibliothèque de la maquette 2.07 : Madame Bovary en carte, puis les états « À lire » et « Terminé ». */
+    val states = LibraryUiState(
+        loading = false,
+        books = listOf(
+            bovary,
+            book(2, "Vingt mille lieues sous les mers", "Jules Verne", BookStatus.IN_PROGRESS, 0.64),
+            book(8, "Le Comte de Monte-Cristo", "Alexandre Dumas", BookStatus.TO_READ, 0.0),
+            book(5, "Le Grand Meaulnes", "Alain-Fournier", BookStatus.FINISHED, 1.0),
+            book(3, "Bel-Ami", "Guy de Maupassant", BookStatus.IN_PROGRESS, 0.47),
+            book(4, "Germinal", "Émile Zola", BookStatus.IN_PROGRESS, 0.12),
+            book(6, "Le Rouge et le Noir", "Stendhal", BookStatus.TO_READ, 0.0),
+        ),
+        resume = resume,
     )
 
     val list = LibraryUiState(loading = false, books = books, resume = resume)
