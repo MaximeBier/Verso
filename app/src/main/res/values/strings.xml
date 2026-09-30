@@ -156,6 +156,26 @@
     <string name="details_size_kb">%1$s ko</string>
     <string name="details_delete_book">Supprimer le livre</string>
 
+    <!-- V2 · écran 2.08 : statistiques -->
+    <string name="details_stats_title">Statistiques</string>
+    <string name="details_stats_reading_time_label">Temps de lecture</string>
+    <!-- « 2 h 28 en 5 sessions » ; %1$s = durée (common_duration_*), %2$d = nombre de sessions -->
+    <plurals name="details_stats_reading_time">
+        <item quantity="one">%1$s en %2$d session</item>
+        <item quantity="many">%1$s en %2$d sessions</item>
+        <item quantity="other">%1$s en %2$d sessions</item>
+    </plurals>
+    <string name="details_stats_speed_label">Vitesse moyenne</string>
+    <plurals name="details_stats_speed">
+        <item quantity="one">%1$d mot par minute</item>
+        <item quantity="many">%1$d mots par minute</item>
+        <item quantity="other">%1$d mots par minute</item>
+    </plurals>
+    <string name="details_stats_remaining_label">Temps restant estimé</string>
+    <!-- « Environ 5 h 30 à votre rythme » ; %1$s = durée (common_duration_*) -->
+    <string name="details_stats_remaining">Environ %1$s à votre rythme</string>
+    <string name="details_open_journal">Voir le journal de lecture</string>
+
     <!-- Confirmation de suppression (1.08) -->
     <string name="details_delete_dialog_title">Supprimer « %1$s » ?</string>
     <string name="details_delete_dialog_body">Le livre et votre position de lecture seront effacés de Verso. Le fichier d’origine, sur votre téléphone ou votre Drive, n’est pas touché.</string>
@@ -167,7 +187,17 @@
     <string name="settings_section_startup">Au démarrage</string>
     <string name="settings_reopen_last_book">Rouvrir le dernier livre</string>
     <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
-    <string name="settings_section_display">Affichage</string>
+    <!-- V2 · écran 2.09 : section Lecture -->
+    <string name="settings_section_reading">Lecture</string>
+    <string name="settings_reading_help">Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.</string>
+    <string name="settings_font">Police</string>
+    <string name="settings_font_literata">Literata</string>
+    <string name="settings_font_literata_summary">Par défaut · avec empattements, pensée pour la lecture longue</string>
+    <string name="settings_font_atkinson">Atkinson Hyperlegible Next</string>
+    <string name="settings_font_atkinson_summary">Sans empattements, lettres très distinctes</string>
+    <string name="settings_font_system">Police du système</string>
+    <string name="settings_font_system_summary">Celle de votre téléphone</string>
+    <string name="settings_font_sample">Nous étions à l’Étude, quand le Proviseur entra</string>
     <string name="settings_theme">Thème</string>
     <string name="settings_theme_auto">Automatique</string>
     <string name="settings_theme_light">Clair</string>
@@ -177,7 +207,16 @@
     <string name="settings_dark_theme">Thème sombre</string>
     <string name="settings_dark_theme_dark">Sombre</string>
     <string name="settings_dark_theme_night">Nuit</string>
-    <string name="settings_display_body">En automatique, Verso suit le thème clair ou sombre de votre téléphone. L’écran reste allumé pendant la lecture.</string>
+    <string name="settings_text_size">Taille du texte</string>
+    <string name="settings_text_size_decrease">Réduire la taille du texte</string>
+    <string name="settings_text_size_increase">Agrandir la taille du texte</string>
+    <string name="settings_scroll">Défilement</string>
+    <string name="settings_scroll_continuous">Continu</string>
+    <string name="settings_scroll_pages">Pages</string>
+    <!-- V2 · écran 2.09 : section Statistiques -->
+    <string name="settings_section_statistics">Statistiques</string>
+    <string name="settings_show_statistics">Afficher les statistiques</string>
+    <string name="settings_show_statistics_summary">Temps et vitesse de lecture, calculés à partir du journal. Tout reste sur ce téléphone.</string>
     <string name="settings_section_privacy">Confidentialité</string>
     <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>

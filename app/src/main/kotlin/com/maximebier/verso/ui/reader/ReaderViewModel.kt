@@ -17,6 +17,7 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.core.text.LocationTexts
 import com.maximebier.verso.core.text.TocNode
 import com.maximebier.verso.core.text.TocProgress
+import com.maximebier.verso.core.text.DEFAULT_WORDS_PER_MINUTE
 import com.maximebier.verso.core.text.calibrateAnchor
 import com.maximebier.verso.core.text.chapterPathAt
 import com.maximebier.verso.core.text.chapterPathOfEntry
@@ -99,6 +100,7 @@ data class ReaderUiState(
     val readingProgression: Double = 0.0,
     val readingPercent: Int = 0,
     val remainingMinutes: Int = 0,
+    val wordsPerMinute: Int = DEFAULT_WORDS_PER_MINUTE,
     val barsVisible: Boolean = false,
     val tocVisible: Boolean = false,
     val journalVisible: Boolean = false,
@@ -128,6 +130,8 @@ class ReaderViewModel(
     private val reportOpenFailure: (title: String) -> Unit = {},
     /** Réglages de lecture (appliqués au lecteur à chaque changement) et thème, lus et écrits depuis la feuille « Aa ». */
     private val settings: SettingsRepository,
+    /** Ouvert par « Voir le journal de lecture » de la fiche : feuille du journal affichée au chargement. */
+    private val openJournalOnLoad: Boolean = false,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -193,6 +197,12 @@ class ReaderViewModel(
 
     init {
         viewModelScope.launch { load() }
+        viewModelScope.launch {
+            sessions.observeStats(bookId).collect { stats ->
+                val rate = stats.effectiveWordsPerMinute
+                _uiState.update { it.copy(wordsPerMinute = rate, remainingMinutes = remainingMinutes(it.totalWords, it.readingProgression, rate)) }
+            }
+        }
         viewModelScope.launch {
             settings.readingSettings.collect { reading ->
                 _uiState.update { it.copy(readingSettings = reading) }
@@ -274,6 +284,7 @@ class ReaderViewModel(
         onPositionState(created.state.value)
         // `loading = false` en dernier : l’état publié est alors complet (progression comprise).
         _uiState.update { it.copy(loading = false) }
+        if (openJournalOnLoad) showJournal()
         viewModelScope.launch { created.state.collect(::onPositionState) }
         // Relais dans l’ordre d’émission ; lancé avant attach() (onReaderReady), donc aucun effet perdu.
         viewModelScope.launch { created.readingEffects.collect { readingEffectsFlow.emit(it) } }
@@ -412,7 +423,7 @@ class ReaderViewModel(
                 shortLocation = location,
                 readingProgression = progression,
                 readingPercent = percent,
-                remainingMinutes = remainingMinutes(state.totalWords, progression),
+                remainingMinutes = remainingMinutes(state.totalWords, progression, state.wordsPerMinute),
                 returnCard = if (position.showReturnCard) ReturnCardState(location, percent) else null,
             )
         }
@@ -644,7 +655,7 @@ class ReaderViewModel(
     }
 
     companion object {
-        fun factory(bookId: Long): ViewModelProvider.Factory = viewModelFactory {
+        fun factory(bookId: Long, openJournal: Boolean = false): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as VersoApplication
                 val container = app.container
@@ -657,6 +668,7 @@ class ReaderViewModel(
                     locationTexts = app.resources.locationTexts(),
                     reportOpenFailure = OpenFailures::report,
                     settings = container.settings,
+                    openJournalOnLoad = openJournal,
                 )
             }
         }

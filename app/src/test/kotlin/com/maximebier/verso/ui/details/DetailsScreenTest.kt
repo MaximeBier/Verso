@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -14,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
@@ -40,6 +42,42 @@ class DetailsScreenTest {
         compose.setContent { VersoTheme { DetailsContent(state = state, actions = actions) } }
     }
 
+    private val stats = ReadingStats(totalActiveMs = 148 * 60_000L, sessionCount = 5, wordsPerMinute = 240)
+
+    @Test
+    fun statisticsSectionShowsTimeSpeedAndRemaining() {
+        var journal: Long? = null
+        show(DetailsSamples.bovary.copy(stats = stats), DetailsActions(onOpenJournal = { journal = it }))
+        val duration = text(R.string.common_duration_hours_minutes, 2, 28)
+        compose.onNodeWithText(context.resources.getQuantityString(R.plurals.details_stats_reading_time, 5, duration, 5))
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.resources.getQuantityString(R.plurals.details_stats_speed, 240, 240)).assertExists()
+        compose.onNodeWithText(text(R.string.details_stats_remaining, text(R.string.common_duration_hours_minutes, 5, 30))).assertExists()
+        compose.onNodeWithText(text(R.string.details_open_journal)).performScrollTo().performClick()
+        assertThat(journal).isEqualTo(1L)
+    }
+
+    @Test
+    fun statisticsSectionIsHiddenWhenSwitchedOffOrEmpty() {
+        show(DetailsSamples.bovary.copy(stats = null))
+        compose.onNodeWithText(text(R.string.details_stats_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutMeasuredSpeedOnlyTheReadingTimeIsShown() {
+        show(DetailsSamples.bovary.copy(stats = stats.copy(sessionCount = 1, wordsPerMinute = null)))
+        compose.onNodeWithText(text(R.string.details_stats_title)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_stats_speed_label)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.details_stats_remaining_label)).assertDoesNotExist()
+    }
+
+    @Test
+    fun sessionlessStatsShowNothing() {
+        show(DetailsSamples.bovary.copy(stats = ReadingStats(0, 0, null)))
+        compose.onNodeWithText(text(R.string.details_stats_title)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.details_open_journal)).assertDoesNotExist()
+    }
+
     @Test
     fun showsProgressFieldsAndMetadata() {
         show(DetailsSamples.bovary)
@@ -50,12 +88,12 @@ class DetailsScreenTest {
         compose.onNodeWithContentDescription(text(R.string.details_field_title)).assertIsDisplayed()
         compose.onNodeWithText("Madame Bovary").assertIsDisplayed()
         compose.onNodeWithText("Gustave Flaubert").assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.details_autosave_hint)).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.details_imported_on)).assertIsDisplayed()
-        compose.onNodeWithText("12 septembre 2026").assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.details_size_mb, "1,2")).assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.details_format_epub)).assertIsDisplayed()
-        compose.onNodeWithText("madame-bovary.epub").assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_autosave_hint)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_imported_on)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("12 septembre 2026").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_size_mb, "1,2")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_format_epub)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("madame-bovary.epub").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -94,7 +132,7 @@ class DetailsScreenTest {
         var deleteClicked = false
         show(DetailsSamples.bovary, DetailsActions(onBack = { back = true }, onDeleteClick = { deleteClicked = true }))
         compose.onNodeWithContentDescription(text(R.string.common_back)).performClick()
-        compose.onNodeWithText(text(R.string.details_delete_book)).performClick()
+        compose.onNodeWithText(text(R.string.details_delete_book)).performScrollTo().performClick()
         assertThat(back).isTrue()
         assertThat(deleteClicked).isTrue()
     }

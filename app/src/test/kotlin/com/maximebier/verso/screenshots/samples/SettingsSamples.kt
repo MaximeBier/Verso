@@ -28,3 +28,7 @@ internal fun SettingsClearJournalDialogSample() =
 
 @Composable
 internal fun LicensesSample() = LicensesScreen(onBack = {})
+
+/** 2.09 : Paramètres V2 (Literata, Automatique, 20, Continu, statistiques affichées). */
+@Composable
+internal fun SettingsV2Sample() = SettingsSample(SettingsUiState(reopenLastBook = true, showStatistics = true))

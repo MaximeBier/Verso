@@ -8,6 +8,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
@@ -15,20 +18,24 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ReadingSettingsLimits
 import com.maximebier.verso.data.DarkThemeVariant
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.theme.VersoTheme
@@ -49,6 +56,8 @@ class SettingsScreenTest {
     private var confirming by mutableStateOf(false)
     private var theme by mutableStateOf(ThemeMode.AUTO)
     private var darkVariant by mutableStateOf(DarkThemeVariant.DARK)
+    private var reading by mutableStateOf(ReadingSettings())
+    private var showStats by mutableStateOf(true)
     private val events = mutableListOf<String>()
 
     private fun show() {
@@ -60,6 +69,8 @@ class SettingsScreenTest {
                         themeMode = theme,
                         darkThemeVariant = darkVariant,
                         confirmingClearJournal = confirming,
+                        readingSettings = reading,
+                        showStatistics = showStats,
                     ),
                     versionName = "1.0.0",
                     onBack = { events += "back" },
@@ -71,14 +82,14 @@ class SettingsScreenTest {
                     onClearJournalDismiss = { confirming = false; events += "dismiss" },
                     onOpenSourceCode = { events += "source" },
                     onOpenLicenses = { events += "licenses" },
+                    onFontChange = { reading = reading.copy(font = it); events += "font=$it" },
+                    onFontSizeChange = { reading = reading.withFontSize(it); events += "size=$it" },
+                    onDefaultScrollModeChange = { reading = reading.copy(defaultScrollMode = it); events += "scroll=$it" },
+                    onShowStatisticsChange = { showStats = it; events += "stats=$it" },
                 )
             }
         }
     }
-
-    private fun themeRow(label: Int) = composeRule.onNode(
-        hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_theme))),
-    )
 
     private fun darkVariantSegment(label: Int) = composeRule.onNode(
         hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_dark_theme))),
@@ -97,31 +108,50 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun themeSelectorSelectsTheChosenMode() {
+    fun themeRowOpensAChoiceAndAppliesIt() {
         show()
-        themeRow(R.string.settings_theme_auto).assertIsSelected()
-        themeRow(R.string.settings_theme_dark).performScrollTo().performClick()
-        themeRow(R.string.settings_theme_dark).assertIsSelected()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme)).performScrollTo().performClick()
+        composeRule.onNode(hasText(ctx.getString(R.string.settings_theme_dark)) and hasAnyAncestor(isDialog())).performClick()
         assertThat(events).containsExactly("theme=DARK")
+        composeRule.onNodeWithText(ctx.getString(R.string.common_close)).performClick()
+        composeRule.onNode(hasText(ctx.getString(R.string.settings_theme)) and hasText(ctx.getString(R.string.settings_theme_dark)))
+            .assertExists()
     }
 
     @Test
-    fun themeSelectorOffersTheFiveThemesAsRadioButtons() {
+    fun fontsAreRadioButtonsWithASample() {
         show()
-        val labels = listOf(
-            R.string.settings_theme_auto, R.string.settings_theme_light, R.string.settings_theme_sepia,
-            R.string.settings_theme_dark, R.string.settings_theme_night,
-        ).map(ctx::getString)
-        labels.forEach { label ->
-            composeRule.onNode(hasText(label) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.settings_theme))))
-                .performScrollTo()
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
-                .assertHeightIsAtLeast(48.dp)
-        }
-        themeRow(R.string.settings_theme_sepia).performClick()
-        themeRow(R.string.settings_theme_sepia).assertIsSelected()
-        themeRow(R.string.settings_theme_night).performScrollTo().performClick()
-        assertThat(events).containsExactly("theme=SEPIA", "theme=NIGHT").inOrder()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_font_literata)).assertIsSelected()
+        composeRule.onAllNodesWithText(ctx.getString(R.string.settings_font_sample)).assertCountEquals(3)
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_font_atkinson)).performScrollTo().performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_font_atkinson)).assertIsSelected()
+        assertThat(events).containsExactly("font=ATKINSON")
+    }
+
+    @Test
+    fun textSizeDialogStepsWithinTheLimits() {
+        reading = ReadingSettings(fontSizeSp = ReadingSettingsLimits.MAX_FONT_SIZE_SP)
+        show()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_text_size)).performScrollTo().performClick()
+        composeRule.onNodeWithContentDescription(ctx.getString(R.string.settings_text_size_increase)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(ctx.getString(R.string.settings_text_size_decrease)).performClick()
+        assertThat(events).containsExactly("size=${ReadingSettingsLimits.MAX_FONT_SIZE_SP - 1}")
+    }
+
+    @Test
+    fun defaultScrollDialogOffersContinuousAndPages() {
+        show()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_scroll)).performScrollTo().performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_scroll_pages)).performClick()
+        assertThat(events).containsExactly("scroll=PAGES")
+    }
+
+    @Test
+    fun statisticsSwitchIsASwitch() {
+        show()
+        val row = composeRule.onNode(hasText(ctx.getString(R.string.settings_show_statistics)) and isToggleable())
+        row.performScrollTo().assertIsOn().performClick()
+        assertThat(events).containsExactly("stats=false")
     }
 
     /** 1.09 : « Thème sombre », Sombre coché par défaut, Nuit au choix ; le libellé est celui du groupe pour TalkBack. */
@@ -139,7 +169,11 @@ class SettingsScreenTest {
     fun showsAllSectionsAndTheVersion() {
         show()
         listOf(
-            R.string.settings_section_startup, R.string.settings_section_display, R.string.settings_display_body,
+            // settings_font est omis : substring de "Police du système" (settings_font_system), une fois les
+            // descendants fusionnés par le Modifier.selectable() de la ligne — fontsAreRadioButtonsWithASample
+            // couvre déjà les polices.
+            R.string.settings_section_reading, R.string.settings_reading_help,
+            R.string.settings_section_startup, R.string.settings_section_statistics, R.string.settings_show_statistics_summary,
             R.string.settings_section_privacy, R.string.settings_privacy_body, R.string.settings_clear_journal,
             R.string.settings_section_about, R.string.settings_source_code, R.string.settings_licenses,
         ).forEach { composeRule.onNodeWithText(ctx.getString(it), substring = true).performScrollTo().assertExists() }

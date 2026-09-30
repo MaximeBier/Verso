@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.details
 
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -25,6 +26,7 @@ object DetailsSamples {
         importedAt = importedAt,
         sizeBytes = 1_234_567,
         originalFileName = "madame-bovary.epub",
+        stats = ReadingStats(totalActiveMs = 148 * 60_000L, sessionCount = 5, wordsPerMinute = 240),
     )
 
     val neverOpened = bovary.copy(percent = 0, status = BookStatus.TO_READ, hasStarted = false, remainingMinutes = 478)

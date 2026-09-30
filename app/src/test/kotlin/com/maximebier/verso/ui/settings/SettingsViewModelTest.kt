@@ -7,6 +7,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.settings.ReadingFont
+import com.maximebier.verso.core.settings.ReadingSettings
+import com.maximebier.verso.core.settings.ReadingSettingsLimits
+import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
@@ -122,5 +126,26 @@ class SettingsViewModelTest {
         }
 
         assertThat(sessions.observeSessions(bookId).first()).hasSize(1)
+    }
+
+    @Test
+    fun readingSettingsAndStatisticsSwitchAreWritten() = runTest {
+        val vm = SettingsViewModel(settings, sessions)
+        vm.state.test {
+            val initial = awaitItem()
+            assertThat(initial.readingSettings).isEqualTo(ReadingSettings())
+            assertThat(initial.showStatistics).isTrue()
+
+            vm.onFontChange(ReadingFont.ATKINSON)
+            assertThat(awaitItem().readingSettings.font).isEqualTo(ReadingFont.ATKINSON)
+            vm.onFontSizeChange(ReadingSettingsLimits.MAX_FONT_SIZE_SP + 5)
+            assertThat(awaitItem().readingSettings.fontSizeSp).isEqualTo(ReadingSettingsLimits.MAX_FONT_SIZE_SP)
+            vm.onDefaultScrollModeChange(ScrollMode.PAGES)
+            assertThat(awaitItem().readingSettings.defaultScrollMode).isEqualTo(ScrollMode.PAGES)
+            vm.onShowStatisticsChange(false)
+            assertThat(awaitItem().showStatistics).isFalse()
+        }
+        assertThat(settings.readingSettings.first().font).isEqualTo(ReadingFont.ATKINSON)
+        assertThat(settings.showStatistics.first()).isFalse()
     }
 }

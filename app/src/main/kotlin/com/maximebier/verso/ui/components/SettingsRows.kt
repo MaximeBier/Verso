@@ -190,6 +190,27 @@ fun RadioRow(
     }
 }
 
+/** Ligne de choix (2.09) : titre à gauche, valeur et chevron à droite ; TalkBack lit « Thème, Automatique ». */
+@Composable
+fun ChoiceRow(title: String, value: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = VersoTheme.colors
+    Row(
+        modifier = modifier
+            .then(rowModifier)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics(mergeDescendants = true) {}
+            .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RowTexts(title, summary = null)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(text = value, style = VersoTheme.typography.body, color = colors.textSecondary)
+            Icon(VersoIcons.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(VersoDimens.iconSmall))
+        }
+    }
+}
+
 /** Ligne « À propos » non cliquable : icône de l’app (40 dp), « Verso » et la version en dessous. */
 @Composable
 fun AppInfoRow(title: String, summary: String, modifier: Modifier = Modifier) {

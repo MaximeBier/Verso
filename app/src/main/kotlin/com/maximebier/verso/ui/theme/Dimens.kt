@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.dp
 object VersoDimens {
     val controlMin = 48.dp
     val emptyStatePrimaryButton = 56.dp
+    val fontChoiceRow = 56.dp
     val topBarLibrary = 72.dp
     val topBarDetail = 64.dp
     val topBarReader = 72.dp

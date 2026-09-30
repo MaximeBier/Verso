@@ -13,6 +13,8 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.core.stats.readingStats
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.LibrarySort
@@ -29,8 +31,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -78,12 +82,16 @@ class LibraryViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(pending: MutableStateFlow<List<Uri>> = MutableStateFlow(emptyList())) = LibraryViewModel(
+    private fun viewModel(
+        pending: MutableStateFlow<List<Uri>> = MutableStateFlow(emptyList()),
+        statsOf: (Long) -> Flow<ReadingStats> = { flowOf(readingStats(emptyList())) },
+    ) = LibraryViewModel(
         books = books,
         settings = settings,
         importActions = fake.actions(),
         incomingPending = pending,
         takeIncoming = { pending.getAndUpdate { it.drop(1) }.firstOrNull() },
+        statsOf = statsOf,
     )
 
     private suspend fun ReceiveTurbine<LibraryUiState>.awaitUntil(predicate: (LibraryUiState) -> Boolean): LibraryUiState {
@@ -198,6 +206,16 @@ class LibraryViewModelTest {
             assertThat(resume.chapter).isEqualTo("Deuxième partie, chapitre I")
             assertThat(resume.excerpt).isEqualTo("Yonville-l’Abbaye (ainsi nommé à cause d’une ancienne abbaye de Capucins)")
             assertThat(resume.remainingMinutes).isEqualTo(remainingMinutes(150_000, 0.31))
+        }
+    }
+
+    @Test
+    fun resumeCardUsesTheMeasuredSpeed() = runTest(dispatcher) {
+        insert("Madame Bovary", lastOpenedAt = 20, locatorJson = LOCATOR_JSON, progression = 0.31, totalWords = 150_000)
+        val vm = viewModel(statsOf = { flowOf(ReadingStats(totalActiveMs = 600_000, sessionCount = 2, wordsPerMinute = 100)) })
+        vm.state.test {
+            val resume = requireNotNull(awaitUntil { it.resume != null }.resume)
+            assertThat(resume.remainingMinutes).isEqualTo(remainingMinutes(150_000, 0.31, 100))
         }
     }
 

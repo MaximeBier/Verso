@@ -3,16 +3,13 @@ package com.maximebier.verso.ui.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,22 +17,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.BuildConfig
 import com.maximebier.verso.R
 import com.maximebier.verso.data.DarkThemeVariant
+import com.maximebier.verso.core.settings.ReadingFont
+import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.ActionRow
 import com.maximebier.verso.ui.components.AppInfoRow
 import com.maximebier.verso.ui.components.DangerButton
 import com.maximebier.verso.ui.components.DetailTopBar
-import com.maximebier.verso.ui.components.RadioRow
-import com.maximebier.verso.ui.components.SegmentedRow
 import com.maximebier.verso.ui.components.SettingsParagraph
 import com.maximebier.verso.ui.components.SettingsSection
 import com.maximebier.verso.ui.components.SwitchRow
@@ -66,6 +60,10 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
         onClearJournalDismiss = viewModel::onClearJournalDismiss,
         onOpenSourceCode = { openUrl(context, sourceUrl) },
         onOpenLicenses = onOpenLicenses,
+        onFontChange = viewModel::onFontChange,
+        onFontSizeChange = viewModel::onFontSizeChange,
+        onDefaultScrollModeChange = viewModel::onDefaultScrollModeChange,
+        onShowStatisticsChange = viewModel::onShowStatisticsChange,
     )
 }
 
@@ -96,6 +94,10 @@ fun SettingsScreen(
     onClearJournalDismiss: () -> Unit,
     onOpenSourceCode: () -> Unit,
     onOpenLicenses: () -> Unit,
+    onFontChange: (ReadingFont) -> Unit = {},
+    onFontSizeChange: (Int) -> Unit = {},
+    onDefaultScrollModeChange: (ScrollMode) -> Unit = {},
+    onShowStatisticsChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = VersoTheme.colors
@@ -107,6 +109,16 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.navigationBars),
         ) {
+            ReadingSettingsSection(
+                reading = state.readingSettings,
+                themeMode = state.themeMode,
+                darkThemeVariant = state.darkThemeVariant,
+                onFontChange = onFontChange,
+                onThemeModeChange = onThemeModeChange,
+                onDarkThemeVariantChange = onDarkThemeVariantChange,
+                onFontSizeChange = onFontSizeChange,
+                onDefaultScrollModeChange = onDefaultScrollModeChange,
+            )
             SettingsSection(title = stringResource(R.string.settings_section_startup)) {
                 SwitchRow(
                     title = stringResource(R.string.settings_reopen_last_book),
@@ -115,10 +127,13 @@ fun SettingsScreen(
                     onCheckedChange = onReopenLastBookChange,
                 )
             }
-            SettingsSection(title = stringResource(R.string.settings_section_display)) {
-                ThemeSelector(selected = state.themeMode, onSelect = onThemeModeChange)
-                SettingsParagraph(text = stringResource(R.string.settings_display_body), bottomPadding = 8.dp)
-                DarkThemeVariantSelector(selected = state.darkThemeVariant, onSelect = onDarkThemeVariantChange)
+            SettingsSection(title = stringResource(R.string.settings_section_statistics)) {
+                SwitchRow(
+                    title = stringResource(R.string.settings_show_statistics),
+                    summary = stringResource(R.string.settings_show_statistics_summary),
+                    checked = state.showStatistics,
+                    onCheckedChange = onShowStatisticsChange,
+                )
             }
             SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
                 SettingsParagraph(text = stringResource(R.string.settings_privacy_body))
@@ -164,48 +179,4 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_clear_journal_dialog_body))
         }
     }
-}
-
-/** Thème Automatique / Clair / Sépia / Sombre / Nuit, dans l'ordre de ThemeMode.entries (maquette 2.02). */
-@Composable
-private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    val label = stringResource(R.string.settings_theme)
-    Text(
-        text = label,
-        style = VersoTheme.typography.rowTitle,
-        color = VersoTheme.colors.text,
-        modifier = Modifier.padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
-    )
-    Column(Modifier.selectableGroup().semantics { contentDescription = label }) {
-        ThemeMode.entries.forEach { mode ->
-            RadioRow(title = stringResource(mode.labelRes()), selected = mode == selected, onClick = { onSelect(mode) })
-        }
-    }
-}
-
-@StringRes
-private fun ThemeMode.labelRes(): Int = when (this) {
-    ThemeMode.AUTO -> R.string.settings_theme_auto
-    ThemeMode.LIGHT -> R.string.settings_theme_light
-    ThemeMode.SEPIA -> R.string.settings_theme_sepia
-    ThemeMode.DARK -> R.string.settings_theme_dark
-    ThemeMode.NIGHT -> R.string.settings_theme_night
-}
-
-/** « Thème sombre : Sombre / Nuit » (1.09) : le thème foncé de l'automatique quand le téléphone est en sombre. */
-@Composable
-private fun DarkThemeVariantSelector(selected: DarkThemeVariant, onSelect: (DarkThemeVariant) -> Unit) {
-    val variants = DarkThemeVariant.entries
-    SegmentedRow(
-        title = stringResource(R.string.settings_dark_theme),
-        options = variants.map { stringResource(it.labelRes()) },
-        selectedIndex = variants.indexOf(selected),
-        onSelect = { onSelect(variants[it]) },
-    )
-}
-
-@StringRes
-private fun DarkThemeVariant.labelRes(): Int = when (this) {
-    DarkThemeVariant.DARK -> R.string.settings_dark_theme_dark
-    DarkThemeVariant.NIGHT -> R.string.settings_dark_theme_night
 }

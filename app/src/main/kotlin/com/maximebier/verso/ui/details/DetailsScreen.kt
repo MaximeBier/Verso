@@ -24,7 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -32,13 +35,16 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.core.stats.ReadingStats
 import com.maximebier.verso.ui.common.DeleteBookDialog
+import com.maximebier.verso.ui.common.durationText
 import com.maximebier.verso.ui.common.formatDate
 import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.components.BookCover
 import com.maximebier.verso.ui.components.CoverSize
 import com.maximebier.verso.ui.components.DangerOutlinedButton
 import com.maximebier.verso.ui.components.DetailTopBar
+import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoSegmentedButton
@@ -64,8 +70,8 @@ fun sizeParts(bytes: Long): SizeParts =
  * la fiche reliée à son ViewModel.
  */
 @Composable
-fun DetailsDestination(bookId: Long, onBack: () -> Unit, onOpenReader: (Long) -> Unit) {
-    DetailsScreen(bookId = bookId, onBack = onBack, onOpenReader = onOpenReader)
+fun DetailsDestination(bookId: Long, onBack: () -> Unit, onOpenReader: (Long) -> Unit, onOpenJournal: (Long) -> Unit) {
+    DetailsScreen(bookId = bookId, onBack = onBack, onOpenReader = onOpenReader, onOpenJournal = onOpenJournal)
 }
 
 /** Retour à la bibliothèque après suppression ou si le livre n'existe plus. */
@@ -74,6 +80,7 @@ fun DetailsScreen(
     bookId: Long,
     onBack: () -> Unit,
     onOpenReader: (Long) -> Unit,
+    onOpenJournal: (Long) -> Unit = {},
     viewModel: DetailsViewModel = viewModel(factory = DetailsViewModel.factory(bookId)),
 ) {
     val state by viewModel.state.collectAsState()
@@ -98,6 +105,10 @@ fun DetailsScreen(
             onDeleteConfirm = viewModel::onDeleteConfirm,
             onDeleteDismiss = viewModel::onDeleteDismiss,
             onStatusChange = viewModel::onStatusChange,
+            onOpenJournal = { id ->
+                viewModel.flush()
+                onOpenJournal(id)
+            },
         ),
     )
 }
@@ -113,6 +124,7 @@ data class DetailsActions(
     val onDeleteConfirm: () -> Unit = {},
     val onDeleteDismiss: () -> Unit = {},
     val onStatusChange: (BookStatus) -> Unit = {},
+    val onOpenJournal: (Long) -> Unit = {},
 )
 
 /** Écrans 1.07 (fiche) et 1.08 (confirmation de suppression), sans ViewModel. */
@@ -198,6 +210,13 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
                         authorFocused = focus.hasFocus
                     },
                 )
+                state.stats?.takeIf { it.sessionCount > 0 }?.let { stats ->
+                    StatisticsSection(
+                        stats = stats,
+                        remainingMinutes = state.remainingMinutes,
+                        onOpenJournal = { actions.onOpenJournal(state.bookId) },
+                    )
+                }
                 Column {
                     MetadataRow(
                         label = stringResource(R.string.details_imported_on),
@@ -229,5 +248,49 @@ private fun sizeText(bytes: Long): String {
         stringResource(R.string.details_size_mb, parts.value)
     } else {
         stringResource(R.string.details_size_kb, parts.value)
+    }
+}
+
+/** Arrondi à la minute, au moins 1 dès qu'il y a eu de la lecture. */
+private fun activeMinutes(activeMs: Long): Int = ((activeMs + 30_000) / 60_000).toInt().coerceAtLeast(1)
+
+/** Section « Statistiques » (2.08) : temps de lecture, vitesse moyenne, temps restant à votre rythme, journal. */
+@Composable
+private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpenJournal: () -> Unit) {
+    val colors = VersoTheme.colors
+    Column {
+        Text(
+            text = stringResource(R.string.details_stats_title),
+            style = VersoTheme.typography.captionBold,
+            color = colors.textSecondary,
+            modifier = Modifier.padding(bottom = 4.dp).semantics { heading() },
+        )
+        MetadataRow(
+            label = stringResource(R.string.details_stats_reading_time_label),
+            value = pluralStringResource(
+                R.plurals.details_stats_reading_time,
+                stats.sessionCount,
+                durationText(activeMinutes(stats.totalActiveMs)),
+                stats.sessionCount,
+            ),
+        )
+        stats.wordsPerMinute?.let { speed ->
+            MetadataRow(
+                label = stringResource(R.string.details_stats_speed_label),
+                value = pluralStringResource(R.plurals.details_stats_speed, speed, speed),
+            )
+            if (remainingMinutes >= 1) {
+                MetadataRow(
+                    label = stringResource(R.string.details_stats_remaining_label),
+                    value = stringResource(R.string.details_stats_remaining, durationText(remainingMinutes)),
+                )
+            }
+        }
+        OutlinedPillButton(
+            text = stringResource(R.string.details_open_journal),
+            onClick = onOpenJournal,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            icon = VersoIcons.History,
+        )
     }
 }
