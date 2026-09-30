@@ -1,12 +1,23 @@
 package com.maximebier.verso.ui.reader
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -18,18 +29,42 @@ import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(AndroidJUnit4::class)
+@Config(qualifiers = "w390dp-h844dp-xxhdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PageFooterTest {
     @get:Rule val compose = createComposeRule()
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    private fun show(chapter: String?, pageInfo: PageInfo?, onTurn: ((Boolean) -> Unit)? = null) {
+    private fun show(chapter: String?, pageInfo: PageInfo?, onTurn: ((Boolean) -> Unit)? = null, fontScale: Float = 1f) {
         compose.setContent {
-            VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.LITERATA) {
-                PageFooter(chapter = chapter, pageInfo = pageInfo, onTurn = onTurn)
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.LITERATA) {
+                    Box(Modifier.width(390.dp)) { PageFooter(chapter = chapter, pageInfo = pageInfo, onTurn = onTurn) }
+                }
             }
         }
+    }
+
+    /** À 200 %, le chapitre passe sur toute la largeur, sans coupure, et la page en dessous. */
+    @Test
+    fun atTwoHundredPercentTheChapterIsNotCut() {
+        show(chapter = "Deuxième partie, chapitre I", pageInfo = PageInfo(12, 240), fontScale = 2f)
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText("Deuxième partie, chapitre I", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertThat(layouts.single().multiParagraph.didExceedMaxLines).isFalse()
+        compose.onNodeWithText("Page 12 sur 240", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun withoutTextTheFooterHasNoTalkBackActions() {
+        show(chapter = null, pageInfo = null, onTurn = {})
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.CustomActions)).assertCountEquals(0)
     }
 
     @Test

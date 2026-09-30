@@ -43,6 +43,13 @@ class FakeReaderController(initial: Locator?) : ReaderController {
         turns += forward
     }
 
+    /** Marques demandées par `showSearchMatch`, dans l’ordre (null = effacement). */
+    val searchMatches = mutableListOf<Locator?>()
+
+    override suspend fun showSearchMatch(locator: Locator?) {
+        searchMatches += locator
+    }
+
     /** Extrait qui répond après ce délai ; null : jamais (WebView détruite pendant l’appel JavaScript, non annulable). */
     var excerptDelayMs: Long? = 0L
 

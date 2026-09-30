@@ -34,13 +34,20 @@ import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderGestures
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.testLocator
+import com.maximebier.verso.readium.BookSearch
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadiumOpener
+import com.maximebier.verso.readium.SearchHit
 import com.maximebier.verso.ui.common.locationTexts
+import com.maximebier.verso.ui.reader.search.BookSearchModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -584,6 +591,155 @@ class ReaderViewModelTest {
     }
 
     @Test
+    fun searchOpensHidesBarsAndKeepsItsQueryWhenReopened() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+        viewModel.uiState.first { !it.loading }
+        viewModel.onReaderReady(FakeReaderController(start))
+        runCurrent()
+        viewModel.toggleBars()
+
+        viewModel.showSearch()
+        assertThat(viewModel.uiState.value.searchVisible).isTrue()
+        assertThat(viewModel.uiState.value.barsVisible).isFalse()
+
+        viewModel.onSearchQueryChange("rivière")
+        viewModel.hideSearch()
+        viewModel.showSearch()
+        assertThat(viewModel.search.value.query).isEqualTo("rivière")
+        store.clear()
+    }
+
+    @Test
+    fun searchResultIsAJumpThatMarksTheWordUntilTheNextGesture() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            val effects = mutableListOf<TrackerEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.readingEffects.collect { effects += it } }
+            val fake = FakeReaderController(start)
+            viewModel.onReaderReady(fake)
+            runCurrent()
+            viewModel.showSearch()
+            val target = testLocator(chapter = 1, progression = 0.2, total = 0.10)
+                .copy(text = Locator.Text(before = "petite ", highlight = "rivière", after = " qui"))
+            val hit = SearchHit(target, chapter = "I", before = "petite ", match = "rivière", after = " qui", progression = 0.10)
+
+            viewModel.openSearchResult(hit)
+            runCurrent()
+
+            assertThat(viewModel.uiState.value.searchVisible).isFalse()
+            assertThat(fake.goCalls.last().href).isEqualTo(target.href)
+            assertThat(fake.goCalls.last().text.highlight).isEqualTo("rivière")
+            assertThat(fake.searchMatches.last()).isEqualTo(fake.goCalls.last())
+            // Saut explicite : carte « Revenir », lecture inchangée.
+            val withCard = viewModel.uiState.first { it.returnCard != null }
+            assertThat(withCard.readingPercent).isEqualTo(30)
+            assertThat(effects).isEmpty()
+
+            fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false))
+            runCurrent()
+            assertThat(fake.searchMatches.last()).isNull()
+        }
+    }
+
+    @Test
+    fun closingTheSearchStopsItAndReopeningResumesIt() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        // Recherche pilotée : chaque lot est poussé à la main, `null` termine.
+        val batches = MutableSharedFlow<List<SearchHit>?>()
+        val queries = mutableListOf<String>()
+        val search: (String) -> Flow<List<SearchHit>> = { query ->
+            flow {
+                queries += query
+                batches.takeWhile { it != null }.collect { emit(it!!) }
+            }
+        }
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id, searchIn = { search }))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            viewModel.onReaderReady(FakeReaderController(start))
+            runCurrent()
+            val hit = SearchHit(testLocator(chapter = 1, progression = 0.2, total = 0.10), "I", "", "rivière", "", 0.10)
+
+            viewModel.showSearch()
+            viewModel.onSearchQueryChange("rivière")
+            advanceTimeBy(BookSearchModel.DEBOUNCE_MS + 1)
+            runCurrent()
+            batches.emit(listOf(hit))
+            runCurrent()
+            assertThat(viewModel.search.value.running).isTrue()
+
+            // Fermée avant la fin : plus aucun parcours du livre ; requête et résultats gardés.
+            viewModel.hideSearch()
+            runCurrent()
+            assertThat(batches.subscriptionCount.value).isEqualTo(0)
+            assertThat(viewModel.search.value.running).isFalse()
+            assertThat(viewModel.search.value.query).isEqualTo("rivière")
+            assertThat(viewModel.search.value.resultCount).isEqualTo(1)
+
+            // Rouverte : elle reprend.
+            viewModel.showSearch()
+            runCurrent()
+            assertThat(queries).containsExactly("rivière", "rivière").inOrder()
+            assertThat(batches.subscriptionCount.value).isEqualTo(1)
+
+            // Un résultat touché ferme aussi la recherche : elle s'arrête.
+            viewModel.openSearchResult(hit)
+            runCurrent()
+            assertThat(batches.subscriptionCount.value).isEqualTo(0)
+
+            viewModel.showSearch()
+            runCurrent()
+            batches.emit(null)
+            runCurrent()
+            assertThat(queries).hasSize(3)
+            assertThat(viewModel.search.value.done).isTrue()
+            assertThat(viewModel.search.value.resultCount).isEqualTo(1)
+
+            // Terminée : la rouvrir ne relance rien.
+            viewModel.hideSearch()
+            viewModel.showSearch()
+            runCurrent()
+            assertThat(queries).hasSize(3)
+        }
+    }
+
+    @Test
+    fun anotherJumpClearsTheSearchMark() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            val fake = FakeReaderController(start)
+            viewModel.onReaderReady(fake)
+            runCurrent()
+            val target = testLocator(chapter = 1, progression = 0.2, total = 0.10)
+            viewModel.openSearchResult(SearchHit(target, "I", "", "rivière", "", 0.10))
+            runCurrent()
+            assertThat(fake.searchMatches.last()).isNotNull()
+
+            viewModel.goBack()
+            runCurrent()
+
+            assertThat(fake.searchMatches.last()).isNull()
+        }
+    }
+
+    @Test
     fun themeChosenInTheSheetIsSaved() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
@@ -891,11 +1047,24 @@ class ReaderViewModelTest {
         return state.scrollMode
     }
 
+    /**
+     * Vide le magasin même si une assertion échoue : sinon le ViewModel reste vivant et l’horloge de son coordinateur
+     * (sur le Main de test) fait tourner `runTest` sans fin au lieu de signaler l’échec.
+     */
+    private inline fun ViewModelStore.clearedAfter(block: () -> Unit) {
+        try {
+            block()
+        } finally {
+            clear()
+        }
+    }
+
     private fun TestScope.factory(
         bookId: Long,
         open: suspend (File) -> Result<Publication> = { Result.success(testPublication()) },
         clock: () -> Long = { testScheduler.currentTime },
         openJournal: Boolean = false,
+        searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -908,6 +1077,7 @@ class ReaderViewModelTest {
                 reportOpenFailure = { title -> openFailures += title },
                 settings = testSettings(),
                 openJournalOnLoad = openJournal,
+                searchIn = searchIn,
             ).also { viewModels += it }
         }
     }

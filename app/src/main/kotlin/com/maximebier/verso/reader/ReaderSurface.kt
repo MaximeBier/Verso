@@ -45,6 +45,7 @@ import androidx.fragment.compose.AndroidFragment
 import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
+import com.maximebier.verso.readium.SearchMatchDecoration
 import com.maximebier.verso.readium.VersoReadingPreferences
 import com.maximebier.verso.readium.VersoReadingPreferences.applyVerso
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
@@ -87,6 +88,9 @@ private const val TOP_TEXT_SCRIPT =
         "while(s.length<400&&w.nextNode())s+=' '+w.currentNode.data;" +
         "return s;})()"
 
+/** Fraction de page ajoutée avant l’arrondi d’une ancre : un début de colonne rendu à -0,3 px reste sur sa page. */
+internal const val ANCHOR_PAGE_EPSILON = 0.01
+
 /**
  * Mode pages (une colonne) : nombre de pages du fichier affiché (largeur du document / largeur de l’écran), page
  * affichée (défilement horizontal / largeur de l’écran, 1-based) puis, pour chaque ancre de [anchorIds], la page où
@@ -97,7 +101,7 @@ internal fun pageLayoutScript(anchorIds: List<String>): String =
     "(function(ids){var e=document.scrollingElement,w=window.innerWidth;if(!w)return null;" +
         "var r=[Math.max(1,Math.round(e.scrollWidth/w)),Math.round(e.scrollLeft/w)+1];" +
         "for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);" +
-        "r.push(el?Math.floor((el.getBoundingClientRect().left+e.scrollLeft)/w)+1:null);}" +
+        "r.push(el?Math.floor((el.getBoundingClientRect().left+e.scrollLeft)/w+" + ANCHOR_PAGE_EPSILON + ")+1:null);}" +
         "return JSON.stringify(r);})(" + JSONArray(anchorIds) + ")"
 
 /**
@@ -222,6 +226,13 @@ fun ReaderSurface(
         observer.addOnScrollChangedListener(scrollListener)
         onDispose { if (observer.isAlive) observer.removeOnScrollChangedListener(scrollListener) }
     }
+    // Mot trouvé par la recherche ; redessiné aux couleurs du thème si celui-ci change pendant qu’il est marqué.
+    var searchMatch by remember { mutableStateOf<Locator?>(null) }
+    LaunchedEffect(navigator, searchMatch, style.theme) {
+        val nav = navigator ?: return@LaunchedEffect
+        val decorations = searchMatch?.let { SearchMatchDecoration.decorations(it, style.theme) } ?: emptyList()
+        nav.applyDecorations(decorations, SearchMatchDecoration.GROUP)
+    }
     LaunchedEffect(navigator) {
         val nav = navigator ?: return@LaunchedEffect
         controller.bind(
@@ -239,6 +250,7 @@ fun ReaderSurface(
                 pageLayoutOf(nav.evaluateJavascript(pageLayoutScript(ids)), ids)
             },
         )
+        controller.bindSearchMatch { searchMatch = it }
         currentOnReady(controller)
         nav.currentLocator.collect(controller::onDisplayed)
     }

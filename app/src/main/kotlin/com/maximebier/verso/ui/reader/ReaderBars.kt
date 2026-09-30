@@ -85,6 +85,7 @@ fun ReaderBars(
     onBack: () -> Unit,
     onTocClick: () -> Unit,
     onJournalClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     onBottomBarHeightChanged: (Int) -> Unit = {},
@@ -109,7 +110,7 @@ fun ReaderBars(
         ) {
             ReaderBottomBar(
                 state = state,
-                tools = readerTools(onTocClick, onJournalClick, onSettingsClick),
+                tools = readerTools(onTocClick, onJournalClick, onSearchClick, onSettingsClick),
                 modifier = Modifier.onSizeChanged { onBottomBarHeightChanged(it.height) },
             )
         }
@@ -175,11 +176,12 @@ sealed interface ToolGlyph {
 private fun readerTools(
     onTocClick: () -> Unit,
     onJournalClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ): List<ReaderTool> = buildList {
     add(ReaderTool(stringResource(R.string.reader_toc), ToolGlyph.Icon(VersoIcons.ListBullets), onTocClick))
     add(ReaderTool(stringResource(R.string.reader_journal), ToolGlyph.Icon(VersoIcons.History), onJournalClick))
-    // Étape 15 : outil Rechercher (icône VersoIcons.Search, libellé R.string.reader_search) inséré ici.
+    add(ReaderTool(stringResource(R.string.reader_search), ToolGlyph.Icon(VersoIcons.Search), onSearchClick))
     add(ReaderTool(stringResource(R.string.reader_settings), ToolGlyph.Text(stringResource(R.string.reader_settings_glyph)), onSettingsClick))
 }
 

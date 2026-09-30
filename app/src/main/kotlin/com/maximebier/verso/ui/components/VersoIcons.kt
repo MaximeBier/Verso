@@ -71,6 +71,7 @@ object VersoIcons {
         "M3.5 4v4.5H8",
         "M12 7.5V12l3 2",
     )
+    val Search: ImageVector = strokeIcon("search", "M11 4a7 7 0 1 1 0 14a7 7 0 1 1 0-14z", "m20 20-3.5-3.5")
     val Close: ImageVector = strokeIcon("x", "M18 6 6 18M6 6l12 12")
     val Bookmark: ImageVector = strokeIcon("bookmark", "M7 4h10v16l-5-3.5L7 20z")
     val Undo: ImageVector = strokeIcon("undo", "M9 14 4 9l5-5", "M4 9h11a5 5 0 0 1 0 10h-3")

@@ -35,18 +35,23 @@ import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.reader.ReaderGestures
 import com.maximebier.verso.reader.sameResource
+import com.maximebier.verso.readium.BookSearch
 import com.maximebier.verso.readium.Locators
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
+import com.maximebier.verso.readium.SearchHit
 import com.maximebier.verso.readium.TocAnchors
 import com.maximebier.verso.ui.common.locationTexts
 import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.ui.library.OpenFailures
+import com.maximebier.verso.ui.reader.search.BookSearchModel
+import com.maximebier.verso.ui.reader.search.SearchUiState
 import java.io.File
 import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -58,6 +63,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -106,6 +112,8 @@ data class ReaderUiState(
     val journalVisible: Boolean = false,
     /** Feuille « Réglages de lecture » (2.02) ouverte. */
     val settingsVisible: Boolean = false,
+    /** Écran « Recherche dans le livre » (2.06) affiché par-dessus le texte. */
+    val searchVisible: Boolean = false,
     /** Défilement de ce livre (`books.scrollMode`), à défaut celui des Paramètres (`defaultScrollMode`). */
     val scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
     /** Mode pages : « Page 2 sur 9 » du chapitre affiché ; null en continu ou avant le premier compte. */
@@ -132,6 +140,8 @@ class ReaderViewModel(
     private val settings: SettingsRepository,
     /** Ouvert par « Voir le journal de lecture » de la fiche : feuille du journal affichée au chargement. */
     private val openJournalOnLoad: Boolean = false,
+    /** Recherche plein texte d’une publication ouverte ([BookSearch]) ; les tests la remplacent par une recherche pilotée. */
+    private val searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -166,6 +176,19 @@ class ReaderViewModel(
     private var positions: ReadingOrderPositions? = null
     private var metrics: ReaderMetrics? = null
     private var appliedMetrics: ReaderMetrics? = null
+
+    /** Recherche plein texte du livre ouvert (2.06) ; créée avec la publication ([BookSearch]). */
+    private var bookSearch: ((String) -> Flow<List<SearchHit>>)? = null
+
+    private val searchModel = BookSearchModel(
+        scope = viewModelScope,
+        search = { query -> bookSearch?.invoke(query) ?: emptyFlow() },
+        readingOrderHrefs = { _uiState.value.readingOrderHrefs },
+        chapterLabel = { hit -> chapterTitleOf(hit.locator) },
+    )
+
+    /** Requête et résultats de la recherche ; gardés tant que le lecteur est ouvert. */
+    val search: StateFlow<SearchUiState> = searchModel.state
 
     /** Palette affichée, reçue de ReaderScreen ; null tant qu’elle n’est pas connue (rien n’est envoyé au lecteur). */
     private var theme: AppTheme? = null
@@ -240,6 +263,7 @@ class ReaderViewModel(
         }
         tocLinks = publication.tableOfContents.ifEmpty { publication.readingOrder }
         positions = ReadingOrderPositions.load(publication)
+        bookSearch = searchIn(publication)
         val anchors = TocAnchors.load(publication, tocLinks)
         val saved = book.readingLocatorJson?.let(Locators::fromJson)
         val start = saved ?: publication.readingOrder.firstOrNull()?.let(publication::locatorFromLink)
@@ -319,8 +343,14 @@ class ReaderViewModel(
         coordinator?.attach(readerController)
         controllerJob?.cancel()
         controllerJob = viewModelScope.launch {
-            // Un geste de l’utilisateur : la position affichée n’est plus celle d’une ancre visée par un saut.
-            launch { readerController.gestures.collect { cancelCalibration() } }
+            // Un geste de l’utilisateur : la position affichée n’est plus celle d’une ancre visée par un saut,
+            // et le mot trouvé par la recherche n’est plus marqué (glissé, fling ou tour de page).
+            launch {
+                readerController.gestures.collect {
+                    cancelCalibration()
+                    clearSearchMatch()
+                }
+            }
             launch {
                 readerController.pageInfo.collect { info ->
                     _uiState.update { state ->
@@ -362,6 +392,8 @@ class ReaderViewModel(
         controllerJob = null
         cancelCalibration()
         controller = null
+        // La prochaine surface n’a pas la décoration.
+        searchMatchShown = false
         coordinator?.detach()
         // Le premier locator de la prochaine surface est une arrivée, pas un scroll (journal, 6.4).
         lastDisplayed = null
@@ -483,6 +515,50 @@ class ReaderViewModel(
 
     fun hideReadingSettings() = _uiState.update { it.copy(settingsVisible = false) }
 
+    /** Écran « Recherche » (2.06) : la barre et la feuille de réglages se referment. */
+    fun showSearch() {
+        sessionCoordinator?.onInteraction()
+        _uiState.update { it.copy(searchVisible = true, barsVisible = false, tocVisible = false, settingsVisible = false) }
+        // Recherche arrêtée à la fermeture avant sa fin : elle reprend.
+        searchModel.resume()
+    }
+
+    /** Recherche fermée (retour, retour système) : elle ne parcourt plus le livre ; requête et résultats restent. */
+    fun hideSearch() {
+        searchModel.cancel()
+        _uiState.update { it.copy(searchVisible = false) }
+    }
+
+    fun onSearchQueryChange(query: String) = searchModel.onQueryChange(query)
+
+    fun clearSearch() = searchModel.clear()
+
+    /** Mot marqué dans le texte par [openSearchResult] ; effacé au premier geste ou au prochain saut. */
+    private var searchMatchShown = false
+
+    /**
+     * Résultat de recherche touché : recherche (arrêtée, comme [hideSearch]) et barre fermées, saut explicite ([jumpTo] : carte « Revenir »,
+     * position de lecture inchangée), puis le mot est marqué dans le texte.
+     */
+    fun openSearchResult(hit: SearchHit) {
+        searchModel.cancel()
+        _uiState.update { it.copy(searchVisible = false, barsVisible = false) }
+        sessionCoordinator?.onInteraction()
+        jumpTo(hit.locator)
+        val readerController = controller ?: return
+        // Même locator que le saut (progression totale comprise).
+        val target = withTotalProgression(hit.locator)
+        searchMatchShown = true
+        viewModelScope.launch { readerController.showSearchMatch(target) }
+    }
+
+    private fun clearSearchMatch() {
+        if (!searchMatchShown) return
+        searchMatchShown = false
+        val readerController = controller ?: return
+        viewModelScope.launch { readerController.showSearchMatch(null) }
+    }
+
     /** Police, taille, interligne, marges : communs à tous les livres (spec) ; appliqués en direct par la collecte des réglages. */
     fun updateReadingSettings(transform: (ReadingSettings) -> ReadingSettings) {
         sessionCoordinator?.onInteraction()
@@ -560,6 +636,8 @@ class ReaderViewModel(
 
     /** [jumpTo], avec calibrage de l’entrée de sommaire n° [calibrateEntry] (préordre) si elle est ancrée. */
     private fun jump(locator: Locator, calibrateEntry: Int?) {
+        // Tout saut efface l’ancienne marque ; openSearchResult pose la sienne après.
+        clearSearchMatch()
         val readerController = controller
         if (readerController == null) {
             pendingJump = PendingJump(locator, closesToc = false)
@@ -609,6 +687,7 @@ class ReaderViewModel(
      * explicite). Annoncé à la machine à états seulement ; le déplacement reste celui du moteur.
      */
     fun onInternalLinkFollowed(url: Url) {
+        clearSearchMatch()
         val publication = _uiState.value.publication ?: return
         val target = publication.locatorFromLink(Link(href = url)) ?: return
         cancelCalibration()
@@ -622,6 +701,7 @@ class ReaderViewModel(
     }
 
     fun goBack() {
+        clearSearchMatch()
         cancelCalibration()
         coordinator?.onGoBack()
     }
@@ -643,6 +723,7 @@ class ReaderViewModel(
     }
 
     override fun onCleared() {
+        searchModel.cancel()
         // Sortie du lecteur (retour à la bibliothèque = popBackStack) : dernière écriture de la session.
         sessionCoordinator?.close()
         _uiState.value.publication?.close()
