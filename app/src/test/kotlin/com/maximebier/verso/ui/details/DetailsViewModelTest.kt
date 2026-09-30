@@ -11,6 +11,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
@@ -201,6 +202,23 @@ class DetailsViewModelTest {
         assertThat(state.showDeleteDialog).isFalse()
         assertThat(books.book(id)).isNull()
         assertThat(File(booksDir, "sha-bovary.epub").exists()).isFalse()
+    }
+
+    @Test
+    fun statusChoiceIsSavedAndWinsOverProgression() = runTest(dispatcher) {
+        val id = insertBovary()
+        val vm = viewModel(id)
+        advanceUntilIdle()
+        assertThat(vm.state.value.status).isEqualTo(BookStatus.TO_READ)
+
+        vm.onStatusChange(BookStatus.FINISHED)
+        advanceUntilIdle()
+        assertThat(books.book(id)!!.stateOverride).isEqualTo("FINISHED")
+        assertThat(vm.state.value.status).isEqualTo(BookStatus.FINISHED)
+
+        books.saveReadingPosition(id, """{"href":"ch1.xhtml","type":"application/xhtml+xml"}""", 0.4)
+        advanceUntilIdle()
+        assertThat(vm.state.value.status).isEqualTo(BookStatus.FINISHED)
     }
 
     @Test

@@ -29,3 +29,9 @@ internal fun LibraryBookMenuSample() {
 internal fun LibraryGridSample() {
     LibraryContent(state = LibrarySamples.grid, actions = LibraryActions())
 }
+
+/** 2.07 et 2.07b : bibliothèque avec états (la feuille est ouverte par la capture). */
+@Composable
+internal fun LibraryStatesSample() {
+    LibraryContent(LibrarySamples.states, LibraryActions())
+}

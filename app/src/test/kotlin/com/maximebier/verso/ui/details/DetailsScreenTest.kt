@@ -2,6 +2,7 @@ package com.maximebier.verso.ui.details
 
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.data.db.VersoDatabase
@@ -54,6 +56,16 @@ class DetailsScreenTest {
         compose.onNodeWithText(text(R.string.details_size_mb, "1,2")).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.details_format_epub)).assertIsDisplayed()
         compose.onNodeWithText("madame-bovary.epub").assertIsDisplayed()
+    }
+
+    @Test
+    fun statusSegmentShowsAndChangesTheState() {
+        var chosen: BookStatus? = null
+        show(DetailsSamples.bovary, DetailsActions(onStatusChange = { chosen = it }))
+        compose.onNodeWithText(text(R.string.details_state_label)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_state_in_progress)).assertIsSelected()
+        compose.onNodeWithText(text(R.string.details_state_finished)).performClick()
+        assertThat(chosen).isEqualTo(BookStatus.FINISHED)
     }
 
     @Test

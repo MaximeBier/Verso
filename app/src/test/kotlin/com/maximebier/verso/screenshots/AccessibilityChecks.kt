@@ -70,11 +70,16 @@ object AccessibilityChecks {
                 }
             }
 
-    /** La V1 n'a aucun défilement horizontal : une plage horizontale non nulle est une violation. */
+    /**
+     * La V1 n'avait aucun défilement horizontal ; la V2 en introduit un seul, assumé : la rangée de pastilles de
+     * filtre (2.07, `selectableGroup`), dont chaque pastille reste atteignable individuellement au clavier/TalkBack.
+     * Toute autre plage horizontale non nulle reste une violation.
+     */
     fun horizontalScroll(rule: ComposeContentTestRule): List<String> =
         rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange), useUnmergedTree = true)
             .fetchSemanticsNodes()
             .filter { it.config[SemanticsProperties.HorizontalScrollAxisRange].maxValue() > 0f }
+            .filterNot { it.config.getOrNull(SemanticsProperties.SelectableGroup) != null }
             .map { "Défilement horizontal : ${describe(it)}" }
 
     /**

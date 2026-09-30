@@ -2,8 +2,9 @@ package com.maximebier.verso.screenshots
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
@@ -83,7 +84,7 @@ class VariantRule(private val variant: ScreenVariant) : TestRule {
 private val openBookMenu: ComposeContentTestRule.() -> Unit = {
     val label = ApplicationProvider.getApplicationContext<Context>()
         .getString(R.string.library_book_options, "Vingt mille lieues sous les mers")
-    onNode(hasScrollAction()).performScrollToNode(hasContentDescription(label))
+    onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToNode(hasContentDescription(label))
     onNodeWithContentDescription(label).performClick()
 }
 

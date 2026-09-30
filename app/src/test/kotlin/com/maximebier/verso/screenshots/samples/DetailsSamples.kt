@@ -16,3 +16,9 @@ internal fun DetailsSample() {
 internal fun DeleteBookDialogSample() {
     DetailsContent(DetailsSamples.deleteDialog, DetailsActions())
 }
+
+/** 2.08 : fiche V2 (état ; les statistiques s'ajoutent à l'étape 14). */
+@Composable
+internal fun DetailsV2Sample() {
+    DetailsContent(DetailsSamples.bovary, DetailsActions())
+}

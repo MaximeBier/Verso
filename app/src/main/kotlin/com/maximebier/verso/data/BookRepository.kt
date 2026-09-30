@@ -1,6 +1,7 @@
 package com.maximebier.verso.data
 
 import com.maximebier.verso.core.settings.ScrollMode
+import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.data.db.BookDao
 import com.maximebier.verso.data.db.BookEntity
 import java.io.File
@@ -44,6 +45,8 @@ class BookRepository(private val dao: BookDao, private val booksDir: File, priva
 
     /** Défilement choisi pour ce livre (feuille « Aa ») ; il l’emporte sur le défaut des Paramètres. */
     suspend fun setScrollMode(bookId: Long, mode: ScrollMode) = dao.setScrollMode(bookId, mode.name)
+    /** Choix manuel de la fiche ; null revient à l'état calculé. */
+    suspend fun setStateOverride(bookId: Long, status: BookStatus?) = dao.setStateOverride(bookId, status?.name)
 
     /** Supprime la ligne (sessions en cascade), puis l'EPUB et la couverture — seulement s'ils sont dans les dossiers de l'app. */
     suspend fun delete(id: Long) {

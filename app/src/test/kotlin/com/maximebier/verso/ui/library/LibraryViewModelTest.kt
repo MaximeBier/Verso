@@ -135,7 +135,7 @@ class LibraryViewModelTest {
         insert("Nana", locatorJson = LOCATOR_JSON, progression = 0.995)
         viewModel().state.test {
             val byTitle = awaitUntil { it.books.size == 3 }.books.associateBy { it.title }
-            assertThat(byTitle.getValue("Germinal").status).isEqualTo(BookStatus.NEW)
+            assertThat(byTitle.getValue("Germinal").status).isEqualTo(BookStatus.TO_READ)
             assertThat(byTitle.getValue("Bel-Ami").status).isEqualTo(BookStatus.IN_PROGRESS)
             assertThat(byTitle.getValue("Bel-Ami").percent).isEqualTo(47)
             assertThat(byTitle.getValue("Nana").status).isEqualTo(BookStatus.FINISHED)
@@ -167,6 +167,25 @@ class LibraryViewModelTest {
             awaitUntil { it.viewMode == LibraryViewMode.GRID }
         }
         assertThat(settings.libraryViewMode.first()).isEqualTo(LibraryViewMode.GRID)
+    }
+
+    @Test
+    fun filterKeepsOnlyMatchingBooksAndIsNotPersisted() = runTest(dispatcher) {
+        insert("Germinal")
+        insert("Bel-Ami", locatorJson = LOCATOR_JSON, progression = 0.473)
+        insert("Nana", locatorJson = LOCATOR_JSON, progression = 0.995)
+        val vm = viewModel()
+        vm.state.test {
+            awaitUntil { it.books.size == 3 }
+            vm.onFilterChange(LibraryFilter.FINISHED)
+            val finished = awaitUntil { it.filter == LibraryFilter.FINISHED }
+            assertThat(finished.filteredBooks.map { it.title }).containsExactly("Nana")
+            vm.onFilterChange(LibraryFilter.TO_READ)
+            assertThat(awaitUntil { it.filter == LibraryFilter.TO_READ }.filteredBooks.map { it.title }).containsExactly("Germinal")
+        }
+        viewModel().state.test {
+            assertThat(awaitUntil { it.books.size == 3 }.filter).isEqualTo(LibraryFilter.ALL)
+        }
     }
 
     @Test

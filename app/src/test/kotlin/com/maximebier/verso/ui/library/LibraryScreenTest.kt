@@ -1,13 +1,20 @@
 package com.maximebier.verso.ui.library
 
 import android.content.Context
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -77,17 +84,32 @@ class LibraryScreenTest {
         assertThat(deleted?.id).isEqualTo(4L)
     }
 
+    private val sortButtonLabel
+        get() = text(R.string.library_sort_button_description, text(R.string.library_sort_state_recent), text(R.string.library_view_state_list))
+
     @Test
-    fun sortAndViewModeCallbacks() {
+    fun sortButtonOpensTheSheetWithSortAndDisplay() {
         var sort: LibrarySort? = null
         var mode: LibraryViewMode? = null
         show(LibrarySamples.list, LibraryActions(onSortChange = { sort = it }, onViewModeChange = { mode = it }))
+        compose.onNodeWithText(text(R.string.library_sort_sheet_title)).assertDoesNotExist()
+
+        compose.onNodeWithContentDescription(sortButtonLabel).assertHasClickAction().performClick()
+        compose.onNodeWithText(text(R.string.library_sort_sheet_title)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.library_sort_title)).performClick()
         assertThat(sort).isEqualTo(LibrarySort.TITLE)
-        compose.onNodeWithText(text(R.string.library_sort_author)).performClick()
-        assertThat(sort).isEqualTo(LibrarySort.AUTHOR)
-        compose.onNodeWithContentDescription(text(R.string.library_view_grid)).performClick()
+        compose.onNodeWithText(text(R.string.library_view_grid)).performClick()
         assertThat(mode).isEqualTo(LibraryViewMode.GRID)
+
+        compose.onNodeWithContentDescription(text(R.string.common_close)).performClick()
+        compose.onNodeWithText(text(R.string.library_sort_sheet_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun sortButtonShowsTheCurrentSort() {
+        show(LibrarySamples.list.copy(sort = LibrarySort.AUTHOR, viewMode = LibraryViewMode.GRID))
+        val label = text(R.string.library_sort_button_description, text(R.string.library_sort_state_author), text(R.string.library_view_state_grid))
+        compose.onNodeWithContentDescription(label).assertIsDisplayed()
     }
 
     @Test
@@ -96,8 +118,27 @@ class LibraryScreenTest {
         // sont tous composés (la LazyColumn ne compose que les lignes visibles).
         show(LibrarySamples.list.copy(resume = null, books = LibrarySamples.books.drop(3)))
         compose.onAllNodesWithText(text(R.string.library_state_finished)).assertCountEquals(1)
-        compose.onAllNodesWithText(text(R.string.library_state_new)).assertCountEquals(1)
+        // « À lire » est aussi le libellé de la pastille de filtre (2.07) : on ne compte que la ligne du livre
+        // (le bouton de la rangée, Role.Button), pas la pastille (Role.RadioButton).
+        compose.onAllNodes(hasText(text(R.string.library_state_to_read)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assertCountEquals(1)
         compose.onNodeWithText(text(R.string.common_percent, 12)).assertIsDisplayed()
+    }
+
+    @Test
+    fun filterChipsSelectAndReport() {
+        var filter: LibraryFilter? = null
+        show(LibrarySamples.list, LibraryActions(onFilterChange = { filter = it }))
+        compose.onNodeWithText(text(R.string.library_filter_all)).assertIsSelected()
+        compose.onNodeWithText(text(R.string.library_filter_finished)).performScrollTo().performClick()
+        assertThat(filter).isEqualTo(LibraryFilter.FINISHED)
+    }
+
+    @Test
+    fun emptyFilterSaysSo() {
+        show(LibrarySamples.list.copy(resume = null, filter = LibraryFilter.FINISHED, books = LibrarySamples.books.take(2)))
+        compose.onNodeWithText(text(R.string.library_filter_empty)).assertIsDisplayed()
+        compose.onNodeWithText(context.resources.getQuantityString(R.plurals.library_book_count, 0, 0)).assertIsDisplayed()
     }
 
     @Test
