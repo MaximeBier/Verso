@@ -454,6 +454,55 @@ class ReaderViewModelTest {
         store.clear()
     }
 
+    private suspend fun highlightAt(bookId: Long, locator: org.readium.r2.shared.publication.Locator): Long =
+        db.highlightDao().insert(
+            com.maximebier.verso.data.db.HighlightEntity(
+                bookId = bookId, locatorJson = Locators.toJson(locator), text = "passage", note = null,
+                progression = locator.locations.totalProgression ?: 0.0, chapterPath = "", createdAt = 0, updatedAt = 0,
+            ),
+        )
+
+    @Test
+    fun openingAHighlightFromTheListIsAnExplicitJump() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val highlight = highlightAt(id, testLocator(chapter = 1, progression = 0.1, total = 0.05))
+        val store = ViewModelStore()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            val fake = FakeReaderController(start)
+            viewModel.onReaderReady(fake)
+            runCurrent()
+            viewModel.showNotes()
+            assertThat(viewModel.uiState.value.notesVisible).isTrue()
+            viewModel.openHighlight(highlight)
+            val state = viewModel.uiState.first { it.returnCard != null }
+            assertThat(state.notesVisible).isFalse()
+            assertThat(fake.goCalls.last().href.toString()).isEqualTo("chapitre-1.xhtml")
+            assertThat(state.readingProgression).isWithin(1e-9).of(0.30)
+        }
+    }
+
+    @Test
+    fun highlightFromTheRouteIsOpenedOnceTheReaderIsReady() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val highlight = highlightAt(id, testLocator(chapter = 1, progression = 0.1, total = 0.05))
+        val store = ViewModelStore()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id, highlightId = highlight))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            runCurrent()
+            val fake = FakeReaderController(start)
+            viewModel.onReaderReady(fake)
+            runCurrent()
+            assertThat(fake.goCalls.map { it.href.toString() }).contains("chapitre-1.xhtml")
+        }
+    }
+
     @Test
     fun configurationChangeKeepsTheSessionInProgress() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -1066,6 +1115,7 @@ class ReaderViewModelTest {
         clock: () -> Long = { testScheduler.currentTime },
         openJournal: Boolean = false,
         searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
+        highlightId: Long? = null,
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -1080,6 +1130,7 @@ class ReaderViewModelTest {
                 openJournalOnLoad = openJournal,
                 searchIn = searchIn,
                 highlightRepository = HighlightRepository(db.highlightDao()) { 0L },
+                openHighlightOnLoad = highlightId,
             ).also { viewModels += it }
         }
     }

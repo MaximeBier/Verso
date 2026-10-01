@@ -70,8 +70,14 @@ fun sizeParts(bytes: Long): SizeParts =
  * la fiche reliée à son ViewModel.
  */
 @Composable
-fun DetailsDestination(bookId: Long, onBack: () -> Unit, onOpenReader: (Long) -> Unit, onOpenJournal: (Long) -> Unit) {
-    DetailsScreen(bookId = bookId, onBack = onBack, onOpenReader = onOpenReader, onOpenJournal = onOpenJournal)
+fun DetailsDestination(
+    bookId: Long,
+    onBack: () -> Unit,
+    onOpenReader: (Long) -> Unit,
+    onOpenJournal: (Long) -> Unit,
+    onOpenNotes: (Long) -> Unit = {},
+) {
+    DetailsScreen(bookId = bookId, onBack = onBack, onOpenReader = onOpenReader, onOpenJournal = onOpenJournal, onOpenNotes = onOpenNotes)
 }
 
 /** Retour à la bibliothèque après suppression ou si le livre n'existe plus. */
@@ -81,6 +87,7 @@ fun DetailsScreen(
     onBack: () -> Unit,
     onOpenReader: (Long) -> Unit,
     onOpenJournal: (Long) -> Unit = {},
+    onOpenNotes: (Long) -> Unit = {},
     viewModel: DetailsViewModel = viewModel(factory = DetailsViewModel.factory(bookId)),
 ) {
     val state by viewModel.state.collectAsState()
@@ -105,6 +112,10 @@ fun DetailsScreen(
             onDeleteConfirm = viewModel::onDeleteConfirm,
             onDeleteDismiss = viewModel::onDeleteDismiss,
             onStatusChange = viewModel::onStatusChange,
+            onOpenNotes = { id ->
+                viewModel.flush()
+                onOpenNotes(id)
+            },
             onOpenJournal = { id ->
                 viewModel.flush()
                 onOpenJournal(id)
@@ -125,6 +136,7 @@ data class DetailsActions(
     val onDeleteDismiss: () -> Unit = {},
     val onStatusChange: (BookStatus) -> Unit = {},
     val onOpenJournal: (Long) -> Unit = {},
+    val onOpenNotes: (Long) -> Unit = {},
 )
 
 /** Écrans 1.07 (fiche) et 1.08 (confirmation de suppression), sans ViewModel. */
@@ -215,6 +227,15 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
                         stats = stats,
                         remainingMinutes = state.remainingMinutes,
                         onOpenJournal = { actions.onOpenJournal(state.bookId) },
+                    )
+                }
+                // Sous « Voir le journal de lecture » (spec V3) ; seulement si le livre a des surlignages.
+                if (state.highlightCount > 0) {
+                    OutlinedPillButton(
+                        text = stringResource(R.string.details_open_notes, state.highlightCount),
+                        onClick = { actions.onOpenNotes(state.bookId) },
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = VersoIcons.Note,
                     )
                 }
                 Column {

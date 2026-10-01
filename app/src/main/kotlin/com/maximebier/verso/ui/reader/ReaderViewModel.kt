@@ -1,5 +1,6 @@
 package com.maximebier.verso.ui.reader
 
+import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -48,6 +49,12 @@ import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.SearchHit
 import com.maximebier.verso.readium.TocAnchors
 import com.maximebier.verso.ui.common.highlightLocation
+import com.maximebier.verso.ui.common.notesTexts
+import com.maximebier.verso.ui.notes.NotesEvent
+import com.maximebier.verso.ui.notes.NotesListModel
+import com.maximebier.verso.ui.notes.NotesTexts
+import com.maximebier.verso.ui.notes.NotesUiState
+import com.maximebier.verso.ui.notes.plainNotesTexts
 import com.maximebier.verso.ui.common.locationTexts
 import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.ui.library.OpenFailures
@@ -131,6 +138,8 @@ data class ReaderUiState(
     val displayedChapterPath: List<String> = emptyList(),
     /** Carte « Revenir » ; jamais persistée. */
     val returnCard: ReturnCardState? = null,
+    /** Surcouche « Notes et surlignages » (3.06) ouverte depuis la barre. */
+    val notesVisible: Boolean = false,
     /** Réglages de lecture courants (police, taille, interligne, marges). */
     val readingSettings: ReadingSettings = ReadingSettings(),
 )
@@ -156,6 +165,12 @@ class ReaderViewModel(
     /** « Deuxième partie, chap. I · 30 % » d’un surlignage, lu dans les ressources. */
     private val highlightLocationText: (location: String?, percent: Int) -> String =
         { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
+    /** Textes de la liste des notes et de l’export (3.06). */
+    private val notesTexts: NotesTexts = plainNotesTexts(),
+    /** Écriture du fichier choisi par le sélecteur d’Android (export Markdown). */
+    private val writeDocument: suspend (Uri, String) -> Unit = { _, _ -> },
+    /** Ouvert depuis « Notes et surlignages » de la fiche : saut vers ce surlignage au chargement. */
+    private val openHighlightOnLoad: Long? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -334,6 +349,7 @@ class ReaderViewModel(
         // `loading = false` en dernier : l’état publié est alors complet (progression comprise).
         _uiState.update { it.copy(loading = false) }
         if (openJournalOnLoad) showJournal()
+        openHighlightOnLoad?.let(::openHighlight)
         viewModelScope.launch { created.state.collect(::onPositionState) }
         // Relais dans l’ordre d’émission ; lancé avant attach() (onReaderReady), donc aucun effet perdu.
         viewModelScope.launch { created.readingEffects.collect { readingEffectsFlow.emit(it) } }
@@ -444,6 +460,46 @@ class ReaderViewModel(
     fun undoDeleteHighlight(row: HighlightEntity) {
         highlightCoordinator?.undoDelete(row)
     }
+
+    // --- « Notes et surlignages » (3.06) ----------------------------------------------------------
+    private val notesModel = NotesListModel(
+        bookId = bookId,
+        highlights = highlightRepository,
+        books = books,
+        scope = viewModelScope,
+        texts = notesTexts,
+        writeText = { uri, text -> writeDocument(uri, text) },
+        clock = clock,
+    )
+    val notes: StateFlow<NotesUiState> = notesModel.state
+    val notesEvents: SharedFlow<NotesEvent> = notesModel.events
+
+    /** « Notes » de la barre : surcouche 3.06, barre de lecture fermée. */
+    fun showNotes() {
+        sessionCoordinator?.onInteraction()
+        _uiState.update { it.copy(notesVisible = true, barsVisible = false) }
+    }
+
+    fun hideNotes() = _uiState.update { it.copy(notesVisible = false) }
+
+    /** Élément touché (ou « Aller au passage ») : surcouche fermée, saut explicite (carte « Revenir »). */
+    fun openHighlight(id: Long) {
+        viewModelScope.launch {
+            val row = highlightRepository.get(id) ?: return@launch
+            val target = Locators.fromJson(row.locatorJson) ?: return@launch
+            _uiState.update { it.copy(notesVisible = false, barsVisible = false) }
+            sessionCoordinator?.onInteraction()
+            jumpTo(target)
+        }
+    }
+
+    fun exportNotes(uri: Uri) = notesModel.export(uri)
+    fun editNoteFromList(id: Long) = notesModel.editNote(id)
+    fun onListNoteChange(text: String) = notesModel.onNoteChange(text)
+    fun saveListNote() = notesModel.saveNote()
+    fun cancelListNote() = notesModel.cancelNote()
+    fun deleteFromList(id: Long) = notesModel.delete(id)
+    fun undoDeleteFromList(row: HighlightEntity) = notesModel.undoDelete(row)
 
     /** Retour système pendant une sélection : elle s’efface, le livre reste ouvert. */
     fun clearSelection() {
@@ -853,7 +909,7 @@ class ReaderViewModel(
     }
 
     companion object {
-        fun factory(bookId: Long, openJournal: Boolean = false): ViewModelProvider.Factory = viewModelFactory {
+        fun factory(bookId: Long, openJournal: Boolean = false, highlightId: Long? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as VersoApplication
                 val container = app.container
@@ -869,6 +925,9 @@ class ReaderViewModel(
                     openJournalOnLoad = openJournal,
                     highlightRepository = container.highlights,
                     highlightLocationText = { location, percent -> app.resources.highlightLocation(location, percent) },
+                    notesTexts = app.resources.notesTexts(),
+                    writeDocument = container.documents::writeText,
+                    openHighlightOnLoad = highlightId,
                 )
             }
         }

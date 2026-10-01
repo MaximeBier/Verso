@@ -180,4 +180,18 @@ class DetailsScreenTest {
         assertThat(runBlocking { books.book(id) }).isNull()
         db.close()
     }
+
+    @Test
+    fun notesRowAppearsOnlyWithHighlights() {
+        var notes: Long? = null
+        show(DetailsSamples.bovary.copy(highlightCount = 3), DetailsActions(onOpenNotes = { notes = it }))
+        compose.onNodeWithText(text(R.string.details_open_notes, 3)).performScrollTo().performClick()
+        assertThat(notes).isEqualTo(DetailsSamples.bovary.bookId)
+    }
+
+    @Test
+    fun noNotesRowWithoutHighlights() {
+        show(DetailsSamples.bovary.copy(highlightCount = 0))
+        compose.onNodeWithText(text(R.string.details_open_notes, 0)).assertDoesNotExist()
+    }
 }

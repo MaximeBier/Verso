@@ -396,6 +396,35 @@
     <!-- « Deuxième partie, chap. I · 30 % » ; « 30 % » hors sommaire -->
     <string name="notes_item_location">%1$s · %2$d %%</string>
     <string name="notes_item_percent">%1$d %%</string>
+    <string name="notes_title">Notes et surlignages</string>
+    <!-- « Madame Bovary · 3 éléments » -->
+    <string name="notes_subtitle">%1$s · %2$s</string>
+    <plurals name="notes_item_count">
+        <item quantity="one">%d élément</item>
+        <item quantity="many">%d éléments</item>
+        <item quantity="other">%d éléments</item>
+    </plurals>
+    <string name="notes_export">Exporter</string>
+    <string name="notes_export_hint">L’export crée un fichier Markdown à garder ou à partager.</string>
+    <string name="notes_item_options">Options de cet élément</string>
+    <string name="notes_go_to_passage">Aller au passage</string>
+    <string name="notes_edit_note">Modifier la note</string>
+    <string name="notes_add_note">Ajouter une note</string>
+    <string name="notes_delete">Supprimer</string>
+    <!-- PROPOSÉ : livre sans surlignage -->
+    <string name="notes_empty">Aucun surlignage pour l’instant. Sélectionnez un passage pendant la lecture pour le surligner.</string>
+    <!-- Nom proposé au sélecteur : « Madame Bovary – notes.md » (tiret demi-cadratin) -->
+    <string name="notes_export_file_name">%1$s – notes.md</string>
+    <!-- PROPOSÉ : ligne sous le titre du fichier exporté, « Gustave Flaubert · 3 éléments · 1 octobre 2026 » -->
+    <string name="notes_export_meta">%1$s · %2$s · %3$s</string>
+    <string name="notes_export_meta_no_author">%1$s · %2$s</string>
+    <!-- PROPOSÉ : snackbars de l’export -->
+    <string name="notes_exported">Notes exportées</string>
+    <string name="notes_export_failed">L’export n’a pas pu être enregistré.</string>
+    <!-- Barre de lecture : 5ᵉ outil (V3) -->
+    <string name="reader_notes">Notes</string>
+    <!-- Fiche : « Notes et surlignages · 3 » -->
+    <string name="details_open_notes">Notes et surlignages · %1$d</string>
 
     <!-- ===================== Carte de retour (1.14) ===================== -->
     <string name="return_card_title">Vous avez quitté votre lecture</string>
