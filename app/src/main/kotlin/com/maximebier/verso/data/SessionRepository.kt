@@ -19,6 +19,13 @@ class SessionRepository(private val dao: SessionDao) {
         readingStats(list.map { SessionStat(activeMs = it.activeMs, wordsRead = it.wordsRead) })
     }
 
+    /** Statistiques de chaque livre qui a des sessions (vitesse des collections, V4). */
+    fun observeAllStats(): Flow<Map<Long, ReadingStats>> = dao.observeAll().map { list ->
+        list.groupBy { it.bookId }.mapValues { (_, sessions) ->
+            readingStats(sessions.map { SessionStat(activeMs = it.activeMs, wordsRead = it.wordsRead) })
+        }
+    }
+
     /** Renvoie l'id de la session (nouvel id à la première insertion, id inchangé ensuite). */
     suspend fun upsert(session: SessionEntity): Long {
         val rowId = dao.upsert(session)

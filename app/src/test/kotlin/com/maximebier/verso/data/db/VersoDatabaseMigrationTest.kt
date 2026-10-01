@@ -12,8 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Base créée comme par la V1 (SQL de app/schemas/…/1.json), puis ouverte par la V3 : Room joue MIGRATION_1_2 puis
- * MIGRATION_2_3 et valide le schéma obtenu contre les entités. Livres, positions et sessions de la V1 sont gardés.
+ * Base créée comme par la V1 (SQL de app/schemas/…/1.json), puis ouverte par la V4 : Room joue MIGRATION_1_2,
+ * MIGRATION_2_3 puis MIGRATION_3_4 et valide le schéma obtenu contre les entités. Livres, positions et sessions de la V1 sont gardés.
  */
 @RunWith(AndroidJUnit4::class)
 class VersoDatabaseMigrationTest {
@@ -75,6 +75,21 @@ class VersoDatabaseMigrationTest {
             )
             assertThat(db.highlightDao().byId(id)!!.note).isEqualTo("note")
             assertThat(db.bookDao().byId(1)!!.title).isEqualTo("Madame Bovary")
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun collectionTablesExistAfterMigration() = runTest {
+        createVersion1Database()
+        val db = VersoDatabase.build(context, name)
+        try {
+            val id = db.collectionDao().create("Les Rougon-Macquart", createdAt = 5, bookIds = listOf(1L))
+            assertThat(db.collectionDao().observeMemberships().first().single().bookId).isEqualTo(1L)
+            db.bookDao().deleteById(1)
+            assertThat(db.collectionDao().observeMemberships().first()).isEmpty()
+            assertThat(db.collectionDao().observeById(id).first()!!.name).isEqualTo("Les Rougon-Macquart")
         } finally {
             db.close()
         }
