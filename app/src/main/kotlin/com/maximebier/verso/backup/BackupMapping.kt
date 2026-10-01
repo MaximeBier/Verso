@@ -1,12 +1,15 @@
 package com.maximebier.verso.backup
 
 import com.maximebier.verso.core.backup.BackupBookRef
+import com.maximebier.verso.core.backup.BackupCollectionRef
 import com.maximebier.verso.core.backup.BackupFormat
 import com.maximebier.verso.core.backup.BackupItemRef
 import com.maximebier.verso.core.backup.BackupManifest
 import com.maximebier.verso.data.RawSetting
 import com.maximebier.verso.data.chapterPathList
 import com.maximebier.verso.data.db.BookEntity
+import com.maximebier.verso.data.db.CollectionBookEntity
+import com.maximebier.verso.data.db.CollectionEntity
 import com.maximebier.verso.data.db.HighlightEntity
 import com.maximebier.verso.data.db.SessionEntity
 import com.maximebier.verso.data.toChapterPathColumn
@@ -105,6 +108,19 @@ fun HighlightDto.toEntity(): HighlightEntity = HighlightEntity(
     updatedAt = updatedAt,
 )
 
+/** Livres de la collection dans l’ordre des positions (les trous laissés par un retrait sont ignorés). */
+fun CollectionEntity.toDto(members: List<CollectionBookEntity>): CollectionDto = CollectionDto(
+    id = id,
+    name = name,
+    createdAt = createdAt,
+    bookIds = members.filter { it.collectionId == id }.sortedWith(compareBy({ it.position }, { it.bookId })).map { it.bookId },
+)
+
+/** Positions réécrites 0..n-1. */
+fun CollectionDto.toEntities(): Pair<CollectionEntity, List<CollectionBookEntity>> =
+    CollectionEntity(id = id, name = name, createdAt = createdAt) to
+        bookIds.mapIndexed { index, bookId -> CollectionBookEntity(collectionId = id, bookId = bookId, position = index) }
+
 fun RawSetting.toDto(): SettingDto = when (val v = value) {
     is Boolean -> SettingDto(key, "boolean", JsonPrimitive(v))
     is Int -> SettingDto(key, "int", JsonPrimitive(v))
@@ -142,4 +158,5 @@ fun BackupDataDto.manifest(entries: Set<String>): BackupManifest = BackupManifes
     sessions = sessions.map { BackupItemRef(it.id, it.bookId) },
     highlights = highlights.map { BackupItemRef(it.id, it.bookId) },
     entries = entries,
+    collections = collections.map { BackupCollectionRef(it.id, it.bookIds) },
 )

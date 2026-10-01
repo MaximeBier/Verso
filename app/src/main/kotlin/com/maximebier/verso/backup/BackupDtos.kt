@@ -23,6 +23,8 @@ data class BackupDataDto(
     val books: List<BookDto>,
     val sessions: List<SessionDto>,
     val highlights: List<HighlightDto>,
+    /** Format 2 (V4) ; absent d’une sauvegarde au format 1. */
+    val collections: List<CollectionDto> = emptyList(),
 )
 
 @Serializable
@@ -70,6 +72,10 @@ data class HighlightDto(
     val createdAt: Long,
     val updatedAt: Long,
 )
+
+/** Collection : livres dans l’ordre de lecture, par leur id (comme les sessions et les surlignages). */
+@Serializable
+data class CollectionDto(val id: Long, val name: String, val createdAt: Long, val bookIds: List<Long>)
 
 /** Une clé DataStore : [type] parmi boolean, int, long, float, double, string, stringSet. */
 @Serializable

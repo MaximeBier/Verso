@@ -359,7 +359,7 @@ private fun CollectionsRow(names: List<String>, onEdit: () -> Unit) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.details_collections_label), style = VersoTheme.typography.captionBold, color = colors.textSecondary)
             Text(
-                text = if (names.isEmpty()) stringResource(R.string.details_collections_none) else names.joinToString(", "),
+                text = if (names.isEmpty()) stringResource(R.string.details_collections_none) else names.joinToString(stringResource(R.string.details_collections_separator)),
                 style = VersoTheme.typography.rowTitle,
                 color = colors.text,
             )

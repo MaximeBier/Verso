@@ -556,5 +556,7 @@
     <string name="details_collections_edit">Modifier</string>
     <!-- PROPOSÉ (V4) : livre dans aucune collection ; TalkBack de « Modifier » -->
     <string name="details_collections_none">Aucune</string>
+    <!-- Entre deux noms de collections : « Les Rougon-Macquart, Flaubert » -->
+    <string name="details_collections_separator" translatable="false">", "</string>
     <string name="details_collections_edit_content_description">Modifier les collections</string>
 </resources>

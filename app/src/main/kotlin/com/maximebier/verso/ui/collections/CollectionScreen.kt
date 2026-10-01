@@ -33,7 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.R
+import com.maximebier.verso.core.collections.CollectionOrder
 import com.maximebier.verso.core.collections.CollectionSummary
 import com.maximebier.verso.ui.common.durationText
 import com.maximebier.verso.ui.components.BookCover
@@ -74,7 +75,6 @@ import com.maximebier.verso.ui.library.LibraryBook
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
-import kotlin.math.roundToInt
 
 /** Intentions de l’écran 4.02 ; toutes facultatives pour les tests. */
 data class CollectionActions(
@@ -214,9 +214,10 @@ private fun CollectionMenu(detail: CollectionDetail, actions: CollectionActions)
 private fun CollectionBody(detail: CollectionDetail, reordering: Boolean, actions: CollectionActions, modifier: Modifier) {
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val summary = detail.summary
-    var dragIndex by remember { mutableStateOf<Int?>(null) }
+    // Livre glissé repéré par son id (la liste peut changer pendant le geste), hauteur mesurée de chaque ligne.
+    var draggedId by remember { mutableStateOf<Long?>(null) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
-    var rowHeightPx by remember { mutableIntStateOf(1) }
+    val rowHeights = remember { mutableStateMapOf<Long, Int>() }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 16.dp)) {
         item(key = "progression") { ProgressSection(summary, Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp)) }
         summary.resumeIndex?.let { index ->
@@ -236,12 +237,12 @@ private fun CollectionBody(detail: CollectionDetail, reordering: Boolean, action
         } else {
             item(key = "titre-liste") { OrderHeader(reordering, detail.books.size > 1, actions) }
             itemsIndexed(detail.books, key = { _, book -> book.id }) { index, book ->
-                val dragged = dragIndex == index
+                val dragged = draggedId == book.id
                 Box(
                     Modifier
                         .zIndex(if (dragged) 1f else 0f)
                         .graphicsLayer { translationY = if (dragged) dragOffset else 0f }
-                        .onSizeChanged { rowHeightPx = it.height.coerceAtLeast(1) },
+                        .onSizeChanged { rowHeights[book.id] = it.height },
                 ) {
                     if (reordering) {
                         ReorderRow(
@@ -251,15 +252,17 @@ private fun CollectionBody(detail: CollectionDetail, reordering: Boolean, action
                             canMoveDown = index < detail.books.lastIndex,
                             onMove = { to -> actions.onMove(index, to) },
                             onDragStart = {
-                                dragIndex = index
+                                draggedId = book.id
                                 dragOffset = 0f
                             },
                             onDragBy = { dy -> dragOffset += dy },
                             onDragStop = { cancelled ->
-                                val target = (index + (dragOffset / rowHeightPx).roundToInt()).coerceIn(0, detail.books.lastIndex)
-                                dragIndex = null
+                                val from = detail.books.indexOfFirst { it.id == book.id }
+                                val heights = detail.books.map { rowHeights[it.id] ?: 0 }
+                                val target = CollectionOrder.dropIndex(from, dragOffset, heights)
+                                draggedId = null
                                 dragOffset = 0f
-                                if (!cancelled && target != index) actions.onMove(index, target)
+                                if (!cancelled && from >= 0 && target != from) actions.onMove(from, target)
                             },
                         )
                     } else {
@@ -468,50 +471,55 @@ private fun ReorderRow(
     val up = stringResource(R.string.collection_move_up, book.title)
     val down = stringResource(R.string.collection_move_down, book.title)
     val drag = stringResource(R.string.collection_drag, book.title)
-    Row(
-        Modifier.fillMaxWidth().background(colors.background).padding(end = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .pointerInput(index) {
-                    detectDragGestures(
-                        onDragStart = { start() },
-                        onDrag = { change, amount ->
-                            change.consume()
-                            dragBy(amount.y)
-                        },
-                        onDragEnd = { stop(false) },
-                        onDragCancel = { stop(true) },
-                    )
-                }
-                .size(VersoDimens.controlMin)
-                .semantics {
-                    contentDescription = drag
-                    customActions = buildList {
-                        if (canMoveUp) add(CustomAccessibilityAction(up) { onMove(index - 1); true })
-                        if (canMoveDown) add(CustomAccessibilityAction(down) { onMove(index + 1); true })
-                    }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(VersoIcons.GripVertical, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(VersoDimens.iconSmall))
-        }
-        Text(
-            text = rank.toString(),
-            style = VersoTheme.typography.bodyStrong.copy(fontFeatureSettings = "tnum"),
-            color = colors.textSecondary,
-            modifier = Modifier.clearAndSetSemantics {},
-        )
-        Row(
-            Modifier.weight(1f).padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BookCover(title = book.title, coverPath = book.coverPath, seed = book.colorSeed, size = CoverSize.ROW)
-            Text(book.title, style = VersoTheme.typography.rowTitle, color = colors.text, modifier = Modifier.weight(1f))
-        }
+    val buttons = @Composable {
         VersoIconButton(icon = VersoIcons.ChevronUp, contentDescription = up, onClick = { onMove(index - 1) }, enabled = canMoveUp)
         VersoIconButton(icon = VersoIcons.ChevronDown, contentDescription = down, onClick = { onMove(index + 1) }, enabled = canMoveDown)
+    }
+    // Texte très agrandi : « Monter » et « Descendre » passent sous le titre, qui garde la largeur (pas de mot coupé).
+    val stacked = LocalDensity.current.fontScale >= STACKED_CARD_FONT_SCALE
+    Column(Modifier.fillMaxWidth().background(colors.background).padding(end = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { start() },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragBy(amount.y)
+                            },
+                            onDragEnd = { stop(false) },
+                            onDragCancel = { stop(true) },
+                        )
+                    }
+                    .size(VersoDimens.controlMin)
+                    .semantics {
+                        contentDescription = drag
+                        customActions = buildList {
+                            if (canMoveUp) add(CustomAccessibilityAction(up) { onMove(index - 1); true })
+                            if (canMoveDown) add(CustomAccessibilityAction(down) { onMove(index + 1); true })
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(VersoIcons.GripVertical, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(VersoDimens.iconSmall))
+            }
+            Text(
+                text = rank.toString(),
+                style = VersoTheme.typography.bodyStrong.copy(fontFeatureSettings = "tnum"),
+                color = colors.textSecondary,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+            Row(
+                Modifier.weight(1f).padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BookCover(title = book.title, coverPath = book.coverPath, seed = book.colorSeed, size = CoverSize.ROW)
+                Text(book.title, style = VersoTheme.typography.rowTitle, color = colors.text, modifier = Modifier.weight(1f))
+            }
+            if (!stacked) buttons()
+        }
+        if (stacked) Row(Modifier.align(Alignment.End)) { buttons() }
     }
 }

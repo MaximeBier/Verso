@@ -56,7 +56,7 @@ class BackupTestLibrary(root: File, scope: CoroutineScope, name: String = "telep
         return db.bookDao().byId(id)!!
     }
 
-    /** Trois livres (deux avec couverture), deux sessions, deux surlignages (un annoté), réglages changés. */
+    /** Trois livres (deux avec couverture), deux sessions, deux surlignages (un annoté), deux collections (une vide), réglages changés. */
     suspend fun seed(): List<BookEntity> {
         val bovary = addBook("Madame Bovary", withCover = true)
         val candide = addBook("Candide")
@@ -65,6 +65,8 @@ class BackupTestLibrary(root: File, scope: CoroutineScope, name: String = "telep
         db.sessionDao().upsert(testSession(silo.id, startedAt = 2_000L))
         db.highlightDao().insert(highlight(bovary.id, "Elle s’ennuyait", note = "Le cœur du livre"))
         db.highlightDao().insert(highlight(candide.id, "Il faut cultiver notre jardin", note = null))
+        db.collectionDao().create("Classiques", createdAt = 7_000L, bookIds = listOf(candide.id, bovary.id))
+        db.collectionDao().create("Vide", createdAt = 8_000L, bookIds = emptyList())
         settings.setThemeMode(ThemeMode.DARK)
         settings.updateReadingSettings { it.withFontSize(22) }
         settings.setReopenLastBook(false)
