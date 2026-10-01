@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.navigator.Selection
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
@@ -54,6 +55,8 @@ class FragmentReaderControllerTest {
         var adjacent: Locator? = null
         val turns = mutableListOf<Boolean>()
         var pageCount: Int? = null
+        var selectionText: String? = null
+        var cleared = 0
 
         /** Pages où commencent les chapitres ancrés du fichier affiché (vide : un seul chapitre). */
         var anchors: List<AnchorPage> = emptyList()
@@ -85,6 +88,10 @@ class FragmentReaderControllerTest {
                 visibleText = { visible },
                 turnPage = { forward -> turns += forward; turnAccepted },
                 pageLayout = { pageCount?.let { PageLayout(it, anchors, currentPage) } },
+            )
+            bindSelection(
+                read = { selectionText?.let { Selection(Locator(href = Url("ch1.xhtml")!!, mediaType = MediaType.XHTML, locations = Locator.Locations(progression = 0.4), text = Locator.Text(highlight = it)), null) } },
+                clear = { cleared++ },
             )
         }
     }
@@ -1013,5 +1020,81 @@ class FragmentReaderControllerTest {
     fun showSearchMatchWithoutNavigatorDoesNothing() = runTest {
         // Aucune exception, rien à marquer : la surface n’a pas encore branché les décorations.
         Harness(this).controller.showSearchMatch(at("ch1.xhtml", 0.5))
+    }
+
+    // ---------- Sélection et surlignages (V3) ----------
+
+    @Test
+    fun selectionGesturesAreNeverSignalled() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.2))
+        h.controller.gestures.test {
+            // Appui long : le doigt se pose, la sélection commence, le doigt glisse pour l’étendre puis se lève.
+            h.controller.onPointerDown()
+            h.selectionText = "la campagne"
+            h.controller.onSelectionStarted()
+            h.controller.onGestureReleased(velocityYPxPerSecond = 0f, dragDyPx = 120f)
+            // Toucher qui annule la sélection : ni geste, ni barre de lecture.
+            h.controller.onPointerDown()
+            h.controller.onSelectionEnded()
+            h.controller.onTapLikeGesture()
+            h.controller.onReadiumTap()
+            advanceTimeBy(5_000)
+            expectNoEvents()
+        }
+        assertThat(h.taps).isEqualTo(0)
+    }
+
+    @Test
+    fun selectionTextIsPolledWhileSelecting() = runTest {
+        val h = Harness(this)
+        h.selectionText = "la campagne"
+        h.controller.onSelectionStarted()
+        assertThat(h.controller.selecting.value).isTrue()
+        advanceTimeBy(ReaderGestures.SELECTION_POLL_MS + 1)
+        assertThat(h.controller.selection.value?.text).isEqualTo("la campagne")
+        h.selectionText = "la campagne\nainsi"
+        advanceTimeBy(ReaderGestures.SELECTION_POLL_MS + 1)
+        assertThat(h.controller.selection.value?.text).isEqualTo("la campagne ainsi")
+        h.controller.clearSelection()
+        assertThat(h.cleared).isEqualTo(1)
+        assertThat(h.controller.selecting.value).isFalse()
+        assertThat(h.controller.selection.value).isNull()
+    }
+
+    @Test
+    fun currentSelectionCarriesTotalProgression() = runTest {
+        val h = Harness(this)
+        h.controller.setPositions(positions)
+        h.selectionText = "passage"
+        assertThat(h.controller.currentSelection()!!.locator.locations.totalProgression).isNotNull()
+        h.selectionText = "   "
+        assertThat(h.controller.currentSelection()).isNull()
+    }
+
+    @Test
+    fun tapOnAHighlightOpensItInsteadOfTheBars() = runTest {
+        val h = Harness(this)
+        h.controller.onDisplayed(at("ch1.xhtml", 0.2))
+        h.controller.highlightTaps.test {
+            h.controller.onPointerDown()
+            h.controller.onTapLikeGesture()
+            h.controller.onHighlightActivated(42L)
+            assertThat(awaitItem()).isEqualTo(42L)
+            advanceTimeBy(ReaderGestures.TAP_FALLBACK_DELAY_MS * 2)
+        }
+        assertThat(h.taps).isEqualTo(0)
+    }
+
+    @Test
+    fun ordinaryTapStillTogglesTheBarsAfterTheGuard() = runTest {
+        val h = Harness(this)
+        h.controller.onSelectionStarted()
+        h.controller.onSelectionEnded()
+        advanceTimeBy(ReaderGestures.SELECTION_DISMISS_TAP_MS + 1)
+        h.controller.onPointerDown()
+        h.controller.onTapLikeGesture()
+        h.controller.onReadiumTap()
+        assertThat(h.taps).isEqualTo(1)
     }
 }

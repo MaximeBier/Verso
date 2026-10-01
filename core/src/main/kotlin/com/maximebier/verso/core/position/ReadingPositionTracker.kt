@@ -46,6 +46,15 @@ sealed interface ReaderEvent {
 
     /** Repos forcé (lecteur mis en arrière-plan) : le mouvement en attente est traité tout de suite. */
     data class Rest(override val timeMs: Long) : ReaderEvent
+
+    /** Une sélection de texte commence (appui long) : ni lecture ni navigation jusqu’à [SelectionEnded]. */
+    data class SelectionStarted(override val timeMs: Long) : ReaderEvent
+
+    /**
+     * Fin de la sélection (action de la barre, toucher qui l’annule). [position] : affiché à cet instant, qui devient
+     * le point de départ du prochain mouvement, sans effet (ni lecture, ni carte, ni mots lus).
+     */
+    data class SelectionEnded(override val timeMs: Long, val position: BookPosition) : ReaderEvent
 }
 
 enum class TrackerMode { FOLLOWING, AWAY }
@@ -106,6 +115,9 @@ sealed interface TrackerEffect {
  *   la navigation reste ouverte jusqu’à la position d’arrivée, au plus [ReadingThresholds.flingPositionMaxWaitMs].
  * - `Rest` (arrière-plan) : repos immédiat, le mouvement en attente est validé.
  * - Le premier `Displayed` reçu est l'arrivée à la position initiale : il ne modifie jamais la lecture.
+ * - Sélection (`SelectionStarted` … `SelectionEnded`) : le mouvement en attente est validé au début (l’appui long
+ *   suit un arrêt). Ensuite, `Displayed` ne fait que suivre l’affiché (défilement automatique des poignées),
+ *   `GestureEnded` est ignoré, le repos n’est pas évalué. À la fin, l’affiché devient le point de départ, sans effet.
  * - `SaveReading` sans `ReadingMoved` (restauration, « Rester ici », confirmation) : la lecture change
  *   sans mouvement de lecture, aucun mot n'est compté.
  */
@@ -123,6 +135,9 @@ class ReadingPositionTracker(
     private var reading: BookPosition = initial
     private var displayed: BookPosition = initial
     private var mode: TrackerMode = TrackerMode.FOLLOWING
+
+    /** Sélection de texte en cours : ni lecture ni navigation. */
+    private var selecting = false
 
     /** Dernière position connue en mouvement (Displayed ou fin de geste) ; null avant le premier Displayed. */
     private var lastMotion: Stamped? = null
@@ -197,6 +212,11 @@ class ReadingPositionTracker(
 
     fun onEvent(event: ReaderEvent): List<TrackerEffect> {
         val effects = mutableListOf<TrackerEffect>()
+        if (selecting) {
+            onEventWhileSelecting(event, effects)
+            pruneHistory(event.timeMs)
+            return effects
+        }
         settleIfResting(event.timeMs, effects)
         when (event) {
             is ReaderEvent.Displayed -> onDisplayed(event.timeMs, event.position, effects)
@@ -217,9 +237,58 @@ class ReadingPositionTracker(
                 flingAwaitingPositionSinceMs = null
                 settle(effects)
             }
+            is ReaderEvent.SelectionStarted -> {
+                if (motionPending || navigating) settle(effects)
+                flingAwaitingPositionSinceMs = null
+                selecting = true
+            }
+            // Fin sans début (surface recréée pendant la sélection) : simple nouveau point de départ.
+            is ReaderEvent.SelectionEnded -> restartFrom(event.timeMs, event.position)
         }
         pruneHistory(event.timeMs)
         return effects
+    }
+
+    private fun onEventWhileSelecting(event: ReaderEvent, effects: MutableList<TrackerEffect>) {
+        when (event) {
+            is ReaderEvent.Displayed -> {
+                displayed = event.position
+                displayedAtMs = event.timeMs
+            }
+            is ReaderEvent.SelectionEnded -> {
+                selecting = false
+                restartFrom(event.timeMs, event.position)
+            }
+            // Saut ou carte touchée pendant une sélection (peu probable) : la sélection est finie, l’événement est traité.
+            is ReaderEvent.Jumped, is ReaderEvent.StayHere, is ReaderEvent.GoBack -> {
+                selecting = false
+                restartFrom(event.timeMs, displayed)
+                effects += onEvent(event)
+            }
+            is ReaderEvent.GestureEnded, is ReaderEvent.Tick, is ReaderEvent.Rest, is ReaderEvent.SelectionStarted -> Unit
+        }
+    }
+
+    /** L’affiché devient le point de départ du prochain mouvement : aucune lecture, aucune navigation en attente. */
+    private fun restartFrom(timeMs: Long, position: BookPosition) {
+        displayed = position
+        displayedAtMs = timeMs
+        lastMotion = Stamped(timeMs, position)
+        motionPending = false
+        navigating = false
+        navigationStartedAtMs = null
+        flingAwaitingPositionSinceMs = null
+        displayedSinceGestureEnd = false
+        movedSinceGesture = false
+        // Un saut en attente d’arrivée (cible déjà à l’écran) ne doit pas faire ignorer les mouvements suivants.
+        jumpTarget = null
+        jumpApproximate = false
+        jumpDisplayedSeen = false
+        resetWindow(timeMs, position)
+        if (mode == TrackerMode.AWAY) {
+            anchor = Stamped(timeMs, position)
+            confirmWindowStartMs = null
+        }
     }
 
     private fun onDisplayed(timeMs: Long, position: BookPosition, effects: MutableList<TrackerEffect>) {

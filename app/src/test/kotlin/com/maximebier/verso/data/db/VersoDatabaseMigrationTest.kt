@@ -12,8 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Base créée comme par la V1 (SQL de app/schemas/…/1.json), puis ouverte par la V2 : Room joue MIGRATION_1_2 et
- * valide le schéma obtenu contre les entités. Livres, positions et sessions de la V1 sont gardés.
+ * Base créée comme par la V1 (SQL de app/schemas/…/1.json), puis ouverte par la V3 : Room joue MIGRATION_1_2 puis
+ * MIGRATION_2_3 et valide le schéma obtenu contre les entités. Livres, positions et sessions de la V1 sont gardés.
  */
 @RunWith(AndroidJUnit4::class)
 class VersoDatabaseMigrationTest {
@@ -57,6 +57,24 @@ class VersoDatabaseMigrationTest {
             assertThat(book.stateOverride).isEqualTo("FINISHED")
             db.bookDao().setScrollMode(1, null)
             assertThat(db.bookDao().byId(1)!!.scrollMode).isNull()
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun highlightsTableExistsAfterMigration() = runTest {
+        createVersion1Database()
+        val db = VersoDatabase.build(context, name)
+        try {
+            val id = db.highlightDao().insert(
+                HighlightEntity(
+                    bookId = 1, locatorJson = "{}", text = "passage", note = "note", progression = 0.3,
+                    chapterPath = "", createdAt = 1, updatedAt = 1,
+                ),
+            )
+            assertThat(db.highlightDao().byId(id)!!.note).isEqualTo("note")
+            assertThat(db.bookDao().byId(1)!!.title).isEqualTo("Madame Bovary")
         } finally {
             db.close()
         }

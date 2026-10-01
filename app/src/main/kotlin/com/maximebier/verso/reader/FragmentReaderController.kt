@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.readium.r2.navigator.Selection
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
 
@@ -203,6 +204,92 @@ internal class FragmentReaderController(
         this.readPageLayout = pageLayout
     }
 
+    // --- Sélection et surlignages (V3) ------------------------------------------------------------
+    private val selectingState = MutableStateFlow(false)
+    private val selectionState = MutableStateFlow<TextSelection?>(null)
+    private val highlightTapFlow = MutableSharedFlow<Long>(extraBufferCapacity = 4)
+    private var readSelection: (suspend () -> Selection?)? = null
+    private var clearNativeSelection: (() -> Unit)? = null
+    private var highlightsSink: (suspend (List<HighlightMark>) -> Unit)? = null
+    private var selectionPoll: Job? = null
+
+    /** Doigt posé pendant une sélection : tout le geste lui appartient (glissé qui l’étend, toucher qui l’annule). */
+    private var selectionGesture = false
+
+    /** Fin de la dernière sélection (garde contre le tap qui l’annule, [ReaderGestures.SELECTION_DISMISS_TAP_MS]). */
+    private var selectionEndedAt: Long? = null
+
+    override val selecting: StateFlow<Boolean> = selectingState.asStateFlow()
+    override val selection: StateFlow<TextSelection?> = selectionState.asStateFlow()
+    override val highlightTaps: Flow<Long> = highlightTapFlow.asSharedFlow()
+
+    /** Branche la sélection du navigateur (`currentSelection`, `clearSelection`), une fois celui-ci créé. */
+    fun bindSelection(read: suspend () -> Selection?, clear: () -> Unit) {
+        readSelection = read
+        clearNativeSelection = clear
+    }
+
+    /** Branche le dessin des surlignages (décorations Readium), une fois le navigateur créé. */
+    fun bindHighlights(show: suspend (List<HighlightMark>) -> Unit) {
+        highlightsSink = show
+    }
+
+    override suspend fun showHighlights(marks: List<HighlightMark>) {
+        highlightsSink?.invoke(marks)
+    }
+
+    override suspend fun currentSelection(): TextSelection? =
+        readSelection?.invoke()
+            ?.takeIf { !it.locator.text.highlight.isNullOrBlank() }
+            ?.let { TextSelection(withTotalProgression(it.locator)) }
+
+    /**
+     * ActionMode d’Android créé (menu natif vidé par la surface) : une sélection commence. Ni geste, ni tap jusqu’à sa
+     * fin ; le passage est relu toutes les [ReaderGestures.SELECTION_POLL_MS] pour la barre de sélection.
+     */
+    fun onSelectionStarted() {
+        if (selectingState.value) return
+        cancelRelayout(publishScreen = true)
+        pendingTap?.cancel()
+        pendingTap = null
+        dropPendingGesture()
+        selectingState.value = true
+        selectionPoll?.cancel()
+        selectionPoll = scope.launch {
+            while (true) {
+                // WebView détruite pendant la lecture JavaScript : on réessaie au tour suivant.
+                val read = runCatching { currentSelection() }.getOrNull()
+                // La lecture JavaScript ne s’annule pas : la sélection a pu finir entre-temps, ne pas la ressusciter.
+                ensureActive()
+                if (read != null && selectingState.value) selectionState.value = read
+                delay(ReaderGestures.SELECTION_POLL_MS)
+            }
+        }
+    }
+
+    /** ActionMode détruit : sélection effacée (action de la barre, toucher ailleurs, retour). */
+    fun onSelectionEnded() {
+        if (!selectingState.value) return
+        selectionPoll?.cancel()
+        selectionPoll = null
+        selectionState.value = null
+        selectingState.value = false
+        selectionEndedAt = uptimeMs()
+    }
+
+    override fun clearSelection() {
+        clearNativeSelection?.invoke()
+        onSelectionEnded()
+    }
+
+    /** Surlignage touché (Readium : décoration activée, sans `onTap`) ; le tap vu par l’app n’est pas rattrapé. */
+    fun onHighlightActivated(id: Long) {
+        pendingTap?.cancel()
+        pendingTap = null
+        if (selectingState.value) return
+        highlightTapFlow.tryEmit(id)
+    }
+
     private var searchMatch: (suspend (Locator?) -> Unit)? = null
 
     /** Branche la marque de recherche sur le navigateur (décorations Readium), une fois celui-ci créé. */
@@ -293,6 +380,9 @@ internal class FragmentReaderController(
 
     /** Doigt posé : il arrête tout défilement en cours, dont le signal part aussitôt ; les bords sont relus. */
     fun onPointerDown() {
+        selectionGesture = selectingState.value
+        // Poignées et toucher qui annule la sélection : ni lecture, ni bords, ni tap.
+        if (selectionGesture) return
         // L’utilisateur reprend le texte en main (feuille « Aa » sans voile) : pas de retour au locator sous son doigt.
         cancelRelayout(publishScreen = true)
         val now = uptimeMs()
@@ -324,6 +414,8 @@ internal class FragmentReaderController(
      * (`chapterTurn`). Sinon : fling si la vitesse au lâcher dépasse `flingScreensPerSecond` écrans par seconde.
      */
     fun onGestureReleased(velocityYPxPerSecond: Float, dragDyPx: Float) {
+        // Appui long : la sélection a commencé pendant ce geste (glissé qui l’étend) — rien à signaler.
+        if (selectionGesture || selectingState.value) return
         // Remise en page commencée pendant le glissé : le chapitre voisin se calcule sur la position réelle.
         cancelRelayout(publishScreen = true)
         val height = viewportHeightPx
@@ -426,6 +518,7 @@ internal class FragmentReaderController(
      * deux fois ([echoesOwed]). Un appui qui arrête un défilement n’est pas un tap.
      */
     fun onTapLikeGesture() {
+        if (selectionGesture || selectingState.value) return
         if (touchStoppedScroll) return
         pendingTap?.cancel()
         pendingTap = scope.launch {
@@ -437,6 +530,9 @@ internal class FragmentReaderController(
 
     fun onReadiumTap() {
         val now = uptimeMs()
+        // Tap qui a annulé une sélection : il n’affiche pas la barre de lecture.
+        val endedAt = selectionEndedAt
+        if (selectingState.value || (endedAt != null && now - endedAt < ReaderGestures.SELECTION_DISMISS_TAP_MS)) return
         while (echoesOwed.isNotEmpty() && now - echoesOwed.first() > ReaderGestures.TAP_ECHO_MAX_MS) {
             echoesOwed.removeFirst()
         }
@@ -500,8 +596,9 @@ internal class FragmentReaderController(
 
     /** Saut sans animation ; le geste en attente est abandonné sans signal ([dropPendingGesture]). */
     override suspend fun go(locator: Locator) {
-        // Le saut l’emporte sur le retour au locator d’une remise en page en cours.
+        // Le saut l’emporte sur le retour au locator d’une remise en page en cours, et sur une sélection.
         cancelRelayout(publishScreen = false)
+        if (selectingState.value) clearSelection()
         dropPendingGesture()
         navigate?.invoke(locator)
     }

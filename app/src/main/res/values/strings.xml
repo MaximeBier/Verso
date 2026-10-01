@@ -363,6 +363,32 @@
     <!-- PROPOSÉ : journal vide -->
     <string name="journal_empty">Aucune session pour l’instant. Vos sessions apparaîtront ici dès que vous lirez.</string>
 
+    <!-- ===================== Texte sélectionné (3.04) ===================== -->
+    <string name="selection_toolbar">Texte sélectionné</string>
+    <!-- « Sélection : « la campagne ainsi ressemble à un grand manteau… » » -->
+    <string name="selection_label">Sélection : « %1$s »</string>
+    <string name="selection_highlight">Surligner</string>
+    <string name="selection_note">Note</string>
+    <string name="selection_copy">Copier</string>
+    <!-- PROPOSÉ : confirmation sous Android 12 et moins (Android 13 et plus affiche la sienne) -->
+    <string name="selection_copied">Passage copié</string>
+
+    <!-- ===================== Surlignage touché ===================== -->
+    <!-- PROPOSÉ : titre de la feuille d’un surlignage touché dans le texte -->
+    <string name="highlight_sheet_title">Surlignage</string>
+    <string name="highlight_add_note">Ajouter une note</string>
+    <string name="highlight_edit_note">Modifier la note</string>
+    <string name="highlight_delete">Supprimer</string>
+    <string name="highlight_action_copy">Copier</string>
+    <!-- PROPOSÉ : snackbar après « Supprimer » -->
+    <string name="highlight_deleted">Surlignage supprimé</string>
+    <string name="highlight_deleted_undo">Annuler</string>
+
+    <!-- ===================== Notes et surlignages (3.06) ===================== -->
+    <!-- « Deuxième partie, chap. I · 30 % » ; « 30 % » hors sommaire -->
+    <string name="notes_item_location">%1$s · %2$d %%</string>
+    <string name="notes_item_percent">%1$d %%</string>
+
     <!-- ===================== Carte de retour (1.14) ===================== -->
     <string name="return_card_title">Vous avez quitté votre lecture</string>
     <!-- « Votre lecture : Partie II, chap. I · 31 % » -->
