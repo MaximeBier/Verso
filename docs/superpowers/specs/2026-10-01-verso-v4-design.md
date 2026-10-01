@@ -11,9 +11,9 @@ Une étape par commit (`Étape N : …`), à la suite de la V3, poussée et inst
 | # | Étape | Écrans | Critères V4 |
 | --- | --- | --- | --- |
 | 22 | Données et logique : tables Room (migration 3 → 4), DAO, dépôt, calculs `:core` (progression, décompte, temps restant, « Reprendre », auteur commun, ordre) | — | 3 (tests) |
-| 23 | Onglets « Livres / Collections » et liste des collections | 4.01 | 1, 2 (affichage) |
-| 24 | Création et ajout : écran « Nouvelle collection », feuille « Ajouter à une collection » depuis le ⋮ d'un livre et depuis la fiche | 4.03, 4.04 | 2, 7 |
-| 25 | Écran d'une collection : statistiques, « Reprendre », liste, « Réordonner », renommer, supprimer, retirer un livre | 4.02 | 3, 4, 5, 6, 8 |
+| 23 | Onglets « Livres / Collections », liste des collections et écran « Nouvelle collection » | 4.01, 4.03 | 1, 2 |
+| 24 | Écran d'une collection : statistiques, « Reprendre », liste, « Réordonner », renommer, supprimer, retirer un livre | 4.02 | 3, 4, 5, 6, 8 (retrait) |
+| 25 | Ajout : feuille « Ajouter à une collection » depuis le ⋮ d'un livre et depuis la fiche | 4.04 | 7, 8 (suppression d'un livre) |
 | 26 | Sauvegarde des collections, passe d'acceptation V4 et README | toutes | toutes, plus 9, 10 et 11 |
 
 ## Décisions
@@ -33,14 +33,14 @@ Une étape par commit (`Étape N : …`), à la suite de la V3, poussée et inst
 | Ordre des collections | Par date de création, la plus récente en haut. Pas de tri au choix |
 | Onglet au lancement | Toujours « Livres ». L'onglet n'est pas mémorisé, mais il est conservé quand on revient d'un écran ouvert depuis l'onglet « Collections » |
 | Onglet « Collections » vide | Une phrase et le bouton « Nouvelle collection » (texte absent des maquettes, proposé) |
-| Création | « Créer » est actif dès que le nom contient autre chose que des espaces, même sans livre coché. Deux collections peuvent porter le même nom. Le filtre cherche dans le titre et l'auteur, comme celui de la bibliothèque ; un livre coché puis masqué par le filtre reste coché. Après « Créer », on arrive sur l'écran de la collection |
+| Création | « Créer » est actif dès que le nom contient autre chose que des espaces, même sans livre coché. Deux collections peuvent porter le même nom. Le filtre cherche le texte saisi dans le titre et l'auteur, sans tenir compte de la casse ni des accents ; un livre coché puis masqué par le filtre reste coché. Après « Créer », on arrive sur l'écran de la collection |
 | « Nouvelle collection » depuis la feuille 4.04 | Ouvre l'écran 4.03 avec le livre déjà coché. Après « Créer », retour à la feuille, où la nouvelle collection apparaît cochée |
 | Feuille « Ajouter à une collection » | Chaque case agit tout de suite (ajout en dernier, ou retrait). « Terminé » et la croix ferment la feuille. Sans collection, la feuille ne montre que « Nouvelle collection » |
 | Fiche du livre | Ligne « Collections » : les noms séparés par des virgules, ou « Aucune » (proposé), et « Modifier », qui ouvre la feuille 4.04. Elle est placée sous « État », comme dans la maquette |
 | Renommer | Dialogue avec le champ « Nom de la collection », « Annuler » et « Renommer » (proposé) |
 | Supprimer une collection | Dialogue « Supprimer « Nom » ? Les livres restent dans votre bibliothèque. », « Annuler » et « Supprimer » (proposé), puis retour à l'onglet « Collections » |
 | Collection vide | Écran de la collection avec « 0 % », sans décompte, sans temps restant et sans « Reprendre », et une phrase qui explique comment ajouter un livre depuis son menu ⋮ (proposé) |
-| Supprimer un livre | Il quitte toutes ses collections (suppression en cascade) ; les livres suivants remontent d'un rang. Une collection peut rester vide |
+| Supprimer un livre | Il quitte toutes ses collections (suppression en cascade) ; les livres suivants remontent d'un rang (le rang affiché suit l'ordre des positions, pas leur valeur). Une collection peut rester vide |
 | Sauvegarde | Les collections et leur ordre entrent dans `donnees.json`, au format 2. Une sauvegarde au format 1 (V3) se restaure sans collection ; une sauvegarde au format 3 ou plus est refusée, comme avant |
 
 ## Architecture
@@ -48,33 +48,34 @@ Une étape par commit (`Étape N : …`), à la suite de la V3, poussée et inst
 ### `:core` (logique pure, testée)
 
 - `collections/CollectionSummary` : à partir de la liste ordonnée des livres (nombre de mots, progression, état, vitesse), calcule le pourcentage, le décompte par état, les minutes restantes (`remainingMinutes` existant), l'index du livre à reprendre et l'auteur commun.
-- `collections/CollectionOrder` : déplacer d'un rang vers le haut ou vers le bas, déplacer à un index (glisser), positions denses 0..n-1 après un retrait.
+- `collections/CollectionOrder` : déplacer d'un index à un autre (boutons et glisser), et filtre des livres (titre ou auteur, sans casse ni accents).
 
 ### Données
 
 - Room : migration 3 → 4.
   - `collections` : `id`, `name`, `createdAt`.
   - `collection_books` : `collectionId`, `bookId` (clé primaire composée, clés étrangères avec suppression en cascade des deux côtés, index sur `bookId`), `position`.
-- `CollectionDao` : collections avec le nombre de livres, livres d'une collection dans l'ordre, collections d'un livre, ajout en dernier, retrait avec renumérotation, réordonnancement en une transaction.
-- `CollectionRepository`. La suppression d'un livre renumérote les collections touchées : la cascade supprime les lignes, puis le dépôt referme les trous dans la même transaction que la suppression du livre.
+- `CollectionDao` : collections, appartenances dans l'ordre, collections d'un livre, création avec ses livres, ajout en dernier (position maximale + 1), retrait, réordonnancement (positions 0..n-1) en une transaction. Les trous laissés par un retrait ou une suppression ne gênent pas : seul l'ordre des positions compte.
+- `CollectionRepository`.
 
 ### Interface
 
 - `LibraryScreen` : onglets construits sur `VersoSegmentedButton`. L'onglet « Livres » reste celui d'aujourd'hui, avec la carte « Reprendre », le tri et le filtre. L'onglet « Collections » est un nouveau composable (`CollectionsTab`) qui suit le même gabarit d'en-tête (« Collections » et « 2 collections »).
 - Routes : `CollectionRoute(collectionId)`, `NewCollectionRoute(preselectedBookId: Long? = null)`.
 - `CollectionScreen` et `CollectionViewModel` (4.02), avec un mode édition pour « Réordonner ». `NewCollectionScreen` et `NewCollectionViewModel` (4.03).
-- `AddToCollectionSheet` (4.04), sur `VersoBottomSheet`, partagée entre le menu ⋮ de la bibliothèque (nouvelle entrée « Ajouter à une collection ») et la fiche. Le retour de 4.03 vers la feuille passe par un résultat de navigation (`savedStateHandle`).
+- `AddToCollectionSheet` (4.04), sur `VersoBottomSheet`, partagée entre le menu ⋮ de la bibliothèque (nouvelle entrée « Ajouter à une collection ») et la fiche. Son ouverture est gardée par `rememberSaveable` : au retour de 4.03, la feuille est toujours ouverte, et la nouvelle collection y apparaît cochée puisque le livre en fait partie.
+- Bibliothèque vide (1.01) : pas d'onglets, l'écran reste celui de la V1.
 - Couvertures : `BookCover` existant ; la pile est un nouveau composant (`CoverStack`).
 
 ### Sauvegarde (étape 26)
 
-- `BackupManifest.VERSION` passe à 2, et la lecture accepte les formats 1 et 2. Les DTO gagnent `collections` (id, nom, date de création, livres dans l'ordre par empreinte SHA-256), avec une liste vide par défaut pour lire le format 1.
+- `BackupManifest.VERSION` passe à 2, et la lecture accepte les formats 1 et 2. Les DTO gagnent `collections` (id, nom, date de création, id des livres dans l'ordre, comme les sessions et les surlignages), avec une liste vide par défaut pour lire le format 1.
 - `BackupRestorer` remplace les collections dans la même transaction que le reste. La validation vérifie que chaque livre référencé existe dans la sauvegarde.
 
 ### Tests
 
 - JVM : `CollectionSummary` (pondération : un long livre à moitié lu et un court terminé, état choisi à la main, livre sans nombre de mots, collection vide, arrondi et 100 %) et `CollectionOrder`.
-- Robolectric : DAO et migration 3 → 4, cascade et renumérotation à la suppression d'un livre, aller-retour de sauvegarde avec des collections, restauration d'une sauvegarde au format 1.
+- Robolectric : DAO et migration 3 → 4, cascade à la suppression d'un livre, aller-retour de sauvegarde avec des collections, restauration d'une sauvegarde au format 1.
 - Roborazzi : 4.01 à 4.04 en clair, en sombre et en nuit. `AccessibilityTreeTest` étendu aux nouveaux écrans, à 200 %.
 
 ## Critères d'acceptation V4
