@@ -384,6 +384,14 @@
     <string name="highlight_deleted">Surlignage supprimé</string>
     <string name="highlight_deleted_undo">Annuler</string>
 
+    <!-- ===================== Ajouter une note (3.05) ===================== -->
+    <string name="note_sheet_title">Ajouter une note</string>
+    <!-- PROPOSÉ : même feuille sur une note existante -->
+    <string name="note_sheet_title_edit">Modifier la note</string>
+    <string name="note_field_label">Votre note</string>
+    <string name="note_cancel">Annuler</string>
+    <string name="note_save">Enregistrer</string>
+
     <!-- ===================== Notes et surlignages (3.06) ===================== -->
     <!-- « Deuxième partie, chap. I · 30 % » ; « 30 % » hors sommaire -->
     <string name="notes_item_location">%1$s · %2$d %%</string>

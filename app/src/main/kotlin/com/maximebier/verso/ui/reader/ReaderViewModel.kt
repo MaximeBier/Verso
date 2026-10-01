@@ -412,6 +412,34 @@ class ReaderViewModel(
         highlightCoordinator?.dismissActions()
     }
 
+    /** « Note » de la barre de sélection : feuille 3.05. */
+    fun noteForSelection() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.noteForSelection()
+    }
+
+    fun editNote() {
+        highlightCoordinator?.editNote()
+    }
+
+    fun onNoteChange(text: String) {
+        highlightCoordinator?.onNoteChange(text)
+    }
+
+    fun saveNote() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.saveNote()
+    }
+
+    fun cancelNote() {
+        highlightCoordinator?.cancelNote()
+    }
+
+    fun deleteHighlight() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.deleteHighlight()
+    }
+
     /** « Annuler » de la snackbar « Surlignage supprimé ». */
     fun undoDeleteHighlight(row: HighlightEntity) {
         highlightCoordinator?.undoDelete(row)

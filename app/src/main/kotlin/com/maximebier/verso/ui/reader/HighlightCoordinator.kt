@@ -129,6 +129,65 @@ class HighlightCoordinator(
     /** « Annuler » après une suppression : la même ligne revient. */
     fun undoDelete(row: HighlightEntity) = launchWrite { highlights.restore(row) }
 
+    /** Cible de la feuille de note ouverte : passage sélectionné (rien n’existe encore) ou surlignage existant. */
+    private sealed interface NoteTarget {
+        data class Selection(val locator: Locator) : NoteTarget
+        data class Existing(val id: Long) : NoteTarget
+    }
+
+    private var noteTarget: NoteTarget? = null
+
+    /** « Note » de la barre : feuille 3.05 avec le passage ; rien n’est créé avant « Enregistrer ». */
+    fun noteForSelection() {
+        val reader = controller ?: return
+        launchWrite {
+            val selection = reader.currentSelection() ?: return@launchWrite
+            reader.clearSelection()
+            noteTarget = NoteTarget.Selection(selection.locator)
+            _state.update { it.copy(noteSheet = NoteSheetState(selection.text, "", editing = false)) }
+        }
+    }
+
+    /** « Modifier la note » ou « Ajouter une note » depuis la feuille d’un surlignage touché. */
+    fun editNote() {
+        val actions = _state.value.actions ?: return
+        noteTarget = NoteTarget.Existing(actions.id)
+        _state.update {
+            it.copy(actions = null, noteSheet = NoteSheetState(actions.passage, actions.note.orEmpty(), editing = actions.note != null))
+        }
+    }
+
+    fun onNoteChange(text: String) = _state.update { state -> state.copy(noteSheet = state.noteSheet?.copy(note = text)) }
+
+    /** « Enregistrer » : surlignage créé avec sa note, ou note du surlignage remplacée ; une note vide n’en est pas une. */
+    fun saveNote() {
+        val sheet = _state.value.noteSheet ?: return
+        val target = noteTarget ?: return
+        noteTarget = null
+        _state.update { it.copy(noteSheet = null) }
+        launchWrite {
+            when (target) {
+                is NoteTarget.Selection -> save(target.locator, note = sheet.note)
+                is NoteTarget.Existing -> highlights.setNote(target.id, sheet.note)
+            }
+        }
+    }
+
+    /** « Annuler » ou la croix : rien n’est créé ni modifié. */
+    fun cancelNote() {
+        noteTarget = null
+        _state.update { it.copy(noteSheet = null) }
+    }
+
+    /** « Supprimer » : immédiat, l’écran propose « Annuler » ([HighlightEvent.Deleted]). */
+    fun deleteHighlight() {
+        val actions = _state.value.actions ?: return
+        _state.update { it.copy(actions = null) }
+        launchWrite {
+            highlights.delete(actions.id)?.let { _events.emit(HighlightEvent.Deleted(it)) }
+        }
+    }
+
     private suspend fun openActions(id: Long) {
         val row = highlights.get(id) ?: return
         _state.update { it.copy(actions = HighlightActionsState(row.id, row.text, row.note, locationLabel(row))) }

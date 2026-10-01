@@ -144,5 +144,104 @@ class HighlightCoordinatorTest {
         }
         assertThat(coordinator.state.value.actions).isNull()
     }
-}
 
+    @Test fun noteSheetCreatesNothingUntilSaved() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche")
+        runCurrent()
+        coordinator.noteForSelection()
+        coordinator.awaitIdle()
+        assertThat(coordinator.state.value.noteSheet).isEqualTo(NoteSheetState("raie blanche", "", editing = false))
+        assertThat(fake.selectionCleared).isEqualTo(1)
+        coordinator.onNoteChange("Image du manteau")
+        coordinator.cancelNote()
+        coordinator.awaitIdle()
+        assertThat(coordinator.state.value.noteSheet).isNull()
+        assertThat(repository.forBook(bookId)).isEmpty()
+    }
+
+    @Test fun saveCreatesTheHighlightWithItsNote() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche")
+        runCurrent()
+        coordinator.noteForSelection()
+        coordinator.awaitIdle()
+        coordinator.onNoteChange("  Image du manteau  ")
+        coordinator.saveNote()
+        coordinator.awaitIdle()
+        assertThat(repository.forBook(bookId).single().note).isEqualTo("Image du manteau")
+        assertThat(coordinator.state.value.noteSheet).isNull()
+    }
+
+    @Test fun blankNoteStillCreatesTheHighlight() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche")
+        runCurrent()
+        coordinator.noteForSelection()
+        coordinator.awaitIdle()
+        coordinator.onNoteChange("   ")
+        coordinator.saveNote()
+        coordinator.awaitIdle()
+        assertThat(repository.forBook(bookId).single().note).isNull()
+    }
+
+    @Test fun editingAnExistingNote() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche")
+        runCurrent()
+        coordinator.highlightSelection()
+        coordinator.awaitIdle()
+        val id = repository.forBook(bookId).single().id
+        fake.highlightTaps.emit(id)
+        runCurrent()
+        coordinator.editNote()
+        assertThat(coordinator.state.value.actions).isNull()
+        assertThat(coordinator.state.value.noteSheet).isEqualTo(NoteSheetState("raie blanche", "", editing = false))
+        coordinator.onNoteChange("Premier portrait.")
+        coordinator.saveNote()
+        coordinator.awaitIdle()
+        assertThat(repository.get(id)!!.note).isEqualTo("Premier portrait.")
+        fake.highlightTaps.emit(id)
+        runCurrent()
+        coordinator.editNote()
+        assertThat(coordinator.state.value.noteSheet).isEqualTo(NoteSheetState("raie blanche", "Premier portrait.", editing = true))
+    }
+
+    @Test fun mergingKeepsBothNotes() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche la couleur")
+        runCurrent()
+        coordinator.noteForSelection()
+        coordinator.awaitIdle()
+        coordinator.onNoteChange("première")
+        coordinator.saveNote()
+        coordinator.awaitIdle()
+        fake.select("la couleur des prés")
+        runCurrent()
+        coordinator.noteForSelection()
+        coordinator.awaitIdle()
+        coordinator.onNoteChange("seconde")
+        coordinator.saveNote()
+        coordinator.awaitIdle()
+        assertThat(repository.forBook(bookId).single().note).isEqualTo("première\n\nseconde")
+    }
+
+    @Test fun deleteThenUndoRestoresTheHighlight() = runTest(UnconfinedTestDispatcher()) {
+        val (coordinator, fake, bookId) = setUp()
+        fake.select("raie blanche")
+        runCurrent()
+        coordinator.highlightSelection()
+        coordinator.awaitIdle()
+        val row = repository.forBook(bookId).single()
+        fake.highlightTaps.emit(row.id)
+        runCurrent()
+        coordinator.events.test {
+            coordinator.deleteHighlight()
+            val deleted = awaitItem() as HighlightEvent.Deleted
+            assertThat(repository.forBook(bookId)).isEmpty()
+            coordinator.undoDelete(deleted.row)
+            coordinator.awaitIdle()
+            assertThat(repository.forBook(bookId)).containsExactly(row)
+        }
+    }
+}
