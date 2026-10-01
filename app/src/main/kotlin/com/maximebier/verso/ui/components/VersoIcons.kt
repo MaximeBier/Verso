@@ -63,6 +63,13 @@ object VersoIcons {
     )
     val ChevronRight: ImageVector = strokeIcon("chevron-right", "m9 6 6 6-6 6")
     val ChevronDown: ImageVector = strokeIcon("chevron-down", "m6 9 6 6 6-6")
+    val ChevronUp: ImageVector = strokeIcon("chevron-up", "m18 15-6-6-6 6")
+    val GripVertical: ImageVector = strokeIcon(
+        "grip-vertical",
+        "M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01",
+        strokeWidth = 3f,
+    )
+    val ListPlus: ImageVector = strokeIcon("list-plus", "M11 12H3M16 6H3M16 18H3M18 9v6M21 12h-6")
     val SortArrows: ImageVector = strokeIcon("sort-arrows", "M7 4v16M4 7l3-3 3 3M17 20V4M14 17l3 3 3-3")
     val ListBullets: ImageVector = strokeIcon("list-bullets", "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01")
     val History: ImageVector = strokeIcon(

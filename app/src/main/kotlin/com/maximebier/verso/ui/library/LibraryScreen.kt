@@ -51,6 +51,10 @@ import com.maximebier.verso.R
 import com.maximebier.verso.data.LibrarySort
 import com.maximebier.verso.data.LibraryViewMode
 import com.maximebier.verso.importer.IncomingIntent
+import com.maximebier.verso.ui.collections.CollectionsActions
+import com.maximebier.verso.ui.collections.CollectionsTab
+import com.maximebier.verso.ui.collections.CollectionsUiState
+import com.maximebier.verso.ui.collections.CollectionsViewModel
 import com.maximebier.verso.ui.common.DeleteBookDialog
 import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.components.BookCover
@@ -59,6 +63,7 @@ import com.maximebier.verso.ui.components.GridBookCover
 import com.maximebier.verso.ui.components.LibraryTopBar
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
+import com.maximebier.verso.ui.components.VersoSegmentedButton
 import com.maximebier.verso.ui.components.VersoSnackbarHost
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -75,8 +80,18 @@ private fun countStyle() = VersoTheme.typography.body.copy(lineHeight = 22.sp)
  * la bibliothèque complète, reliée à son ViewModel.
  */
 @Composable
-fun LibraryDestination(onOpenSettings: () -> Unit, onOpenDetails: (Long) -> Unit, onOpenReader: (Long) -> Unit) {
-    LibraryScreen(onOpenReader = onOpenReader, onOpenDetails = onOpenDetails, onOpenSettings = onOpenSettings)
+fun LibraryDestination(
+    onOpenSettings: () -> Unit,
+    onOpenDetails: (Long) -> Unit,
+    onOpenReader: (Long) -> Unit,
+    onNewCollection: () -> Unit = {},
+) {
+    LibraryScreen(
+        onOpenReader = onOpenReader,
+        onOpenDetails = onOpenDetails,
+        onOpenSettings = onOpenSettings,
+        collectionActions = CollectionsActions(onNewCollection = onNewCollection),
+    )
 }
 
 /** Relie l'écran au ViewModel et au sélecteur de fichiers Android (SAF). */
@@ -85,9 +100,12 @@ fun LibraryScreen(
     onOpenReader: (Long) -> Unit,
     onOpenDetails: (Long) -> Unit,
     onOpenSettings: () -> Unit,
+    collectionActions: CollectionsActions = CollectionsActions(),
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
+    collectionsViewModel: CollectionsViewModel = viewModel(factory = CollectionsViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsState()
+    val collections by collectionsViewModel.state.collectAsState()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.onImport(uri)
     }
@@ -111,6 +129,8 @@ fun LibraryScreen(
             onSnackbarShown = viewModel::onSnackbarShown,
             onOpenFailedShown = viewModel::onOpenFailedShown,
         ),
+        collections = collections,
+        collectionActions = collectionActions,
     )
 }
 
@@ -134,11 +154,23 @@ data class LibraryActions(
     val onOpenFailedShown: () -> Unit = {},
 )
 
-/** Écrans 1.01 à 1.06 (et 1.08 depuis le menu ⋮), sans ViewModel. */
+/** Onglet de la bibliothèque (4.01). */
+enum class LibraryTab { BOOKS, COLLECTIONS }
+
+/** Écrans 1.01 à 1.06 (et 1.08 depuis le menu ⋮), onglet « Collections » (4.01), sans ViewModel. */
 @Composable
-fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Modifier = Modifier) {
+fun LibraryContent(
+    state: LibraryUiState,
+    actions: LibraryActions,
+    modifier: Modifier = Modifier,
+    collections: CollectionsUiState = CollectionsUiState(),
+    collectionActions: CollectionsActions = CollectionsActions(),
+    initialTab: LibraryTab = LibraryTab.BOOKS,
+) {
     val colors = VersoTheme.colors
     var sortSheetVisible by rememberSaveable { mutableStateOf(false) }
+    // Gardé dans l’entrée de navigation : un retour depuis une collection revient sur l’onglet « Collections ».
+    var tab by rememberSaveable { mutableStateOf(initialTab) }
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbar = state.snackbar
     if (snackbar != null) {
@@ -188,8 +220,23 @@ fun LibraryContent(state: LibraryUiState, actions: LibraryActions, modifier: Mod
                 state.loading -> Unit
                 // Corps de l'écran 1.01 (tâche 2.2) : la barre du haut, déjà affichée, n'a pas de bouton « Importer ».
                 state.books.isEmpty() -> EmptyLibraryContent(onImport = actions.onImport, modifier = Modifier.fillMaxSize())
-                state.viewMode == LibraryViewMode.LIST -> LibraryList(state, actions) { sortSheetVisible = true }
-                else -> LibraryGrid(state, actions) { sortSheetVisible = true }
+                else -> Column(Modifier.fillMaxSize()) {
+                    VersoSegmentedButton(
+                        options = listOf(stringResource(R.string.library_tab_books), stringResource(R.string.library_tab_collections)),
+                        selectedIndex = tab.ordinal,
+                        onSelect = { tab = LibraryTab.entries[it] },
+                        groupLabel = stringResource(R.string.library_tabs_group),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp),
+                        tabs = true,
+                    )
+                    Box(Modifier.weight(1f)) {
+                        when {
+                            tab == LibraryTab.COLLECTIONS -> CollectionsTab(collections, collectionActions)
+                            state.viewMode == LibraryViewMode.LIST -> LibraryList(state, actions) { sortSheetVisible = true }
+                            else -> LibraryGrid(state, actions) { sortSheetVisible = true }
+                        }
+                    }
+                }
             }
             if (state.importing) {
                 LinearProgressIndicator(

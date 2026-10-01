@@ -53,6 +53,8 @@ fun VersoSegmentedButton(
     onSelect: (Int) -> Unit,
     groupLabel: String,
     modifier: Modifier = Modifier,
+    /** true = onglets (4.01) : rôle Tab et pas de coche, comme la maquette. */
+    tabs: Boolean = false,
 ) {
     val colors = VersoTheme.colors
     val measurer = rememberTextMeasurer()
@@ -73,14 +75,14 @@ fun VersoSegmentedButton(
             Row(group.heightIn(min = VersoDimens.controlMin).height(IntrinsicSize.Min)) {
                 options.forEachIndexed { index, label ->
                     if (index > 0) Box(Modifier.width(SeparatorWidth).fillMaxHeight().background(colors.outline))
-                    Segment(label, index == selectedIndex, { onSelect(index) }, Modifier.weight(1f).fillMaxHeight())
+                    Segment(label, index == selectedIndex, tabs, { onSelect(index) }, Modifier.weight(1f).fillMaxHeight())
                 }
             }
         } else {
             Column(group) {
                 options.forEachIndexed { index, label ->
                     if (index > 0) Box(Modifier.height(SeparatorWidth).fillMaxWidth().background(colors.outline))
-                    Segment(label, index == selectedIndex, { onSelect(index) }, Modifier.fillMaxWidth().heightIn(min = VersoDimens.controlMin))
+                    Segment(label, index == selectedIndex, tabs, { onSelect(index) }, Modifier.fillMaxWidth().heightIn(min = VersoDimens.controlMin))
                 }
             }
         }
@@ -88,17 +90,17 @@ fun VersoSegmentedButton(
 }
 
 @Composable
-private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun Segment(label: String, selected: Boolean, tabs: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val colors = VersoTheme.colors
     Row(
         modifier = modifier
             .background(if (selected) colors.selection else Color.Transparent)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected = selected, role = if (tabs) Role.Tab else Role.RadioButton, onClick = onClick)
             .padding(horizontal = SegmentPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (selected) {
+        if (selected && !tabs) {
             Icon(VersoIcons.Check, contentDescription = null, tint = colors.onSelection, modifier = Modifier.size(CheckSize))
             Spacer(Modifier.width(CheckGap))
         }

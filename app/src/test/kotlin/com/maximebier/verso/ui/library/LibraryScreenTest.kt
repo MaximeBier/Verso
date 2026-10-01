@@ -21,6 +21,7 @@ import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.data.LibrarySort
 import com.maximebier.verso.data.LibraryViewMode
+import com.maximebier.verso.ui.collections.CollectionsUiState
 import com.maximebier.verso.ui.theme.VersoTheme
 import org.junit.Rule
 import org.junit.Test
@@ -49,6 +50,25 @@ class LibraryScreenTest {
         compose.onNodeWithText(text(R.string.library_empty_import)).assertIsDisplayed().performClick()
         compose.onNodeWithText(text(R.string.library_import)).assertDoesNotExist()
         assertThat(imports).isEqualTo(1)
+    }
+
+    @Test
+    fun emptyLibraryHasNoTabs() {
+        show(LibrarySamples.empty)
+        compose.onNodeWithText(text(R.string.library_tab_collections)).assertDoesNotExist()
+    }
+
+    @Test
+    fun tabsSwitchBetweenBooksAndCollections() {
+        compose.setContent {
+            VersoTheme { LibraryContent(LibrarySamples.list, LibraryActions(), collections = CollectionsUiState(loading = false)) }
+        }
+        compose.onNodeWithText(text(R.string.library_tab_books)).assertIsSelected()
+        compose.onNodeWithText(text(R.string.library_title)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.library_tab_collections)).performClick()
+        compose.onAllNodesWithText(text(R.string.library_tab_collections))[0].assertIsSelected()
+        compose.onNodeWithText(text(R.string.collections_new)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.library_title)).assertDoesNotExist()
     }
 
     @Test

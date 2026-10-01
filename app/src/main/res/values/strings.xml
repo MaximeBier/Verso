@@ -464,4 +464,97 @@
     <string name="backup_restore_dialog_body">Votre bibliothèque actuelle (%1$s) sera remplacée par celle de la sauvegarde (%2$s), avec ses positions, son journal, ses notes et ses réglages.</string>
     <string name="backup_restore_dialog_cancel">Annuler</string>
     <string name="backup_restore_dialog_confirm">Remplacer</string>
+
+    <!-- ===================== Bibliothèque : onglets (4.01) ===================== -->
+    <string name="library_tab_books">Livres</string>
+    <string name="library_tab_collections">Collections</string>
+    <!-- PROPOSÉ (V4) : intitulé TalkBack du groupe d’onglets -->
+    <string name="library_tabs_group">Afficher les livres ou les collections</string>
+
+    <!-- ===================== Collections (4.01) ===================== -->
+    <string name="collections_title">Collections</string>
+    <plurals name="collections_count">
+        <item quantity="one">%1$d collection</item>
+        <item quantity="many">%1$d collections</item>
+        <item quantity="other">%1$d collections</item>
+    </plurals>
+    <!-- « Émile Zola · 5 livres » ; %2$s = library_book_count -->
+    <string name="collections_author_and_count">%1$s · %2$s</string>
+    <!-- « · 2 terminés sur 5 », après « 44 % » en gras -->
+    <plurals name="collections_finished_of">
+        <item quantity="one">· %1$d terminé sur %2$d</item>
+        <item quantity="many">· %1$d terminés sur %2$d</item>
+        <item quantity="other">· %1$d terminés sur %2$d</item>
+    </plurals>
+    <string name="collections_new">Nouvelle collection</string>
+    <!-- PROPOSÉ (V4) : onglet Collections sans collection -->
+    <string name="collections_empty">Regroupez des livres, par exemple une série, pour suivre leur lecture ensemble.</string>
+    <!-- TalkBack d’une carte : « Les Rougon-Macquart, 5 livres, 44 % lus » -->
+    <string name="collections_card_content_description">%1$s, %2$s, %3$d %% lus</string>
+
+    <!-- ===================== Une collection (4.02) ===================== -->
+    <string name="collection_percent_label">de la collection lue</string>
+    <plurals name="collection_finished">
+        <item quantity="one">%1$d terminé</item>
+        <item quantity="many">%1$d terminés</item>
+        <item quantity="other">%1$d terminés</item>
+    </plurals>
+    <string name="collection_in_progress">%1$d en cours</string>
+    <string name="collection_to_read">%1$d à lire</string>
+    <string name="collection_counts_separator" translatable="false"> · </string>
+    <string name="collection_remaining">Environ %1$s de lecture restantes</string>
+    <!-- PROPOSÉ (V4) : singulier et moins d’une minute -->
+    <string name="collection_remaining_one">Environ %1$s de lecture restante</string>
+    <string name="collection_remaining_less_than_minute">Moins d’une minute de lecture restante</string>
+    <string name="collection_resume">Reprendre</string>
+    <!-- TalkBack du bouton rond de la carte Reprendre -->
+    <string name="collection_resume_content_description">Reprendre « %1$s »</string>
+    <string name="collection_order_title">Dans l’ordre de lecture</string>
+    <string name="collection_reorder">Réordonner</string>
+    <!-- PROPOSÉ (V4) : quitte le mode Réordonner ; TalkBack des commandes de chaque ligne -->
+    <string name="collection_reorder_done">Terminé</string>
+    <string name="collection_move_up">Monter « %1$s »</string>
+    <string name="collection_move_down">Descendre « %1$s »</string>
+    <string name="collection_drag">Déplacer « %1$s »</string>
+    <!-- PROPOSÉ (V4) : TalkBack du ⋮ de la collection -->
+    <string name="collection_options">Options de la collection</string>
+    <string name="collection_menu_rename">Renommer</string>
+    <string name="collection_menu_reorder">Réordonner</string>
+    <string name="collection_menu_delete">Supprimer</string>
+    <string name="collection_book_menu_remove">Retirer de la collection</string>
+    <!-- PROPOSÉ (V4) : dialogues Renommer et Supprimer, collection vide -->
+    <string name="collection_rename_title">Renommer la collection</string>
+    <string name="collection_rename_confirm">Renommer</string>
+    <string name="collection_dialog_cancel">Annuler</string>
+    <string name="collection_delete_title">Supprimer « %1$s » ?</string>
+    <string name="collection_delete_body">Les livres restent dans votre bibliothèque.</string>
+    <string name="collection_delete_confirm">Supprimer</string>
+    <string name="collection_empty">Aucun livre dans cette collection. Ajoutez-en depuis le menu ⋮ d’un livre, dans la bibliothèque.</string>
+
+    <!-- ===================== Nouvelle collection (4.03) ===================== -->
+    <string name="new_collection_title">Nouvelle collection</string>
+    <string name="new_collection_create">Créer</string>
+    <string name="new_collection_name">Nom de la collection</string>
+    <string name="new_collection_books">Livres</string>
+    <plurals name="new_collection_selected">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="many">%1$d sélectionnés</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <!-- PROPOSÉ (V4) : indication du champ vide et TalkBack de la croix -->
+    <string name="new_collection_filter">Titre ou auteur</string>
+    <string name="new_collection_filter_clear">Effacer le filtre</string>
+    <!-- TalkBack du champ de filtre (4.03) -->
+    <string name="new_collection_filter_label">Filtrer les livres</string>
+
+    <!-- ===================== Ajouter à une collection (4.04) ===================== -->
+    <string name="add_to_collection_title">Ajouter à une collection</string>
+    <string name="add_to_collection_new">Nouvelle collection</string>
+    <string name="add_to_collection_done">Terminé</string>
+    <string name="library_menu_add_to_collection">Ajouter à une collection</string>
+    <string name="details_collections_label">Collections</string>
+    <string name="details_collections_edit">Modifier</string>
+    <!-- PROPOSÉ (V4) : livre dans aucune collection ; TalkBack de « Modifier » -->
+    <string name="details_collections_none">Aucune</string>
+    <string name="details_collections_edit_content_description">Modifier les collections</string>
 </resources>

@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.maximebier.verso.importer.IncomingImports
+import com.maximebier.verso.ui.collections.NewCollectionDestination
 import com.maximebier.verso.ui.details.DetailsDestination
 import com.maximebier.verso.ui.library.LibraryDestination
 import com.maximebier.verso.ui.notes.NotesDestination
@@ -48,6 +49,16 @@ fun VersoNavHost(
                 onOpenSettings = { if (entry.resumed()) navController.navigate(SettingsRoute) },
                 onOpenDetails = { bookId -> if (entry.resumed()) navController.navigate(DetailsRoute(bookId)) },
                 onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
+                onNewCollection = { if (entry.resumed()) navController.navigate(NewCollectionRoute()) },
+            )
+        }
+        composable<NewCollectionRoute> { entry ->
+            val route = entry.toRoute<NewCollectionRoute>()
+            NewCollectionDestination(
+                preselectedBookId = route.preselectedBookId,
+                onClose = { if (entry.resumed()) navController.popBackStack() },
+                // Étape 23 : retour à l’onglet (l’écran de la collection arrive à l’étape 24).
+                onCreated = { navController.popBackStack() },
             )
         }
         composable<DetailsRoute> { entry ->

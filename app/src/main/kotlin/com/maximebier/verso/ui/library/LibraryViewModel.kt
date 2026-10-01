@@ -148,7 +148,7 @@ class LibraryViewModel(
     ) { (sort, list), viewMode, lastOpened, t ->
         LibraryUiState(
             loading = false,
-            books = list.map(::toLibraryBook),
+            books = list.map { it.toLibraryBook() },
             sort = sort,
             viewMode = viewMode,
             filter = t.filter,
@@ -304,15 +304,16 @@ class LibraryViewModel(
     }
 }
 
-private fun toLibraryBook(entity: BookEntity) = LibraryBook(
-    id = entity.id,
-    title = entity.title,
-    author = entity.author,
-    coverPath = entity.coverPath,
-    colorSeed = entity.sha256,
-    status = entity.status(),
-    progression = entity.progression,
-    percent = percentOf(entity.progression),
+/** Ligne de la bibliothèque ; reprise par les collections (V4). */
+internal fun BookEntity.toLibraryBook() = LibraryBook(
+    id = id,
+    title = title,
+    author = author,
+    coverPath = coverPath,
+    colorSeed = sha256,
+    status = status(),
+    progression = progression,
+    percent = percentOf(progression),
 )
 
 /**
@@ -329,7 +330,7 @@ internal fun resumeInfoOf(entity: BookEntity, wordsPerMinute: Int = DEFAULT_WORD
         }
     }
     return ResumeInfo(
-        book = toLibraryBook(entity),
+        book = entity.toLibraryBook(),
         chapter = locator?.title?.trim()?.takeIf { it.isNotEmpty() },
         excerpt = locator?.let(Locators::excerptOf)?.let(::excerptOf)?.takeIf { it.isNotEmpty() },
         remainingMinutes = remainingMinutes(entity.totalWords, entity.progression, wordsPerMinute),
