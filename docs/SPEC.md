@@ -299,6 +299,34 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 - **Création** : écran « Nouvelle collection », avec le champ « Nom de la collection », un filtre des livres (titre ou auteur), des cases à cocher et le bouton « Créer ».
 - **Ajout** : depuis le menu ⋮ d'un livre ou depuis sa fiche (ligne « Collections » + « Modifier »). Feuille « Ajouter à une collection » avec des cases à cocher, « Nouvelle collection » et « Terminé ».
 
+Décisions prises le 2026-10-01 (détail dans le design) :
+
+- L'auteur d'une collection est calculé : c'est l'auteur commun à tous ses livres, sinon il n'y en a pas. Il n'est jamais saisi.
+- Ordre de lecture : à la création, l'ordre de la bibliothèque à ce moment-là ; un livre ajouté ensuite se place en dernier. « Réordonner » propose un glisser et des boutons « Monter » et « Descendre ».
+- Le menu ⋮ d'un livre dans une collection propose « Détails du livre » et « Retirer de la collection ».
+- Progression : somme des mots lus divisée par la somme des mots. Un livre terminé compte pour tous ses mots. Le temps restant additionne celui de chaque livre, à la vitesse de sa fiche. « Reprendre » ouvre le premier livre non terminé et disparaît quand il n'y en a plus.
+- Collections triées de la plus récente à la plus ancienne. La bibliothèque s'ouvre toujours sur l'onglet « Livres ».
+- Supprimer une collection demande confirmation et garde les livres. Supprimer un livre le retire de ses collections.
+- Sauvegarde au format 2, avec les collections ; une sauvegarde de la V3 (format 1) se restaure encore.
+
+Design et découpage : `docs/superpowers/specs/2026-10-01-verso-v4-design.md`.
+
+#### Critères d'acceptation V4
+
+Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels de test.
+
+- [ ] La bibliothèque a deux onglets, « Livres » et « Collections », et s'ouvre toujours sur « Livres ».
+- [ ] Je crée une collection en la nommant et en cochant des livres filtrés par titre ou par auteur. Elle apparaît en haut de l'onglet, avec sa pile de couvertures, son nom, l'auteur commun, le nombre de livres, sa barre et « N % · N terminés sur N ».
+- [ ] La progression est pondérée par le nombre de mots : un roman court terminé pèse moins qu'un roman long à moitié lu. Rien ne l'explique à l'écran.
+- [ ] L'écran d'une collection affiche le pourcentage, le décompte par état et le temps restant. « Reprendre » ouvre le premier livre non terminé, à sa position de lecture.
+- [ ] « Réordonner » change l'ordre par glisser et par les boutons « Monter » et « Descendre », et l'ordre survit à un redémarrage.
+- [ ] Je renomme puis je supprime une collection ; ses livres restent dans la bibliothèque.
+- [ ] J'ajoute un livre à deux collections, depuis son menu ⋮ puis depuis sa fiche. « Nouvelle collection » dans la feuille crée une collection où le livre est déjà coché.
+- [ ] Retirer un livre d'une collection, ou le supprimer de la bibliothèque, le fait disparaître de la collection, et les livres suivants remontent d'un rang.
+- [ ] Une sauvegarde restaure les collections et leur ordre ; une sauvegarde faite en V3 se restaure toujours.
+- [ ] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé, et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
+- [ ] Toujours aucune permission réseau ni autre permission.
+
 ## Interface
 
 Les maquettes de tous les écrans sont exportées dans `design/` : un PNG et un HTML statique par écran, une planche d'aperçu par version, et `design/index.html` pour tout parcourir. Chaque écran est dans `design/screens/<id>-<nom>.png` (par exemple `1.14-retour-a-votre-lecture.png`) ; la liste complète est dans `design/README.md` et `design/screens.json`. La source des maquettes reste le canvas « Verso » (claude.ai, privé).
@@ -642,3 +670,4 @@ Sorti de la V3 le 2026-09-30 : je ne lis que des EPUB. Règles de conversion dé
 - 2026-10-01 (étape 20) : sauvegarde et restauration (3.07). Ligne « Sauvegarde » dans la section Confidentialité des Paramètres. Zip au format 1 : `donnees.json` (numéro de format lu en premier, livres, sessions, surlignages), `reglages.json` (clés DataStore avec leur type, sauf la carte « Dernière sauvegarde », propre au téléphone), `livres/<sha256>.epub`, `couvertures/<sha256>.jpg` (l'import écrit les couvertures en JPEG). Restauration : décompression dans un dossier temporaire (seules les entrées connues), empreinte de chaque EPUB recalculée, validation complète, confirmation avec le nombre de livres, puis remplacement tout ou rien (dossiers mis de côté, base remplacée en une transaction par un DAO dédié, réglages) et retour à l'état d'avant au moindre échec ; limite connue : pas de reprise si Android tue Verso pendant le remplacement lui-même (moins d'une seconde). Taille de la carte : la plus grande entre celle du fournisseur et les octets écrits (le fournisseur de Téléchargements rapportait « 1 ko » pour 6 Mo). « 2 livres » avec une espace insécable (la confirmation coupait « (4 » / « livres) »). Libellés proposés : « Aucune sauvegarde pour l'instant », « Sauvegarde enregistrée. », « Ce fichier n'est pas une sauvegarde Verso, ou il est incomplet. Votre bibliothèque n'a pas changé. », la confirmation et la ligne des Paramètres. Correctifs à 200 % de l'étape 19 (boutons de la feuille de note, « Exporter » sous le titre) ; `AccessibilityTreeTest` couvre tous les écrans V3. Vérifié sur le téléphone (`build/acceptance/20261001-e20/`) : sauvegarde de 6,1 Mo dans Téléchargements ; zip qui n'est pas une sauvegarde refusé avec un message, bibliothèque intacte ; Notre-Dame de Paris et Candide supprimés puis sauvegarde restaurée : 4 livres, mêmes positions, états, statistiques et journal, surlignages de Wool, Sépia et Atkinson. Critères V3 10, 11 et 12.
 - 2026-10-01 (étape 21) : passe d'acceptation V3 et README. Sur le téléphone, avec l'accord de Maxime pour changer les réglages système puis les rétablir : texte Android à 200 % (bibliothèque et ⋮ de la carte « Reprendre », barre de lecture à quatre outils sur deux colonnes, barre de sélection, feuille de note, feuille d'un surlignage, « Notes et surlignages », Paramètres, écran Sauvegarde) sans coupure ; TalkBack activé, mais les touchers injectés par adb le contournent : les intitulés lus par TalkBack ont été vérifiés dans l'arbre d'accessibilité du téléphone (« Retour », « Options pour « … » », « Options de cet élément », « Texte sélectionné », textes des boutons), en plus d'`AccessibilityTreeTest` (tous les écrans V3, cibles de 48 dp, à 200 %) ; `dumpsys package` : aucune permission. Réglages rétablis à l'identique (taille du texte, services d'accessibilité, TalkBack, autorisation de notifications de TalkBack inchangée ; `build/acceptance/20261001-e21/reglages-avant.txt` et `reglages-apres.txt`). README : surlignages, notes, sauvegarde, trois captures V3, 1 074 tests. Les 14 critères V3 sont cochés ; V3 terminée.
 - 2026-10-01 : Maxime confirme le redémarrage complet (critères V3 2 et 11), l'écoute TalkBack (critère 13) et les libellés absents des maquettes proposés pour la V3 (marqués « Validé par Maxime » dans `strings.xml`).
+- 2026-10-01 : début de la V4 (collections). Décisions et critères d'acceptation V4, étapes 22 à 26 dans `docs/superpowers/specs/2026-10-01-verso-v4-design.md`.

@@ -18,14 +18,14 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 
 ## Règles
 
-- **V3 terminée** (2026-10-01 ; V2 le 2026-09-30, V1 le 2026-09-27) : ne pas coder la V4 ni « Plus tard » sans décision explicite.
+- **V4 en cours** (collections, décidée le 2026-10-01 ; V3 terminée le 2026-10-01, V2 le 2026-09-30, V1 le 2026-09-27) : ne pas coder « Plus tard » sans décision explicite.
 - **Position de lecture** : toujours un locator Readium, jamais des pixels. La logique lecture/navigation et la carte « Revenir » forment une machine à états sans dépendance Android, couverte par des tests unitaires. Les seuils sont des constantes nommées.
 - **Textes** : en français, dans `res/values/strings.xml`, repris mot pour mot des maquettes. Espace fine insécable avant `; : ! ?` et `%`, apostrophe typographique, « Environ » plutôt que « ≈ ».
 - **Accessibilité** : texte à au moins 7:1 de contraste (et pas plus d'environ 10:1 en thème foncé), commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.
 - **Confidentialité** : aucune permission réseau, aucune analytics. Rien ne quitte le téléphone.
 - **Lecture** : alignement à gauche, sans justification ni césure, imposé par-dessus le CSS de l'éditeur.
 - Tout sur `master`, un commit par étape (`Étape N : …`), poussé et installé sur le téléphone à la fin de chaque étape. Pas de pull request. Toute décision qui change la spec est reportée dans `docs/SPEC.md` dans le même commit.
-- Plan d'implémentation V1 : `docs/superpowers/plans/2026-09-25-verso-v1.md`. Design V2 : `docs/superpowers/specs/2026-09-27-verso-v2-design.md`. Design et plan V3 : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`, `docs/superpowers/plans/2026-10-01-verso-v3.md`.
+- Plan d'implémentation V1 : `docs/superpowers/plans/2026-09-25-verso-v1.md`. Design V2 : `docs/superpowers/specs/2026-09-27-verso-v2-design.md`. Design et plan V3 : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`, `docs/superpowers/plans/2026-10-01-verso-v3.md`. Design V4 : `docs/superpowers/specs/2026-10-01-verso-v4-design.md`.
 - Téléphone branché en adb : installer, lancer, capturer l'écran uniquement ; ne jamais modifier ses réglages système.
 - Un seul agent pilote le téléphone à la fois : avant la première commande adb, prendre le verrou `mkdir .superpowers/phone.lock` (attendre s'il existe), le rendre à la fin (`rm -rf .superpowers/phone.lock`), même en cas d'échec. Les agents lancés en parallèle se limitent aux tests JVM/Robolectric sauf autorisation explicite.
 
