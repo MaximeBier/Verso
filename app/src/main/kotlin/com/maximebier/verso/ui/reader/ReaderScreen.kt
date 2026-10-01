@@ -41,13 +41,23 @@ import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.ui.components.VersoSnackbarHost
+import com.maximebier.verso.ui.notes.NotesActions
+import com.maximebier.verso.ui.notes.NotesEvent
+import com.maximebier.verso.ui.notes.NotesScreen
+import com.maximebier.verso.ui.notes.rememberNotesExport
 import com.maximebier.verso.ui.reader.search.SearchScreen
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
 @Composable
-fun ReaderDestination(bookId: Long, onBack: () -> Unit, onOpenFailed: () -> Unit = onBack, openJournal: Boolean = false) {
-    val viewModel: ReaderViewModel = viewModel(key = "reader-$bookId", factory = ReaderViewModel.factory(bookId, openJournal))
+fun ReaderDestination(
+    bookId: Long,
+    onBack: () -> Unit,
+    onOpenFailed: () -> Unit = onBack,
+    openJournal: Boolean = false,
+    highlightId: Long? = null,
+) {
+    val viewModel: ReaderViewModel = viewModel(key = "reader-$bookId", factory = ReaderViewModel.factory(bookId, openJournal, highlightId))
     ReaderScreen(viewModel = viewModel, onBackToLibrary = onBack, onOpenFailed = onOpenFailed)
 }
 
@@ -62,6 +72,20 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     val copiedMessage = stringResource(R.string.selection_copied)
     val deletedMessage = stringResource(R.string.highlight_deleted)
     val undoLabel = stringResource(R.string.highlight_deleted_undo)
+    val exportedMessage = stringResource(R.string.notes_exported)
+    val exportFailedMessage = stringResource(R.string.notes_export_failed)
+    LaunchedEffect(viewModel) {
+        viewModel.notesEvents.collect { event ->
+            when (event) {
+                is NotesEvent.Deleted -> {
+                    val result = snackbarHostState.showSnackbar(deletedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+                    if (result == SnackbarResult.ActionPerformed) viewModel.undoDeleteFromList(event.row)
+                }
+                NotesEvent.Exported -> snackbarHostState.showSnackbar(exportedMessage)
+                NotesEvent.ExportFailed -> snackbarHostState.showSnackbar(exportFailedMessage, duration = SnackbarDuration.Long)
+            }
+        }
+    }
     LaunchedEffect(viewModel) {
         viewModel.highlightEvents.collect { event ->
             when (event) {
@@ -100,6 +124,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
     BackHandler(enabled = state.settingsVisible) { viewModel.hideReadingSettings() }
     BackHandler(enabled = state.searchVisible) { viewModel.hideSearch() }
+    BackHandler(enabled = state.notesVisible) { viewModel.hideNotes() }
     // Retour pendant une sélection : elle s’efface, le livre reste ouvert.
     BackHandler(enabled = highlights.selectionText != null) { viewModel.clearSelection() }
     if (state.failed) {
@@ -150,6 +175,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas.
             onJournalClick = viewModel::showJournal,
             onSearchClick = viewModel::showSearch,
+            onNotesClick = viewModel::showNotes,
             onBottomBarHeightChanged = { bottomBarHeightPx = it },
         )
         state.returnCard?.let { card ->
@@ -177,6 +203,23 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 onNote = viewModel::noteForSelection,
                 onCopy = viewModel::copySelection,
                 modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+        if (state.notesVisible) {
+            val notes by viewModel.notes.collectAsStateWithLifecycle()
+            val export = rememberNotesExport(notes.exportFileName, viewModel::exportNotes)
+            NotesScreen(
+                state = notes,
+                actions = NotesActions(
+                    onBack = viewModel::hideNotes,
+                    onExport = export,
+                    onOpen = viewModel::openHighlight,
+                    onEditNote = viewModel::editNoteFromList,
+                    onDelete = viewModel::deleteFromList,
+                    onNoteChange = viewModel::onListNoteChange,
+                    onSaveNote = viewModel::saveListNote,
+                    onCancelNote = viewModel::cancelListNote,
+                ),
             )
         }
         if (state.searchVisible) {

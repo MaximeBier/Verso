@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.data.db.BookEntity
 import com.maximebier.verso.core.stats.readingStats
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.BookRepository
@@ -50,6 +51,8 @@ data class DetailsUiState(
     val deleted: Boolean = false,
     /** Section « Statistiques » (2.08) ; null = section masquée (interrupteur désactivé). */
     val stats: ReadingStats? = null,
+    /** Surlignages du livre ; la ligne « Notes et surlignages » n’apparaît qu’à partir de 1. */
+    val highlightCount: Int = 0,
 )
 
 /**
@@ -63,6 +66,8 @@ class DetailsViewModel(
     private val debounceMs: Long = AUTOSAVE_DEBOUNCE_MS,
     private val statsOf: (Long) -> Flow<ReadingStats> = { flowOf(readingStats(emptyList())) },
     private val showStatistics: Flow<Boolean> = flowOf(true),
+    /** Nombre de surlignages du livre (ligne « Notes et surlignages · 3 », V3). */
+    private val highlightCountOf: (Long) -> Flow<Int> = { flowOf(0) },
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DetailsUiState(bookId = bookId))
@@ -77,8 +82,10 @@ class DetailsViewModel(
 
     init {
         viewModelScope.launch {
-            combine(books.observeBook(bookId), statsOf(bookId), showStatistics) { book, stats, shown -> Triple(book, stats, shown) }
-                .collect { (book, stats, shown) ->
+            combine(books.observeBook(bookId), statsOf(bookId), showStatistics, highlightCountOf(bookId)) { book, stats, shown, count ->
+                DetailsSources(book, stats, shown, count)
+            }
+                .collect { (book, stats, shown, highlightCount) ->
                     if (book == null) {
                         _state.update { it.copy(loaded = true, missing = true) }
                     } else {
@@ -101,6 +108,7 @@ class DetailsViewModel(
                                 sizeBytes = book.sizeBytes,
                                 originalFileName = book.originalFileName,
                                 stats = stats.takeIf { shown },
+                                highlightCount = highlightCount,
                             )
                         }
                     }
@@ -203,8 +211,11 @@ class DetailsViewModel(
                     saveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
                     statsOf = app.container.sessions::observeStats,
                     showStatistics = app.container.settings.showStatistics,
+                    highlightCountOf = app.container.highlights::observeCount,
                 )
             }
         }
     }
 }
+
+private data class DetailsSources(val book: BookEntity?, val stats: ReadingStats, val shown: Boolean, val highlightCount: Int)

@@ -6,7 +6,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class DetailsRoute(val bookId: Long)
 
-@Serializable data class ReaderRoute(val bookId: Long, val openJournal: Boolean = false)
+@Serializable data class ReaderRoute(val bookId: Long, val openJournal: Boolean = false, val highlightId: Long? = null)
+
+@Serializable data class NotesRoute(val bookId: Long)
 
 @Serializable data object SettingsRoute
 

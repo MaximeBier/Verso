@@ -7,6 +7,9 @@ import androidx.compose.ui.res.stringResource
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.LocationTexts
 import com.maximebier.verso.core.text.durationOfMinutes
+import com.maximebier.verso.core.text.longLocation
+import com.maximebier.verso.core.text.shortLocation
+import com.maximebier.verso.ui.notes.NotesTexts
 import com.maximebier.verso.ui.components.DangerButton
 import com.maximebier.verso.ui.components.VersoDialog
 import com.maximebier.verso.ui.components.VersoTextButton
@@ -73,3 +76,21 @@ fun Resources.locationTexts(): LocationTexts = LocationTexts(
 /** « Deuxième partie, chap. I · 30 % » d’un surlignage (3.06), ou « 30 % » hors sommaire. */
 fun Resources.highlightLocation(location: String?, percent: Int): String =
     if (location == null) getString(R.string.notes_item_percent, percent) else getString(R.string.notes_item_location, location, percent)
+
+/** Textes de « Notes et surlignages » et de son export, lus dans les ressources. */
+fun Resources.notesTexts(): NotesTexts {
+    val locations = locationTexts()
+    return NotesTexts(
+        location = { location, percent -> highlightLocation(location, percent) },
+        shortChapter = { path -> shortLocation(path, locations) },
+        longChapter = { path -> longLocation(path) { part, chapter -> String.format(Locale.FRENCH, getString(R.string.common_location_long), part, chapter) } },
+        exportMeta = { author, count, date ->
+            val items = getQuantityString(R.plurals.notes_item_count, count, count)
+            if (author.isBlank()) getString(R.string.notes_export_meta_no_author, items, date)
+            else getString(R.string.notes_export_meta, author, items, date)
+        },
+        exportFileName = { title -> getString(R.string.notes_export_file_name, title) },
+        exportDate = { ms -> formatDate(ms, getString(R.string.common_date_pattern_full)) },
+    )
+}
+

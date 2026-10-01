@@ -20,6 +20,7 @@ import androidx.navigation.toRoute
 import com.maximebier.verso.importer.IncomingImports
 import com.maximebier.verso.ui.details.DetailsDestination
 import com.maximebier.verso.ui.library.LibraryDestination
+import com.maximebier.verso.ui.notes.NotesDestination
 import com.maximebier.verso.ui.reader.ReaderDestination
 import com.maximebier.verso.ui.settings.LicensesDestination
 import com.maximebier.verso.ui.settings.SettingsDestination
@@ -57,6 +58,18 @@ fun VersoNavHost(
                 onOpenJournal = { bookId ->
                     if (entry.resumed()) navController.navigate(ReaderRoute(bookId, openJournal = true)) { launchSingleTop = true }
                 },
+                onOpenNotes = { bookId -> if (entry.resumed()) navController.navigate(NotesRoute(bookId)) },
+            )
+        }
+        composable<NotesRoute> { entry ->
+            val route = entry.toRoute<NotesRoute>()
+            NotesDestination(
+                bookId = route.bookId,
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                // Aller au passage : le livre s’ouvre et saute au surlignage (carte « Revenir »).
+                onOpenPassage = { bookId, highlightId ->
+                    if (entry.resumed()) navController.navigate(ReaderRoute(bookId, highlightId = highlightId)) { launchSingleTop = true }
+                },
             )
         }
         composable<ReaderRoute> { entry ->
@@ -67,6 +80,7 @@ fun VersoNavHost(
                 // Échec d’ouverture : toujours la bibliothèque, qui affiche le message (même ouvert depuis la fiche).
                 onOpenFailed = { navController.popBackStack<LibraryRoute>(inclusive = false) },
                 openJournal = route.openJournal,
+                highlightId = route.highlightId,
             )
         }
         composable<SettingsRoute> { entry ->

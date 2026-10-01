@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.DocumentStore
 import com.maximebier.verso.data.HighlightRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
@@ -36,6 +37,8 @@ class AppContainer(context: Context) {
     val sessions: SessionRepository = SessionRepository(database.sessionDao())
 
     val highlights: HighlightRepository = HighlightRepository(database.highlightDao(), System::currentTimeMillis)
+
+    val documents: DocumentStore = DocumentStore(appContext)
 
     val settings: SettingsRepository = SettingsRepository(appContext.settingsDataStore)
 
