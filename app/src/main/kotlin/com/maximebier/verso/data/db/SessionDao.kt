@@ -15,6 +15,9 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE bookId = :bookId ORDER BY startedAt DESC, id DESC")
     fun observeForBook(bookId: Long): Flow<List<SessionEntity>>
 
+    @Query("SELECT * FROM sessions")
+    fun observeAll(): Flow<List<SessionEntity>>
+
     @Query("DELETE FROM sessions")
     suspend fun clearAll()
 

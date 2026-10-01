@@ -48,4 +48,18 @@ class SessionRepositoryTest {
         val bookId = db.bookDao().insert(testBook(sha256 = "vide"))
         assertThat(sessions.observeStats(bookId).first().sessionCount).isEqualTo(0)
     }
+
+    @Test
+    fun allStatsAreGroupedByBook() = runTest {
+        val a = db.bookDao().insert(testBook("a"))
+        val b = db.bookDao().insert(testBook("b"))
+        sessions.upsert(testSession(a, startedAt = 1))
+        sessions.upsert(testSession(a, startedAt = 2))
+        sessions.upsert(testSession(b, startedAt = 3))
+        val stats = sessions.observeAllStats().first()
+        assertThat(stats.getValue(a).sessionCount).isEqualTo(2)
+        assertThat(stats.getValue(b).sessionCount).isEqualTo(1)
+        assertThat(stats.getValue(a).wordsPerMinute).isEqualTo(1309)   // 2 400 mots en 110 s
+        assertThat(stats.getValue(b).wordsPerMinute).isNull()          // 55 s : moins d’une minute, pas de vitesse
+    }
 }

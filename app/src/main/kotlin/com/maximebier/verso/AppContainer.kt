@@ -10,6 +10,7 @@ import com.maximebier.verso.backup.BackupRestorer
 import com.maximebier.verso.backup.BackupService
 import com.maximebier.verso.backup.BackupWriter
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.CollectionRepository
 import com.maximebier.verso.data.DocumentStore
 import com.maximebier.verso.data.HighlightRepository
 import com.maximebier.verso.data.SessionRepository
@@ -40,6 +41,8 @@ class AppContainer(context: Context) {
     val sessions: SessionRepository = SessionRepository(database.sessionDao())
 
     val highlights: HighlightRepository = HighlightRepository(database.highlightDao(), System::currentTimeMillis)
+
+    val collections: CollectionRepository = CollectionRepository(database.collectionDao(), System::currentTimeMillis)
 
     val documents: DocumentStore = DocumentStore(appContext)
 
