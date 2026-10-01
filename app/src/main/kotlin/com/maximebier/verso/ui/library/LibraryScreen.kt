@@ -85,12 +85,13 @@ fun LibraryDestination(
     onOpenDetails: (Long) -> Unit,
     onOpenReader: (Long) -> Unit,
     onNewCollection: () -> Unit = {},
+    onOpenCollection: (Long) -> Unit = {},
 ) {
     LibraryScreen(
         onOpenReader = onOpenReader,
         onOpenDetails = onOpenDetails,
         onOpenSettings = onOpenSettings,
-        collectionActions = CollectionsActions(onNewCollection = onNewCollection),
+        collectionActions = CollectionsActions(onOpenCollection = onOpenCollection, onNewCollection = onNewCollection),
     )
 }
 

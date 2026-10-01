@@ -501,7 +501,7 @@
     </plurals>
     <string name="collection_in_progress">%1$d en cours</string>
     <string name="collection_to_read">%1$d à lire</string>
-    <string name="collection_counts_separator" translatable="false"> · </string>
+    <string name="collection_counts_separator" translatable="false">" · "</string>
     <string name="collection_remaining">Environ %1$s de lecture restantes</string>
     <!-- PROPOSÉ (V4) : singulier et moins d’une minute -->
     <string name="collection_remaining_one">Environ %1$s de lecture restante</string>

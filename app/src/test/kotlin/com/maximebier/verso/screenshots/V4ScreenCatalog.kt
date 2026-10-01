@@ -1,6 +1,10 @@
 package com.maximebier.verso.screenshots
 
 import com.maximebier.verso.data.AppTheme
+import com.maximebier.verso.screenshots.samples.CollectionEmptySample
+import com.maximebier.verso.screenshots.samples.CollectionFinishedSample
+import com.maximebier.verso.screenshots.samples.CollectionReorderSample
+import com.maximebier.verso.screenshots.samples.CollectionSample
 import com.maximebier.verso.screenshots.samples.CollectionsEmptySample
 import com.maximebier.verso.screenshots.samples.CollectionsTabSample
 import com.maximebier.verso.screenshots.samples.NewCollectionSample
@@ -15,6 +19,10 @@ object V4ScreenCatalog {
     val fixtures: List<V4ScreenFixture> = listOf(
         V4ScreenFixture(ScreenFixture("4.01-collections") { CollectionsTabSample() }),
         V4ScreenFixture(ScreenFixture("4.01-collections-vide") { CollectionsEmptySample() }),
+        V4ScreenFixture(ScreenFixture("4.02-une-collection") { CollectionSample() }),
+        V4ScreenFixture(ScreenFixture("4.02-reordonner") { CollectionReorderSample() }),
+        V4ScreenFixture(ScreenFixture("4.02-vide") { CollectionEmptySample() }),
+        V4ScreenFixture(ScreenFixture("4.02-tout-termine") { CollectionFinishedSample() }),
         V4ScreenFixture(ScreenFixture("4.03-nouvelle-collection") { NewCollectionSample() }),
     )
 }
