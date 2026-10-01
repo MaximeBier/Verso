@@ -21,7 +21,8 @@ class BackupManifestTest {
         sessions: List<BackupItemRef> = listOf(BackupItemRef(10, 1), BackupItemRef(11, 2)),
         highlights: List<BackupItemRef> = listOf(BackupItemRef(20, 2)),
         entries: Set<String> = allEntries,
-    ) = BackupManifest(format, books, sessions, highlights, entries)
+        collections: List<BackupCollectionRef> = listOf(BackupCollectionRef(30, listOf(2, 1)), BackupCollectionRef(31, emptyList())),
+    ) = BackupManifest(format, books, sessions, highlights, entries, collections)
 
     @Test
     fun completeBackupIsValid() {
@@ -35,6 +36,7 @@ class BackupManifestTest {
             sessions = emptyList(),
             highlights = emptyList(),
             entries = setOf(BackupFormat.DATA_ENTRY, BackupFormat.SETTINGS_ENTRY),
+            collections = emptyList(),
         )
         assertThat(empty.check()).isEqualTo(BackupCheck.Valid)
     }
@@ -124,6 +126,22 @@ class BackupManifestTest {
     @Test
     fun fileNameCarriesTheDate() {
         assertThat(BackupFormat.fileName(LocalDate.of(2026, 9, 20))).isEqualTo("verso-sauvegarde-2026-09-20.zip")
-    }
 }
 
+    @Test
+    fun formatsOneAndTwoAreReadAndThreeIsNewer() {
+        assertThat(BackupFormat.VERSION).isEqualTo(2)
+        assertThat(manifest(format = 1, collections = emptyList()).check()).isEqualTo(BackupCheck.Valid)
+        assertThat(manifest(format = 2).check()).isEqualTo(BackupCheck.Valid)
+        assertThat(manifest(format = 3).check()).isEqualTo(BackupCheck.NewerFormat)
+    }
+
+    @Test
+    fun collectionsMustBeConsistent() {
+        assertThat(manifest(collections = listOf(BackupCollectionRef(0, emptyList()))).check()).isInstanceOf(BackupCheck.Invalid::class.java)
+        assertThat(manifest(collections = listOf(BackupCollectionRef(30, emptyList()), BackupCollectionRef(30, emptyList()))).check())
+            .isInstanceOf(BackupCheck.Invalid::class.java)
+        assertThat(manifest(collections = listOf(BackupCollectionRef(30, listOf(1, 9)))).check()).isInstanceOf(BackupCheck.Invalid::class.java)
+        assertThat(manifest(collections = listOf(BackupCollectionRef(30, listOf(1, 1)))).check()).isInstanceOf(BackupCheck.Invalid::class.java)
+    }
+}

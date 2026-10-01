@@ -9,6 +9,12 @@ import com.maximebier.verso.importer.Sha256
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -135,6 +141,56 @@ class BackupRestorerTest {
 
         assertThat(newer.inputStream().use { phone.restorer().prepare(it) }).isEqualTo(RestorePreparation.NewerFormat)
         assertThat(phone.workDir.exists()).isFalse()
+        phone.close()
+    }
+
+    /** [zip] avec `donnees.json` réécrit par [edit]. */
+    private fun withData(zip: File, name: String, edit: (MutableMap<String, JsonElement>) -> Unit): File {
+        val target = File(tmp.root, name)
+        rezip(zip, target) { entry, bytes ->
+            if (entry != BackupFormat.DATA_ENTRY) return@rezip bytes
+            val data = BackupJson.parseToJsonElement(bytes.decodeToString()).jsonObject.toMutableMap()
+            edit(data)
+            JsonObject(data).toString().toByteArray()
+        }
+        return target
+    }
+
+    @Test
+    fun backupFromV3RestoresWithoutCollections() = runTest {
+        val phone = BackupTestLibrary(tmp.root, backgroundScope)
+        phone.seed()
+        val v3 = withData(backupOf(phone), "v3.zip") { data ->
+            data["format"] = JsonPrimitive(1)
+            data.remove("collections")
+        }
+        assertThat(phone.snapshot().collections).hasSize(2)
+        val restorer = phone.restorer()
+
+        assertThat(v3.inputStream().use { restorer.prepare(it) }).isInstanceOf(RestorePreparation.Ready::class.java)
+        assertThat(restorer.apply()).isEqualTo(RestoreResult.RESTORED)
+
+        val restored = phone.snapshot()
+        assertThat(restored.books).hasSize(3)
+        assertThat(restored.collections).isEmpty()
+        assertThat(restored.collectionBooks).isEmpty()
+        phone.close()
+    }
+
+    @Test
+    fun collectionCitingAMissingBookIsRefused() = runTest {
+        val phone = BackupTestLibrary(tmp.root, backgroundScope)
+        phone.seed()
+        val before = phone.snapshot()
+        val broken = withData(backupOf(phone), "casse.zip") { data ->
+            val collections = data.getValue("collections").jsonArray.map { it.jsonObject.toMutableMap() }
+            collections[0]["bookIds"] = JsonArray(listOf(JsonPrimitive(999)))
+            data["collections"] = JsonArray(collections.map { JsonObject(it) })
+        }
+
+        assertThat(broken.inputStream().use { phone.restorer().prepare(it) }).isEqualTo(RestorePreparation.Invalid)
+        assertThat(phone.snapshot()).isEqualTo(before)
+        assertNoLeftovers(phone)
         phone.close()
     }
 

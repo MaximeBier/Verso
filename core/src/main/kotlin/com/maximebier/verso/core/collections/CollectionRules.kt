@@ -103,4 +103,23 @@ object CollectionOrder {
         if (from == target) return items
         return items.toMutableList().apply { add(target, removeAt(from)) }
     }
+
+    /**
+     * Index où poser la ligne [from] tirée de [offsetPx] (positif vers le bas), d’après la hauteur de chaque ligne :
+     * une ligne voisine est franchie quand le décalage dépasse les lignes déjà franchies plus la moitié de celle-ci.
+     */
+    fun dropIndex(from: Int, offsetPx: Float, heights: List<Int>): Int {
+        if (from !in heights.indices) return from
+        val step = if (offsetPx >= 0) 1 else -1
+        val distance = kotlin.math.abs(offsetPx)
+        var crossed = 0f
+        var target = from
+        while (target + step in heights.indices) {
+            val next = heights[target + step]
+            if (distance <= crossed + next / 2f) break
+            crossed += next
+            target += step
+        }
+        return target
+    }
 }

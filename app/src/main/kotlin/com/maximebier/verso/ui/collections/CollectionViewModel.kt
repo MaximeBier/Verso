@@ -16,9 +16,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 sealed interface CollectionDialog {
     data object Rename : CollectionDialog
@@ -69,12 +72,21 @@ class CollectionViewModel(
 
     fun onReorderEnd() = ui.update { it.copy(reordering = false) }
 
+    /** Un déplacement à la fois, sur l’ordre relu dans la base : deux touchers rapides s’appliquent l’un après l’autre. */
+    private val moveLock = Mutex()
+
     /** Déplace le livre de [from] à [to] et l’enregistre aussitôt (positions 0..n-1). */
     fun onMove(from: Int, to: Int) {
-        val ids = state.value.detail?.books?.map { it.id } ?: return
-        val moved = CollectionOrder.moved(ids, from, to)
-        if (moved == ids) return
-        viewModelScope.launch { collections.reorder(collectionId, moved) }
+        viewModelScope.launch {
+            moveLock.withLock {
+                val ids = collections.observeMemberships().first()
+                    .filter { it.collectionId == collectionId }
+                    .sortedWith(compareBy({ it.position }, { it.bookId }))
+                    .map { it.bookId }
+                val moved = CollectionOrder.moved(ids, from, to)
+                if (moved != ids) collections.reorder(collectionId, moved)
+            }
+        }
     }
 
     /** Retire le livre de la collection ; il reste dans la bibliothèque. */

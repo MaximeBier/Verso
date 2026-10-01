@@ -6,11 +6,14 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 
-/** Toute la bibliothèque : livres, sessions et surlignages, dans l’ordre des id. */
+/** Toute la bibliothèque : livres, sessions, surlignages et collections, dans l’ordre des id. */
 data class LibrarySnapshot(
     val books: List<BookEntity>,
     val sessions: List<SessionEntity>,
     val highlights: List<HighlightEntity>,
+    val collections: List<CollectionEntity> = emptyList(),
+    /** Dans l’ordre de chaque collection. */
+    val collectionBooks: List<CollectionBookEntity> = emptyList(),
 )
 
 /** Lecture et remplacement de toute la bibliothèque (sauvegarde et restauration), chacun en une transaction. */
@@ -25,8 +28,18 @@ abstract class BackupDao {
     @Query("SELECT * FROM highlights ORDER BY id")
     abstract suspend fun highlights(): List<HighlightEntity>
 
+    @Query("SELECT * FROM collections ORDER BY id")
+    abstract suspend fun collections(): List<CollectionEntity>
+
+    @Query("SELECT * FROM collection_books ORDER BY collectionId, position, bookId")
+    abstract suspend fun collectionBooks(): List<CollectionBookEntity>
+
     @Query("SELECT COUNT(*) FROM books")
     abstract suspend fun bookCount(): Int
+
+    /** Les livres des collections partent en cascade. */
+    @Query("DELETE FROM collections")
+    abstract suspend fun deleteCollections()
 
     @Query("DELETE FROM highlights")
     abstract suspend fun deleteHighlights()
@@ -47,18 +60,27 @@ abstract class BackupDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insertHighlights(highlights: List<HighlightEntity>)
 
-    /** Lecture cohérente : aucune écriture ne s’intercale entre les trois tables. */
-    @Transaction
-    open suspend fun snapshot(): LibrarySnapshot = LibrarySnapshot(books(), sessions(), highlights())
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    abstract suspend fun insertCollections(collections: List<CollectionEntity>)
 
-    /** Vide puis remplit les trois tables avec les id d’origine ; tout ou rien. */
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    abstract suspend fun insertCollectionBooks(members: List<CollectionBookEntity>)
+
+    /** Lecture cohérente : aucune écriture ne s’intercale entre les tables. */
+    @Transaction
+    open suspend fun snapshot(): LibrarySnapshot = LibrarySnapshot(books(), sessions(), highlights(), collections(), collectionBooks())
+
+    /** Vide puis remplit toutes les tables avec les id d’origine ; tout ou rien. */
     @Transaction
     open suspend fun replaceAll(library: LibrarySnapshot) {
+        deleteCollections()
         deleteHighlights()
         deleteSessions()
         deleteBooks()
         insertBooks(library.books)
         insertSessions(library.sessions)
         insertHighlights(library.highlights)
+        insertCollections(library.collections)
+        insertCollectionBooks(library.collectionBooks)
     }
 }

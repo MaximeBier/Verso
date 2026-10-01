@@ -5,6 +5,8 @@ import com.maximebier.verso.core.backup.BackupBookRef
 import com.maximebier.verso.core.backup.BackupFormat
 import com.maximebier.verso.core.backup.BackupItemRef
 import com.maximebier.verso.data.RawSetting
+import com.maximebier.verso.data.db.CollectionBookEntity
+import com.maximebier.verso.data.db.CollectionEntity
 import com.maximebier.verso.data.db.HighlightEntity
 import com.maximebier.verso.data.testBook
 import com.maximebier.verso.data.testSession
@@ -94,5 +96,27 @@ class BackupMappingTest {
         assertThat(manifest.books).containsExactly(BackupBookRef(7, sha, "$sha.jpg"))
         assertThat(manifest.sessions).containsExactly(BackupItemRef(42, 7))
         assertThat(manifest.entries).containsExactly("donnees.json")
+    }
+
+    @Test
+    fun collectionKeepsItsOrderAndGetsDensePositions() {
+        val collection = CollectionEntity(id = 30, name = "Classiques", createdAt = 7_000L)
+        val members = listOf(
+            CollectionBookEntity(30, bookId = 3, position = 7),
+            CollectionBookEntity(30, bookId = 1, position = 0),
+            CollectionBookEntity(30, bookId = 2, position = 3),
+            CollectionBookEntity(31, bookId = 4, position = 0),
+        )
+        val dto = collection.toDto(members)
+        assertThat(dto.bookIds).containsExactly(1L, 2L, 3L).inOrder()
+        val (entity, books) = dto.toEntities()
+        assertThat(entity).isEqualTo(collection)
+        assertThat(books.map { it.bookId to it.position }).containsExactly(1L to 0, 2L to 1, 3L to 2).inOrder()
+    }
+
+    @Test
+    fun formatOneDataHasNoCollections() {
+        val json = """{"format":1,"createdAt":1,"appVersion":"3.0.0","books":[],"sessions":[],"highlights":[]}"""
+        assertThat(BackupJson.decodeFromString(BackupDataDto.serializer(), json).collections).isEmpty()
     }
 }

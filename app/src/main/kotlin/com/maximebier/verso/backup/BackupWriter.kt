@@ -38,6 +38,7 @@ class BackupWriter(
             books = library.books.map { it.toDto(coverFile = covers[it.id]?.name) },
             sessions = library.sessions.map { it.toDto() },
             highlights = library.highlights.map { it.toDto() },
+            collections = library.collections.map { it.toDto(library.collectionBooks) },
         )
         val counting = CountingOutputStream(output)
         val zip = ZipOutputStream(BufferedOutputStream(counting, BUFFER_SIZE))

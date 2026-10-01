@@ -98,4 +98,20 @@ class CollectionRulesTest {
         assertThat(CollectionOrder.moved(listOf("a", "b"), 1, 5)).containsExactly("a", "b").inOrder()
         assertThat(CollectionOrder.moved(listOf("a", "b"), 1, 1)).containsExactly("a", "b").inOrder()
     }
+
+    @Test
+    fun dropIndexFollowsTheHeightsOfTheRowsCrossed() {
+        val heights = listOf(100, 300, 100, 100)
+        // Une ligne est franchie quand le décalage dépasse les lignes déjà franchies plus la moitié de la suivante.
+        assertThat(CollectionOrder.dropIndex(from = 0, offsetPx = 160f, heights = heights)).isEqualTo(1)
+        assertThat(CollectionOrder.dropIndex(from = 0, offsetPx = 140f, heights = heights)).isEqualTo(0)
+        // Avec une hauteur commune de 100 px, 350 px donneraient l’index 3 ; la ligne de 300 px ramène à 2.
+        assertThat(CollectionOrder.dropIndex(from = 0, offsetPx = 350f, heights = heights)).isEqualTo(1)
+        assertThat(CollectionOrder.dropIndex(from = 0, offsetPx = 420f, heights = heights)).isEqualTo(2)
+        assertThat(CollectionOrder.dropIndex(from = 0, offsetPx = 460f, heights = heights)).isEqualTo(3)
+        assertThat(CollectionOrder.dropIndex(from = 3, offsetPx = -60f, heights = heights)).isEqualTo(2)
+        assertThat(CollectionOrder.dropIndex(from = 3, offsetPx = -260f, heights = heights)).isEqualTo(1)
+        assertThat(CollectionOrder.dropIndex(from = 1, offsetPx = 10_000f, heights = heights)).isEqualTo(3)
+        assertThat(CollectionOrder.dropIndex(from = 2, offsetPx = -10_000f, heights = heights)).isEqualTo(0)
+    }
 }

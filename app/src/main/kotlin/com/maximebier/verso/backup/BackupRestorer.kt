@@ -94,11 +94,14 @@ class BackupRestorer(
             is BackupCheck.Invalid -> throw InvalidBackupException(check.reason)
         }
         removeUnreferenced(entries, data)
+        val restoredCollections = data.collections.map { it.toEntities() }
         prepared = Prepared(
             library = LibrarySnapshot(
                 books = data.books.map { it.toEntity(booksDir, coversDir) },
                 sessions = data.sessions.map { it.toEntity() },
                 highlights = data.highlights.map { it.toEntity() },
+                collections = restoredCollections.map { it.first },
+                collectionBooks = restoredCollections.flatMap { it.second },
             ),
             settings = rawSettings,
         )

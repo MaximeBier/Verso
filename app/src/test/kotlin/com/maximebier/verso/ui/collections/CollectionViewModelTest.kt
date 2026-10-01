@@ -3,7 +3,16 @@ package com.maximebier.verso.ui.collections
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.data.testBook
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.CollectionRepository
+import com.maximebier.verso.data.db.VersoDatabase
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -56,6 +65,30 @@ class CollectionViewModelTest {
         assertThat(vm.state.first { it.detail?.books?.first()?.id == b }.detail!!.books.map { it.id })
             .containsExactly(b, c, a).inOrder()
         assertThat(viewModel().order()).containsExactly(b, c, a).inOrder()
+    }
+
+    @Test
+    fun quickSuccessiveMovesAreAllKept() = runBlocking {
+        // Base aux exécuteurs de Room, comme sur le téléphone : l’affichage suit les écritures avec un temps de retard.
+        val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), VersoDatabase::class.java).build()
+        try {
+            val books = BookRepository(db.bookDao(), tmp.newFolder("livres"), tmp.newFolder("couvertures"))
+            val collections = CollectionRepository(db.collectionDao()) { 1L }
+            val ids = listOf("x", "y", "z").map { books.insert(testBook(it)) }
+            val id = collections.create("Série", ids)
+            val vm = CollectionViewModel(id, collections, books, flowOf(emptyMap()))
+            vm.state.first { !it.loading }
+            // « Descendre » deux fois de suite sur le premier livre, sans attendre l’affichage : il finit dernier.
+            vm.onMove(0, 1)
+            vm.onMove(1, 2)
+            val expected = listOf(ids[1], ids[2], ids[0])
+            val order = withTimeoutOrNull(5_000) {
+                collections.observeMemberships().first { list -> list.sortedBy { it.position }.map { it.bookId } == expected }
+            }
+            assertThat(order).isNotNull()
+        } finally {
+            db.close()
+        }
     }
 
     @Test

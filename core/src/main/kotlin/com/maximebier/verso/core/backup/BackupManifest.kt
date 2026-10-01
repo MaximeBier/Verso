@@ -4,8 +4,11 @@ import java.time.LocalDate
 
 /** Format du zip de sauvegarde : JSON (pas une copie de la base), EPUB et couvertures. */
 object BackupFormat {
-    /** Écrit dans le champ `format` de `donnees.json` ; une sauvegarde d’un numéro supérieur est refusée. */
-    const val VERSION = 1
+    /**
+     * Écrit dans le champ `format` de `donnees.json` ; une sauvegarde d’un numéro supérieur est refusée.
+     * 1 : V3. 2 : collections (V4) ; le format 1 se lit toujours, sans collection.
+     */
+    const val VERSION = 2
     const val DATA_ENTRY = "donnees.json"
     const val SETTINGS_ENTRY = "reglages.json"
     const val BOOKS_FOLDER = "livres"
@@ -68,6 +71,9 @@ data class BackupBookRef(val id: Long, val sha256: String, val coverFile: String
 /** Session ou surlignage : son id et le livre auquel il appartient. */
 data class BackupItemRef(val id: Long, val bookId: Long)
 
+/** Collection : son id et ses livres dans l’ordre de lecture. */
+data class BackupCollectionRef(val id: Long, val bookIds: List<Long>)
+
 /** Ce que la restauration a lu : données de `donnees.json` et entrées extraites du zip. */
 data class BackupManifest(
     val format: Int,
@@ -75,6 +81,7 @@ data class BackupManifest(
     val sessions: List<BackupItemRef>,
     val highlights: List<BackupItemRef>,
     val entries: Set<String>,
+    val collections: List<BackupCollectionRef> = emptyList(),
 ) {
     /** Format d’abord (une sauvegarde plus récente est refusée telle quelle), puis fichiers et identifiants. */
     fun check(): BackupCheck {
@@ -94,7 +101,21 @@ data class BackupManifest(
                 return BackupCheck.Invalid("couverture absente (livre ${book.id})")
             }
         }
-        return checkItems("session", sessions, bookIds) ?: checkItems("surlignage", highlights, bookIds) ?: BackupCheck.Valid
+        return checkItems("session", sessions, bookIds)
+            ?: checkItems("surlignage", highlights, bookIds)
+            ?: checkCollections(bookIds)
+            ?: BackupCheck.Valid
+    }
+
+    private fun checkCollections(bookIds: Set<Long>): BackupCheck? {
+        val seen = HashSet<Long>()
+        for (collection in collections) {
+            if (collection.id <= 0 || !seen.add(collection.id)) return BackupCheck.Invalid("collection ${collection.id} invalide ou en double")
+            if (collection.bookIds.toSet().size != collection.bookIds.size) return BackupCheck.Invalid("livre en double (collection ${collection.id})")
+            val missing = collection.bookIds.firstOrNull { it !in bookIds }
+            if (missing != null) return BackupCheck.Invalid("collection ${collection.id} sans livre $missing")
+        }
+        return null
     }
 
     private fun checkItems(kind: String, items: List<BackupItemRef>, bookIds: Set<Long>): BackupCheck? {
