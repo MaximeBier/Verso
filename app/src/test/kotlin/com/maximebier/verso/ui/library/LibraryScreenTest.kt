@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.library
 
 import android.content.Context
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -102,6 +103,27 @@ class LibraryScreenTest {
         compose.onNodeWithContentDescription(text(R.string.library_book_options, "Germinal")).performClick()
         compose.onNodeWithText(text(R.string.library_menu_delete)).performClick()
         assertThat(deleted?.id).isEqualTo(4L)
+    }
+
+    @Test
+    fun bookMenuOffersAddToCollectionAndOpensTheSheet() {
+        val sheets = mutableListOf<Long>()
+        compose.setContent {
+            VersoTheme {
+                LibraryContent(
+                    LibrarySamples.list,
+                    LibraryActions(),
+                    addToCollectionSheet = { bookId, _ -> SideEffect { sheets += bookId } },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription(text(R.string.library_book_options, "Germinal")).performClick()
+        val items = listOf(R.string.library_menu_details, R.string.library_menu_add_to_collection, R.string.library_menu_delete)
+            .map { compose.onNodeWithText(text(it)).fetchSemanticsNode().boundsInRoot.top }
+        assertThat(items).isInOrder()
+        compose.onNodeWithText(text(R.string.library_menu_add_to_collection)).performClick()
+        compose.waitForIdle()
+        assertThat(sheets.distinct()).containsExactly(4L)
     }
 
     @Test

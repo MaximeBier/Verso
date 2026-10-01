@@ -1,6 +1,10 @@
 package com.maximebier.verso.ui.details
 
 import android.content.Context
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -43,6 +47,22 @@ class DetailsScreenTest {
     }
 
     private val stats = ReadingStats(totalActiveMs = 148 * 60_000L, sessionCount = 5, wordsPerMinute = 240)
+
+    @Test
+    fun collectionsRowListsNamesOrNoneAndOpensTheSheet() {
+        val sheets = mutableListOf<Long>()
+        var state by mutableStateOf(DetailsSamples.bovary.copy(collectionNames = emptyList()))
+        compose.setContent {
+            VersoTheme { DetailsContent(state, DetailsActions(), addToCollectionSheet = { bookId, _ -> SideEffect { sheets += bookId } }) }
+        }
+        compose.onNodeWithText(text(R.string.details_collections_label)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.details_collections_none)).assertIsDisplayed()
+        state = state.copy(collectionNames = listOf("Classiques", "Flaubert"))
+        compose.onNodeWithText("Classiques, Flaubert").assertIsDisplayed()
+        compose.onNodeWithContentDescription(text(R.string.details_collections_edit_content_description)).performClick()
+        compose.waitForIdle()
+        assertThat(sheets.distinct()).containsExactly(state.bookId)
+    }
 
     @Test
     fun statisticsSectionShowsTimeSpeedAndRemaining() {
@@ -173,7 +193,7 @@ class DetailsScreenTest {
         compose.setContent {
             VersoTheme { DetailsScreen(bookId = id, onBack = { back++ }, onOpenReader = {}, viewModel = vm) }
         }
-        compose.onNodeWithText(text(R.string.details_delete_book)).performClick()
+        compose.onNodeWithText(text(R.string.details_delete_book)).performScrollTo().performClick()
         compose.onNodeWithText(text(R.string.details_delete_dialog_confirm)).performClick()
         compose.waitUntil(timeoutMillis = 5_000) { back > 0 }
         assertThat(back).isEqualTo(1)

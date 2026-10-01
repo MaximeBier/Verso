@@ -53,6 +53,8 @@ data class DetailsUiState(
     val stats: ReadingStats? = null,
     /** Surlignages du livre ; la ligne « Notes et surlignages » n’apparaît qu’à partir de 1. */
     val highlightCount: Int = 0,
+    /** Collections du livre, la plus récente d’abord (V4). */
+    val collectionNames: List<String> = emptyList(),
 )
 
 /**
@@ -68,6 +70,8 @@ class DetailsViewModel(
     private val showStatistics: Flow<Boolean> = flowOf(true),
     /** Nombre de surlignages du livre (ligne « Notes et surlignages · 3 », V3). */
     private val highlightCountOf: (Long) -> Flow<Int> = { flowOf(0) },
+    /** Noms des collections du livre (ligne « Collections », V4). */
+    private val collectionNamesOf: (Long) -> Flow<List<String>> = { flowOf(emptyList()) },
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DetailsUiState(bookId = bookId))
@@ -82,10 +86,16 @@ class DetailsViewModel(
 
     init {
         viewModelScope.launch {
-            combine(books.observeBook(bookId), statsOf(bookId), showStatistics, highlightCountOf(bookId)) { book, stats, shown, count ->
-                DetailsSources(book, stats, shown, count)
+            combine(
+                books.observeBook(bookId),
+                statsOf(bookId),
+                showStatistics,
+                highlightCountOf(bookId),
+                collectionNamesOf(bookId),
+            ) { book, stats, shown, count, names ->
+                DetailsSources(book, stats, shown, count, names)
             }
-                .collect { (book, stats, shown, highlightCount) ->
+                .collect { (book, stats, shown, highlightCount, collectionNames) ->
                     if (book == null) {
                         _state.update { it.copy(loaded = true, missing = true) }
                     } else {
@@ -109,6 +119,7 @@ class DetailsViewModel(
                                 originalFileName = book.originalFileName,
                                 stats = stats.takeIf { shown },
                                 highlightCount = highlightCount,
+                                collectionNames = collectionNames,
                             )
                         }
                     }
@@ -212,10 +223,21 @@ class DetailsViewModel(
                     statsOf = app.container.sessions::observeStats,
                     showStatistics = app.container.settings.showStatistics,
                     highlightCountOf = app.container.highlights::observeCount,
+                    collectionNamesOf = { id ->
+                        combine(app.container.collections.observeCollections(), app.container.collections.observeCollectionIdsOf(id)) { all, ids ->
+                            all.filter { it.id in ids }.map { it.name }
+                        }
+                    },
                 )
             }
         }
     }
 }
 
-private data class DetailsSources(val book: BookEntity?, val stats: ReadingStats, val shown: Boolean, val highlightCount: Int)
+private data class DetailsSources(
+    val book: BookEntity?,
+    val stats: ReadingStats,
+    val shown: Boolean,
+    val highlightCount: Int,
+    val collectionNames: List<String>,
+)

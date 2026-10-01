@@ -241,6 +241,18 @@ class DetailsViewModelTest {
     }
 
     @Test
+    fun collectionNamesFollowTheBook() = runTest(dispatcher) {
+        val id = insertBovary()
+        val names = MutableStateFlow(emptyList<String>())
+        val vm = DetailsViewModel(bookId = id, books = books, saveScope = this, collectionNamesOf = { names })
+        advanceUntilIdle()
+        assertThat(vm.state.value.collectionNames).isEmpty()
+        names.value = listOf("Classiques", "Flaubert")
+        advanceUntilIdle()
+        assertThat(vm.state.value.collectionNames).containsExactly("Classiques", "Flaubert").inOrder()
+    }
+
+    @Test
     fun missingBookLeaves() = runTest(dispatcher) {
         assertThat(viewModel(999).state.first { it.loaded }.missing).isTrue()
     }

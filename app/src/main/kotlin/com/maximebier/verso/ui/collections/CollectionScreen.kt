@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -249,27 +250,16 @@ private fun CollectionBody(detail: CollectionDetail, reordering: Boolean, action
                             canMoveUp = index > 0,
                             canMoveDown = index < detail.books.lastIndex,
                             onMove = { to -> actions.onMove(index, to) },
-                            dragHandle = Modifier.pointerInput(index, detail.books.size) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        dragIndex = index
-                                        dragOffset = 0f
-                                    },
-                                    onDrag = { change, amount ->
-                                        change.consume()
-                                        dragOffset += amount.y
-                                    },
-                                    onDragEnd = {
-                                        val target = (index + (dragOffset / rowHeightPx).roundToInt()).coerceIn(0, detail.books.lastIndex)
-                                        dragIndex = null
-                                        dragOffset = 0f
-                                        if (target != index) actions.onMove(index, target)
-                                    },
-                                    onDragCancel = {
-                                        dragIndex = null
-                                        dragOffset = 0f
-                                    },
-                                )
+                            onDragStart = {
+                                dragIndex = index
+                                dragOffset = 0f
+                            },
+                            onDragBy = { dy -> dragOffset += dy },
+                            onDragStop = { cancelled ->
+                                val target = (index + (dragOffset / rowHeightPx).roundToInt()).coerceIn(0, detail.books.lastIndex)
+                                dragIndex = null
+                                dragOffset = 0f
+                                if (!cancelled && target != index) actions.onMove(index, target)
                             },
                         )
                     } else {
@@ -465,9 +455,15 @@ private fun ReorderRow(
     canMoveUp: Boolean,
     canMoveDown: Boolean,
     onMove: (Int) -> Unit,
-    dragHandle: Modifier,
+    onDragStart: () -> Unit,
+    onDragBy: (Float) -> Unit,
+    onDragStop: (cancelled: Boolean) -> Unit,
 ) {
     val colors = VersoTheme.colors
+    // La poignée garde son détecteur pendant le geste : elle appelle toujours les derniers rappels.
+    val start by rememberUpdatedState(onDragStart)
+    val dragBy by rememberUpdatedState(onDragBy)
+    val stop by rememberUpdatedState(onDragStop)
     val index = rank - 1
     val up = stringResource(R.string.collection_move_up, book.title)
     val down = stringResource(R.string.collection_move_down, book.title)
@@ -477,7 +473,18 @@ private fun ReorderRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = dragHandle
+            modifier = Modifier
+                .pointerInput(index) {
+                    detectDragGestures(
+                        onDragStart = { start() },
+                        onDrag = { change, amount ->
+                            change.consume()
+                            dragBy(amount.y)
+                        },
+                        onDragEnd = { stop(false) },
+                        onDragCancel = { stop(true) },
+                    )
+                }
                 .size(VersoDimens.controlMin)
                 .semantics {
                     contentDescription = drag

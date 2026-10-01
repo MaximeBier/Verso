@@ -3,7 +3,10 @@ package com.maximebier.verso.screenshots.samples
 import androidx.compose.runtime.Composable
 import com.maximebier.verso.core.collections.CollectionSummary
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.ui.collections.AddToCollectionSheetContent
+import com.maximebier.verso.ui.collections.AddToCollectionUiState
 import com.maximebier.verso.ui.collections.CollectionActions
+import com.maximebier.verso.ui.collections.CollectionChoice
 import com.maximebier.verso.ui.collections.CollectionCard
 import com.maximebier.verso.ui.collections.CollectionContent
 import com.maximebier.verso.ui.collections.CollectionDetail
@@ -14,6 +17,9 @@ import com.maximebier.verso.ui.collections.NewCollectionContent
 import com.maximebier.verso.ui.collections.NewCollectionActions
 import com.maximebier.verso.ui.collections.NewCollectionUiState
 import com.maximebier.verso.ui.collections.SelectableBook
+import com.maximebier.verso.ui.details.DetailsActions
+import com.maximebier.verso.ui.details.DetailsContent
+import com.maximebier.verso.ui.details.DetailsSamples
 import com.maximebier.verso.ui.library.LibraryActions
 import com.maximebier.verso.ui.library.LibraryBook
 import com.maximebier.verso.ui.library.LibraryContent
@@ -117,4 +123,49 @@ internal fun CollectionFinishedSample() {
     val done = zolaBooks.map { it.copy(status = BookStatus.FINISHED, progression = 1.0, percent = 100) }
     val summary = zolaSummary.copy(fraction = 1.0, percent = 100, finished = 5, inProgress = 0, toRead = 0, remainingMinutes = 0, resumeIndex = null)
     CollectionContent(CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", done, summary)), CollectionActions())
+}
+
+/** Fiche de Germinal (4.04), 12 % lu, dans « Les Rougon-Macquart » ; la feuille s’ouvre par « Modifier ». */
+private val germinalDetails = DetailsSamples.bovary.copy(
+    titleField = "Germinal",
+    authorField = "Émile Zola",
+    savedTitle = "Germinal",
+    savedAuthor = "Émile Zola",
+    colorSeed = "Germinal",
+    percent = 12,
+    remainingMinutes = 14 * 60,
+    originalFileName = "germinal.epub",
+    collectionNames = listOf("Les Rougon-Macquart"),
+)
+
+private val addSheetState = AddToCollectionUiState(
+    loading = false,
+    bookTitle = "Germinal",
+    choices = listOf(
+        CollectionChoice(1, "Les Rougon-Macquart", 5, checked = true),
+        CollectionChoice(2, "Les Mousquetaires", 3, checked = false),
+    ),
+)
+
+@Composable
+internal fun AddToCollectionSample() {
+    DetailsContent(
+        state = germinalDetails,
+        actions = DetailsActions(),
+        addToCollectionSheet = { _, onDismiss -> AddToCollectionSheetContent(addSheetState, {}, {}, onDismiss) },
+    )
+}
+
+@Composable
+internal fun AddToCollectionNoCollectionSample() {
+    DetailsContent(
+        state = germinalDetails.copy(collectionNames = emptyList()),
+        actions = DetailsActions(),
+        addToCollectionSheet = { _, onDismiss -> AddToCollectionSheetContent(addSheetState.copy(choices = emptyList()), {}, {}, onDismiss) },
+    )
+}
+
+@Composable
+internal fun DetailsWithCollectionsSample() {
+    DetailsContent(state = germinalDetails, actions = DetailsActions())
 }

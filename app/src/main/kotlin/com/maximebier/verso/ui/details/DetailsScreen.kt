@@ -20,12 +20,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -36,6 +39,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.R
 import com.maximebier.verso.core.model.BookStatus
 import com.maximebier.verso.core.stats.ReadingStats
+import com.maximebier.verso.ui.collections.AddToCollectionSheet
+import com.maximebier.verso.ui.collections.STACKED_CARD_FONT_SCALE
 import com.maximebier.verso.ui.common.DeleteBookDialog
 import com.maximebier.verso.ui.common.durationText
 import com.maximebier.verso.ui.common.formatDate
@@ -48,6 +53,7 @@ import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.PrimaryButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoSegmentedButton
+import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoTheme
 import java.util.Locale
 
@@ -76,8 +82,16 @@ fun DetailsDestination(
     onOpenReader: (Long) -> Unit,
     onOpenJournal: (Long) -> Unit,
     onOpenNotes: (Long) -> Unit = {},
+    onNewCollection: (Long) -> Unit = {},
 ) {
-    DetailsScreen(bookId = bookId, onBack = onBack, onOpenReader = onOpenReader, onOpenJournal = onOpenJournal, onOpenNotes = onOpenNotes)
+    DetailsScreen(
+        bookId = bookId,
+        onBack = onBack,
+        onOpenReader = onOpenReader,
+        onOpenJournal = onOpenJournal,
+        onOpenNotes = onOpenNotes,
+        onNewCollection = onNewCollection,
+    )
 }
 
 /** Retour à la bibliothèque après suppression ou si le livre n'existe plus. */
@@ -88,6 +102,7 @@ fun DetailsScreen(
     onOpenReader: (Long) -> Unit,
     onOpenJournal: (Long) -> Unit = {},
     onOpenNotes: (Long) -> Unit = {},
+    onNewCollection: (Long) -> Unit = {},
     viewModel: DetailsViewModel = viewModel(factory = DetailsViewModel.factory(bookId)),
 ) {
     val state by viewModel.state.collectAsState()
@@ -121,6 +136,16 @@ fun DetailsScreen(
                 onOpenJournal(id)
             },
         ),
+        addToCollectionSheet = { bookId, onDismiss ->
+            AddToCollectionSheet(
+                bookId = bookId,
+                onNewCollection = { id ->
+                    viewModel.flush()
+                    onNewCollection(id)
+                },
+                onDismiss = onDismiss,
+            )
+        },
     )
 }
 
@@ -141,8 +166,15 @@ data class DetailsActions(
 
 /** Écrans 1.07 (fiche) et 1.08 (confirmation de suppression), sans ViewModel. */
 @Composable
-fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Modifier = Modifier) {
+fun DetailsContent(
+    state: DetailsUiState,
+    actions: DetailsActions,
+    modifier: Modifier = Modifier,
+    addToCollectionSheet: @Composable (bookId: Long, onDismiss: () -> Unit) -> Unit = { _, _ -> },
+) {
     val colors = VersoTheme.colors
+    // Feuille 4.04 : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
+    var collectionsSheet by rememberSaveable { mutableStateOf(false) }
     /** 16 sp, interligne 1,45 (pourcentage et temps restant sous la couverture). */
     val metaStyle = VersoTheme.typography.body.copy(lineHeight = 23.2.sp)
     var titleFocused by remember { mutableStateOf(false) }
@@ -203,6 +235,7 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
                         groupLabel = stringResource(R.string.details_state_group),
                     )
                 }
+                CollectionsRow(names = state.collectionNames, onEdit = { collectionsSheet = true })
                 DetailsTextField(
                     value = state.titleField,
                     onValueChange = actions.onTitleChange,
@@ -260,6 +293,7 @@ fun DetailsContent(state: DetailsUiState, actions: DetailsActions, modifier: Mod
     if (state.showDeleteDialog) {
         DeleteBookDialog(title = state.savedTitle, onConfirm = actions.onDeleteConfirm, onDismiss = actions.onDeleteDismiss)
     }
+    if (collectionsSheet) addToCollectionSheet(state.bookId) { collectionsSheet = false }
 }
 
 @Composable
@@ -313,5 +347,41 @@ private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpen
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             icon = VersoIcons.History,
         )
+    }
+}
+
+/** Ligne « Collections » (4.04) : noms séparés par des virgules ou « Aucune », et « Modifier », qui ouvre la feuille. */
+@Composable
+private fun CollectionsRow(names: List<String>, onEdit: () -> Unit) {
+    val colors = VersoTheme.colors
+    val editDescription = stringResource(R.string.details_collections_edit_content_description)
+    val texts = @Composable { modifier: Modifier ->
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stringResource(R.string.details_collections_label), style = VersoTheme.typography.captionBold, color = colors.textSecondary)
+            Text(
+                text = if (names.isEmpty()) stringResource(R.string.details_collections_none) else names.joinToString(", "),
+                style = VersoTheme.typography.rowTitle,
+                color = colors.text,
+            )
+        }
+    }
+    val edit = @Composable {
+        VersoTextButton(
+            text = stringResource(R.string.details_collections_edit),
+            onClick = onEdit,
+            modifier = Modifier.semantics { contentDescription = editDescription },
+        )
+    }
+    // Texte très agrandi : « Modifier » passe sous les noms, qui gardent toute la largeur.
+    if (LocalDensity.current.fontScale >= STACKED_CARD_FONT_SCALE) {
+        Column {
+            texts(Modifier.fillMaxWidth())
+            edit()
+        }
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            texts(Modifier.weight(1f))
+            edit()
+        }
     }
 }
