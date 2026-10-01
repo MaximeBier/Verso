@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,6 +67,8 @@ fun ResumeCard(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Bouton ⋮ du livre, en haut à droite (la fiche du livre en cours n’est accessible que par lui). */
+    options: @Composable () -> Unit = {},
 ) {
     val colors = VersoTheme.colors
     val label = contentDescription
@@ -104,6 +107,8 @@ fun ResumeCard(
                     Text(chapter, style = cardSecondaryStyle, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
+            // Décalé vers le haut et la droite : la cible de 48 dp déborde dans la marge de la carte.
+            Box(Modifier.offset(x = 8.dp, y = (-8).dp)) { options() }
         }
         if (excerpt != null) {
             Text(excerpt, style = VersoTheme.typography.body, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)

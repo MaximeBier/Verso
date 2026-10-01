@@ -84,6 +84,18 @@ class LibraryScreenTest {
         assertThat(deleted?.id).isEqualTo(4L)
     }
 
+    @Test
+    fun resumeCardHasItsOwnOptionsToReachTheDetails() {
+        var details: Long? = null
+        var opened: Long? = null
+        show(LibrarySamples.list, LibraryActions(onOpenDetails = { details = it }, onOpenBook = { opened = it }))
+        val book = LibrarySamples.list.resume!!.book
+        compose.onNodeWithContentDescription(text(R.string.library_book_options, book.title)).performClick()
+        compose.onNodeWithText(text(R.string.library_menu_details)).performClick()
+        assertThat(details).isEqualTo(book.id)
+        assertThat(opened).isNull()
+    }
+
     private val sortButtonLabel
         get() = text(R.string.library_sort_button_description, text(R.string.library_sort_state_recent), text(R.string.library_view_state_list))
 
