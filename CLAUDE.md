@@ -18,7 +18,7 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 
 ## Règles
 
-- **V4 en cours** (collections, décidée le 2026-10-01 ; V3 terminée le 2026-10-01, V2 le 2026-09-30, V1 le 2026-09-27) : ne pas coder « Plus tard » sans décision explicite.
+- **V4 terminée** (2026-10-02 ; V3 le 2026-10-01, V2 le 2026-09-30, V1 le 2026-09-27) : ne pas coder « Plus tard » sans décision explicite.
 - **Position de lecture** : toujours un locator Readium, jamais des pixels. La logique lecture/navigation et la carte « Revenir » forment une machine à états sans dépendance Android, couverte par des tests unitaires. Les seuils sont des constantes nommées.
 - **Textes** : en français, dans `res/values/strings.xml`, repris mot pour mot des maquettes. Espace fine insécable avant `; : ! ?` et `%`, apostrophe typographique, « Environ » plutôt que « ≈ ».
 - **Accessibilité** : texte à au moins 7:1 de contraste (et pas plus d'environ 10:1 en thème foncé), commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.

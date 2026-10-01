@@ -468,7 +468,7 @@
     <!-- ===================== Bibliothèque : onglets (4.01) ===================== -->
     <string name="library_tab_books">Livres</string>
     <string name="library_tab_collections">Collections</string>
-    <!-- PROPOSÉ (V4) : intitulé TalkBack du groupe d’onglets -->
+    <!-- Validé par Maxime (2026-10-02) : intitulé TalkBack du groupe d’onglets -->
     <string name="library_tabs_group">Afficher les livres ou les collections</string>
 
     <!-- ===================== Collections (4.01) ===================== -->
@@ -487,7 +487,7 @@
         <item quantity="other">· %1$d terminés sur %2$d</item>
     </plurals>
     <string name="collections_new">Nouvelle collection</string>
-    <!-- PROPOSÉ (V4) : onglet Collections sans collection -->
+    <!-- Validé par Maxime (2026-10-02) : onglet Collections sans collection -->
     <string name="collections_empty">Regroupez des livres, par exemple une série, pour suivre leur lecture ensemble.</string>
     <!-- TalkBack d’une carte : « Les Rougon-Macquart, 5 livres, 44 % lus » -->
     <string name="collections_card_content_description">%1$s, %2$s, %3$d %% lus</string>
@@ -503,7 +503,7 @@
     <string name="collection_to_read">%1$d à lire</string>
     <string name="collection_counts_separator" translatable="false">" · "</string>
     <string name="collection_remaining">Environ %1$s de lecture restantes</string>
-    <!-- PROPOSÉ (V4) : singulier et moins d’une minute -->
+    <!-- Validé par Maxime (2026-10-02) : singulier et moins d’une minute -->
     <string name="collection_remaining_one">Environ %1$s de lecture restante</string>
     <string name="collection_remaining_less_than_minute">Moins d’une minute de lecture restante</string>
     <string name="collection_resume">Reprendre</string>
@@ -511,18 +511,18 @@
     <string name="collection_resume_content_description">Reprendre « %1$s »</string>
     <string name="collection_order_title">Dans l’ordre de lecture</string>
     <string name="collection_reorder">Réordonner</string>
-    <!-- PROPOSÉ (V4) : quitte le mode Réordonner ; TalkBack des commandes de chaque ligne -->
+    <!-- Validé par Maxime (2026-10-02) : quitte le mode Réordonner ; TalkBack des commandes de chaque ligne -->
     <string name="collection_reorder_done">Terminé</string>
     <string name="collection_move_up">Monter « %1$s »</string>
     <string name="collection_move_down">Descendre « %1$s »</string>
     <string name="collection_drag">Déplacer « %1$s »</string>
-    <!-- PROPOSÉ (V4) : TalkBack du ⋮ de la collection -->
+    <!-- Validé par Maxime (2026-10-02) : TalkBack du ⋮ de la collection -->
     <string name="collection_options">Options de la collection</string>
     <string name="collection_menu_rename">Renommer</string>
     <string name="collection_menu_reorder">Réordonner</string>
     <string name="collection_menu_delete">Supprimer</string>
     <string name="collection_book_menu_remove">Retirer de la collection</string>
-    <!-- PROPOSÉ (V4) : dialogues Renommer et Supprimer, collection vide -->
+    <!-- Validé par Maxime (2026-10-02) : dialogues Renommer et Supprimer, collection vide -->
     <string name="collection_rename_title">Renommer la collection</string>
     <string name="collection_rename_confirm">Renommer</string>
     <string name="collection_dialog_cancel">Annuler</string>
@@ -541,7 +541,7 @@
         <item quantity="many">%1$d sélectionnés</item>
         <item quantity="other">%1$d sélectionnés</item>
     </plurals>
-    <!-- PROPOSÉ (V4) : indication du champ vide et TalkBack de la croix -->
+    <!-- Validé par Maxime (2026-10-02) : indication du champ vide et TalkBack de la croix -->
     <string name="new_collection_filter">Titre ou auteur</string>
     <string name="new_collection_filter_clear">Effacer le filtre</string>
     <!-- TalkBack du champ de filtre (4.03) -->
@@ -554,7 +554,7 @@
     <string name="library_menu_add_to_collection">Ajouter à une collection</string>
     <string name="details_collections_label">Collections</string>
     <string name="details_collections_edit">Modifier</string>
-    <!-- PROPOSÉ (V4) : livre dans aucune collection ; TalkBack de « Modifier » -->
+    <!-- Validé par Maxime (2026-10-02) : livre dans aucune collection ; TalkBack de « Modifier » -->
     <string name="details_collections_none">Aucune</string>
     <!-- Entre deux noms de collections : « Les Rougon-Macquart, Flaubert » -->
     <string name="details_collections_separator" translatable="false">", "</string>
