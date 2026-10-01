@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -172,7 +174,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             SelectionBar(
                 selectionText = text,
                 onHighlight = viewModel::highlightSelection,
-                onNote = null,
+                onNote = viewModel::noteForSelection,
                 onCopy = viewModel::copySelection,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
@@ -186,10 +188,13 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 onResultClick = viewModel::openSearchResult,
             )
         }
-        VersoSnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(16.dp),
-        )
+        // Fenêtre à part : sur le téléphone, le toucher de « Annuler » posé au-dessus du navigateur Readium partait au
+        // texte ou à la barre de lecture dessous. La fenêtre n’a que la taille de la snackbar.
+        if (snackbarHostState.currentSnackbarData != null) {
+            Popup(alignment = Alignment.BottomCenter, properties = PopupProperties(focusable = false)) {
+                VersoSnackbarHost(hostState = snackbarHostState)
+            }
+        }
     }
 
     if (state.tocVisible) {
@@ -231,10 +236,13 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
         HighlightActionsSheet(
             state = actions,
             onCopy = viewModel::copyHighlight,
-            onEditNote = null,
-            onDelete = null,
+            onEditNote = viewModel::editNote,
+            onDelete = viewModel::deleteHighlight,
             onDismiss = viewModel::dismissHighlightActions,
         )
+    }
+    highlights.noteSheet?.let { sheet ->
+        NoteSheet(state = sheet, onNoteChange = viewModel::onNoteChange, onSave = viewModel::saveNote, onCancel = viewModel::cancelNote)
     }
 }
 

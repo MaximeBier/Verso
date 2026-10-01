@@ -1,6 +1,7 @@
 package com.maximebier.verso.screenshots
 
 import com.maximebier.verso.data.AppTheme
+import com.maximebier.verso.screenshots.samples.NoteSheetSample
 import com.maximebier.verso.screenshots.samples.SelectionBarSample
 
 /** Un écran V3 et les palettes où il est capturé (toutes par défaut). */
@@ -12,5 +13,6 @@ data class V3ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
 object V3ScreenCatalog {
     val fixtures: List<V3ScreenFixture> = listOf(
         V3ScreenFixture(ScreenFixture("3.04-texte-selectionne") { SelectionBarSample() }),
+        V3ScreenFixture(ScreenFixture("3.05-ajouter-une-note") { NoteSheetSample() }),
     )
 }
