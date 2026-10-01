@@ -52,6 +52,7 @@ fun VersoNavHost(
                 onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
                 onNewCollection = { if (entry.resumed()) navController.navigate(NewCollectionRoute()) },
                 onOpenCollection = { id -> if (entry.resumed()) navController.navigate(CollectionRoute(id)) },
+                onNewCollectionFor = { bookId -> if (entry.resumed()) navController.navigate(NewCollectionRoute(bookId)) },
             )
         }
         composable<NewCollectionRoute> { entry ->
@@ -88,6 +89,7 @@ fun VersoNavHost(
                     if (entry.resumed()) navController.navigate(ReaderRoute(bookId, openJournal = true)) { launchSingleTop = true }
                 },
                 onOpenNotes = { bookId -> if (entry.resumed()) navController.navigate(NotesRoute(bookId)) },
+                onNewCollection = { bookId -> if (entry.resumed()) navController.navigate(NewCollectionRoute(bookId)) },
             )
         }
         composable<NotesRoute> { entry ->

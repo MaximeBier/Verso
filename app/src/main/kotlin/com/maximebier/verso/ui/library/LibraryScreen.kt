@@ -51,6 +51,7 @@ import com.maximebier.verso.R
 import com.maximebier.verso.data.LibrarySort
 import com.maximebier.verso.data.LibraryViewMode
 import com.maximebier.verso.importer.IncomingIntent
+import com.maximebier.verso.ui.collections.AddToCollectionSheet
 import com.maximebier.verso.ui.collections.CollectionsActions
 import com.maximebier.verso.ui.collections.CollectionsTab
 import com.maximebier.verso.ui.collections.CollectionsUiState
@@ -86,11 +87,13 @@ fun LibraryDestination(
     onOpenReader: (Long) -> Unit,
     onNewCollection: () -> Unit = {},
     onOpenCollection: (Long) -> Unit = {},
+    onNewCollectionFor: (Long) -> Unit = {},
 ) {
     LibraryScreen(
         onOpenReader = onOpenReader,
         onOpenDetails = onOpenDetails,
         onOpenSettings = onOpenSettings,
+        onNewCollectionFor = onNewCollectionFor,
         collectionActions = CollectionsActions(onOpenCollection = onOpenCollection, onNewCollection = onNewCollection),
     )
 }
@@ -101,6 +104,7 @@ fun LibraryScreen(
     onOpenReader: (Long) -> Unit,
     onOpenDetails: (Long) -> Unit,
     onOpenSettings: () -> Unit,
+    onNewCollectionFor: (Long) -> Unit = {},
     collectionActions: CollectionsActions = CollectionsActions(),
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
     collectionsViewModel: CollectionsViewModel = viewModel(factory = CollectionsViewModel.Factory),
@@ -132,6 +136,9 @@ fun LibraryScreen(
         ),
         collections = collections,
         collectionActions = collectionActions,
+        addToCollectionSheet = { bookId, onDismiss ->
+            AddToCollectionSheet(bookId = bookId, onNewCollection = onNewCollectionFor, onDismiss = onDismiss)
+        },
     )
 }
 
@@ -153,6 +160,8 @@ data class LibraryActions(
     val onSnackbarAction: (Long) -> Unit = {},
     val onSnackbarShown: (ImportSnackbar) -> Unit = {},
     val onOpenFailedShown: () -> Unit = {},
+    /** Ouvre la feuille « Ajouter à une collection » (4.04) ; câblé par LibraryContent. */
+    val onAddToCollection: (Long) -> Unit = {},
 )
 
 /** Onglet de la bibliothèque (4.01). */
@@ -167,8 +176,13 @@ fun LibraryContent(
     collections: CollectionsUiState = CollectionsUiState(),
     collectionActions: CollectionsActions = CollectionsActions(),
     initialTab: LibraryTab = LibraryTab.BOOKS,
+    addToCollectionSheet: @Composable (bookId: Long, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val colors = VersoTheme.colors
+    // Feuille 4.04 : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
+    var addingBookId by rememberSaveable { mutableStateOf<Long?>(null) }
+    @Suppress("NAME_SHADOWING")
+    val actions = actions.copy(onAddToCollection = { addingBookId = it })
     var sortSheetVisible by rememberSaveable { mutableStateOf(false) }
     // Gardé dans l’entrée de navigation : un retour depuis une collection revient sur l’onglet « Collections ».
     var tab by rememberSaveable { mutableStateOf(initialTab) }
@@ -272,6 +286,7 @@ fun LibraryContent(
             onDismiss = { sortSheetVisible = false },
         )
     }
+    addingBookId?.let { bookId -> addToCollectionSheet(bookId) { addingBookId = null } }
 }
 
 @Composable
@@ -507,6 +522,14 @@ private fun BookOptions(book: LibraryBook, actions: LibraryActions) {
                 onClick = {
                     expanded = false
                     actions.onOpenDetails(book.id)
+                },
+            )
+            BookOptionsMenuItem(
+                text = stringResource(R.string.library_menu_add_to_collection),
+                icon = VersoIcons.ListPlus,
+                onClick = {
+                    expanded = false
+                    actions.onAddToCollection(book.id)
                 },
             )
             BookOptionsMenuItem(
