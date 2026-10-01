@@ -43,7 +43,7 @@ import com.maximebier.verso.ui.theme.VersoTheme
  * relie le ViewModel, la version de BuildConfig et l'ouverture du lien.
  */
 @Composable
-fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
+fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit, onOpenBackup: () -> Unit) {
     val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -64,6 +64,7 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit) {
         onFontSizeChange = viewModel::onFontSizeChange,
         onDefaultScrollModeChange = viewModel::onDefaultScrollModeChange,
         onShowStatisticsChange = viewModel::onShowStatisticsChange,
+        onOpenBackup = onOpenBackup,
     )
 }
 
@@ -98,6 +99,7 @@ fun SettingsScreen(
     onFontSizeChange: (Int) -> Unit = {},
     onDefaultScrollModeChange: (ScrollMode) -> Unit = {},
     onShowStatisticsChange: (Boolean) -> Unit = {},
+    onOpenBackup: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = VersoTheme.colors
@@ -137,6 +139,12 @@ fun SettingsScreen(
             }
             SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
                 SettingsParagraph(text = stringResource(R.string.settings_privacy_body))
+                ActionRow(
+                    title = stringResource(R.string.settings_backup),
+                    summary = stringResource(R.string.settings_backup_summary),
+                    icon = VersoIcons.ChevronRight,
+                    onClick = onOpenBackup,
+                )
                 ActionRow(
                     title = stringResource(R.string.settings_clear_journal),
                     summary = stringResource(R.string.settings_clear_journal_summary),

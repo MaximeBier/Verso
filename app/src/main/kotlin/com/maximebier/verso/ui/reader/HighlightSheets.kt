@@ -4,7 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -99,6 +100,7 @@ fun HighlightActionsSheet(
  * « Ajouter une note » (3.05) : passage surligné sur fond de page, champ « Votre note » (bord accent 2 dp), puis
  * Annuler et Enregistrer à droite. La croix et le voile annulent. Le champ prend le focus à l’ouverture.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteSheet(
     state: NoteSheetState,
@@ -156,7 +158,12 @@ fun NoteSheet(
                         .padding(horizontal = 15.dp, vertical = 13.dp),
                 )
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+            // FlowRow : à 200 %, « Enregistrer » passe sous « Annuler » au lieu d’être coupé en plein mot.
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 VersoTextButton(text = stringResource(R.string.note_cancel), onClick = onCancel)
                 PrimaryButton(text = stringResource(R.string.note_save), onClick = onSave)
             }

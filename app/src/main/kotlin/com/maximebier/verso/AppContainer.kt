@@ -6,6 +6,9 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.maximebier.verso.backup.BackupRestorer
+import com.maximebier.verso.backup.BackupService
+import com.maximebier.verso.backup.BackupWriter
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.DocumentStore
 import com.maximebier.verso.data.HighlightRepository
@@ -47,4 +50,20 @@ class AppContainer(context: Context) {
     val readiumOpener: ReadiumOpener = ReadiumOpener(appContext)
 
     val importer: EpubImporter = EpubImporter(appContext, books, readiumOpener, clock)
+
+    private val backupDao = database.backupDao()
+
+    val backups: BackupService = BackupService(
+        writer = BackupWriter(backupDao, settings, BuildConfig.VERSION_NAME, clock),
+        restorer = BackupRestorer(
+            dao = backupDao,
+            settings = settings,
+            booksDir = File(appContext.filesDir, "books"),
+            coversDir = File(appContext.filesDir, "covers"),
+            workDir = File(appContext.cacheDir, "restauration"),
+        ),
+        documents = documents,
+        settings = settings,
+        clock = clock,
+    )
 }

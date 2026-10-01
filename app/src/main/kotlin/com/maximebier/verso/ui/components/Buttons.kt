@@ -40,13 +40,20 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     large: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val colors = VersoTheme.colors
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = if (large) VersoDimens.emptyStatePrimaryButton else VersoDimens.controlMin),
         shape = VersoShapes.pill,
-        colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colors.accent,
+            contentColor = colors.onAccent,
+            disabledContainerColor = colors.surfaceHigh,
+            disabledContentColor = colors.textSecondary,
+        ),
         contentPadding = paddingFor(icon),
     ) {
         ButtonIcon(icon)
@@ -61,14 +68,16 @@ fun OutlinedPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    enabled: Boolean = true,
 ) {
     val colors = VersoTheme.colors
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = VersoDimens.controlMin),
         shape = VersoShapes.pill,
-        border = BorderStroke(1.dp, colors.outline),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.text),
+        border = BorderStroke(1.dp, if (enabled) colors.outline else colors.divider),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.text, disabledContentColor = colors.textSecondary),
         contentPadding = if (icon != null) PaddingValues(start = 18.dp, end = 22.dp) else PaddingValues(horizontal = 22.dp),
     ) {
         ButtonIcon(icon)

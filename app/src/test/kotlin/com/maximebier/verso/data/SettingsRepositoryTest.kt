@@ -137,4 +137,77 @@ class SettingsRepositoryTest {
         settings.setShowStatistics(false)
         assertThat(settings.showStatistics.first()).isFalse()
     }
+
+    @Test
+    fun lastBackupIsEmptyUntilRecorded() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "last.preferences_pb") })
+        val settings = SettingsRepository(store)
+        assertThat(settings.lastBackup.first()).isNull()
+
+        settings.setLastBackup(LastBackup(at = 1_790_000_000_000L, sizeBytes = 48_000_000L, fileName = "verso-sauvegarde-2026-09-20.zip"))
+
+        assertThat(settings.lastBackup.first())
+            .isEqualTo(LastBackup(at = 1_790_000_000_000L, sizeBytes = 48_000_000L, fileName = "verso-sauvegarde-2026-09-20.zip"))
+    }
+
+    @Test
+    fun rawSettingsKeepTheirTypeAndLeaveTheLastBackupOut() = runTest {
+        val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "raw.preferences_pb") })
+        val settings = SettingsRepository(store)
+        settings.setThemeMode(ThemeMode.DARK)
+        settings.setReopenLastBook(false)
+        settings.updateReadingSettings { it.withFontSize(22) }
+        settings.setLastBackup(LastBackup(at = 1L, sizeBytes = 2L, fileName = "a.zip"))
+
+        val exported = settings.exportRaw()
+
+        assertThat(exported).containsAtLeast(
+            RawSetting("theme_mode", "DARK"),
+            RawSetting("reopen_last_book", false),
+            RawSetting("reading_font_size", 22),
+        )
+        assertThat(exported.map { it.key }.filter { it.startsWith("last_backup") }).isEmpty()
+    }
+
+    @Test
+    fun importReplacesEverySettingButKeepsThisPhonesLastBackup() = runTest {
+        val source = SettingsRepository(
+            PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "source.preferences_pb") }),
+        )
+        source.setThemeMode(ThemeMode.NIGHT)
+        source.updateReadingSettings { it.withFontSize(24) }
+        val target = SettingsRepository(
+            PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "target.preferences_pb") }),
+        )
+        target.setLibrarySort(LibrarySort.AUTHOR)
+        target.setLastBackup(LastBackup(at = 3L, sizeBytes = 4L, fileName = "b.zip"))
+
+        target.importRaw(source.exportRaw())
+
+        assertThat(target.themeMode.first()).isEqualTo(ThemeMode.NIGHT)
+        assertThat(target.readingSettings.first().fontSizeSp).isEqualTo(24)
+        assertThat(target.librarySort.first()).isEqualTo(LibrarySort.RECENT)
+        assertThat(target.lastBackup.first()).isEqualTo(LastBackup(at = 3L, sizeBytes = 4L, fileName = "b.zip"))
+        assertThat(target.exportRaw()).isEqualTo(source.exportRaw())
+    }
+
+    @Test
+    fun everyDataStoreTypeSurvivesTheRoundTrip() = runTest {
+        val settings = SettingsRepository(
+            PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "types.preferences_pb") }),
+        )
+        val values = listOf(
+            RawSetting("b", true),
+            RawSetting("d", 1.5),
+            RawSetting("f", 2.5f),
+            RawSetting("i", 3),
+            RawSetting("l", 4L),
+            RawSetting("s", "texte"),
+            RawSetting("set", setOf("x", "y")),
+        )
+
+        settings.importRaw(values)
+
+        assertThat(settings.exportRaw()).isEqualTo(values)
+    }
 }
