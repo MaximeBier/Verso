@@ -47,7 +47,6 @@ class ReaderBarsTest {
         visible: Boolean,
         onBack: () -> Unit = {},
         onToc: () -> Unit = {},
-        onJournal: () -> Unit = {},
         onSearch: () -> Unit = {},
         onSettings: () -> Unit = {},
     ) {
@@ -58,7 +57,6 @@ class ReaderBarsTest {
                     state = state,
                     onBack = onBack,
                     onTocClick = onToc,
-                    onJournalClick = onJournal,
                     onSearchClick = onSearch,
                     onSettingsClick = onSettings,
                 )
@@ -89,31 +87,28 @@ class ReaderBarsTest {
     fun buttonsInvokeCallbacksAndAreAtLeast48Dp() {
         var back = 0
         var toc = 0
-        var journal = 0
         var settings = 0
-        show(visible = true, onBack = { back++ }, onToc = { toc++ }, onJournal = { journal++ }, onSettings = { settings++ })
+        show(visible = true, onBack = { back++ }, onToc = { toc++ }, onSettings = { settings++ })
 
         compose.onNodeWithContentDescription(context.getString(R.string.reader_back_to_library))
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         compose.onNode(hasText(context.getString(R.string.reader_toc)) and hasClickAction())
             .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp).performClick()
-        compose.onNode(hasText(context.getString(R.string.reader_journal)) and hasClickAction())
-            .assertHeightIsAtLeast(48.dp).performClick()
         compose.onNode(hasText(context.getString(R.string.reader_settings)) and hasClickAction())
             .assertHeightIsAtLeast(48.dp).performClick()
 
-        assertThat(listOf(back, toc, journal, settings)).containsExactly(1, 1, 1, 1).inOrder()
+        assertThat(listOf(back, toc, settings)).containsExactly(1, 1, 1).inOrder()
     }
 
     @Test
-    fun searchToolIsBetweenJournalAndSettings() {
+    fun toolsAreTocSearchNotesSettingsWithoutJournal() {
         var searched = 0
         show(visible = true, onSearch = { searched++ })
         val labels = compose.onAllNodes(hasClickAction()).fetchSemanticsNodes()
             .mapNotNull { it.config.getOrNull(SemanticsProperties.Text)?.joinToString() }
-        assertThat(labels.filter { it in setOf("Sommaire", "Journal", "Rechercher", "Réglages") })
-            .containsExactly("Sommaire", "Journal", "Rechercher", "Réglages").inOrder()
+        assertThat(labels.filter { it in setOf("Sommaire", "Journal", "Rechercher", "Notes", "Réglages") })
+            .containsExactly("Sommaire", "Rechercher", "Notes", "Réglages").inOrder()
         compose.onNodeWithText("Rechercher").performClick()
         assertThat(searched).isEqualTo(1)
     }

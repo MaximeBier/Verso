@@ -262,7 +262,6 @@
     <!-- ===================== Lecture (1.10 – 1.11) ===================== -->
     <string name="reader_back_to_library">Retour à la bibliothèque</string>
     <string name="reader_toc">Sommaire</string>
-    <string name="reader_journal">Journal</string>
     <!-- V2 · écran 2.01 -->
     <string name="reader_settings">Réglages</string>
     <!-- Glyphe de l’outil Réglages et des pastilles de thème (maquettes 2.01, 2.02) ; masqué à TalkBack. -->
