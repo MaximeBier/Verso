@@ -2,6 +2,7 @@ package com.maximebier.verso.data
 
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -31,5 +32,15 @@ class DocumentStore(context: Context) {
         resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) cursor.getString(0) else null
         }
+
+    /** Taille annoncée par le fournisseur du document ; null s’il ne la donne pas. */
+    fun size(uri: Uri): Long? = runCatching {
+        resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+        }
+    }.getOrNull()
+
+    /** Supprime un document créé par le sélecteur (écriture ratée) ; false si le fournisseur refuse. */
+    fun delete(uri: Uri): Boolean = runCatching { DocumentsContract.deleteDocument(resolver, uri) }.getOrDefault(false)
 }
 

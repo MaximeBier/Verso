@@ -22,11 +22,12 @@ import com.maximebier.verso.ui.details.DetailsDestination
 import com.maximebier.verso.ui.library.LibraryDestination
 import com.maximebier.verso.ui.notes.NotesDestination
 import com.maximebier.verso.ui.reader.ReaderDestination
+import com.maximebier.verso.ui.settings.BackupDestination
 import com.maximebier.verso.ui.settings.LicensesDestination
 import com.maximebier.verso.ui.settings.SettingsDestination
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Les 5 routes de la V1. Chaque destination délègue à un point d'entrée du fichier de sa fonctionnalité. */
+/** Routes de l’app. Chaque destination délègue à un point d'entrée du fichier de sa fonctionnalité. */
 @Composable
 fun VersoNavHost(
     modifier: Modifier = Modifier,
@@ -87,6 +88,14 @@ fun VersoNavHost(
             SettingsDestination(
                 onBack = { if (entry.resumed()) navController.popBackStack() },
                 onOpenLicenses = { if (entry.resumed()) navController.navigate(LicensesRoute) },
+                onOpenBackup = { if (entry.resumed()) navController.navigate(BackupRoute) },
+            )
+        }
+        composable<BackupRoute> { entry ->
+            BackupDestination(
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                // Bibliothèque restaurée : on y arrive directement, Paramètres et Sauvegarde sont dépilés.
+                onRestored = { navController.popBackStack<LibraryRoute>(inclusive = false) },
             )
         }
         composable<LicensesRoute> { entry ->

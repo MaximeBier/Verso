@@ -219,4 +219,31 @@ class SettingsScreenTest {
     fun versionComesFromBuildConfig() {
         assertThat(BuildConfig.VERSION_NAME).matches("""\d+\.\d+\.\d+""")
     }
+
+    @Test
+    fun backupRowOpensTheBackupScreen() {
+        var opened = 0
+        composeRule.setContent {
+            VersoTheme {
+                SettingsScreen(
+                    state = SettingsUiState(),
+                    versionName = "3.0.0",
+                    onBack = {},
+                    onReopenLastBookChange = {},
+                    onThemeModeChange = {},
+                    onDarkThemeVariantChange = {},
+                    onClearJournalClick = {},
+                    onClearJournalConfirm = {},
+                    onClearJournalDismiss = {},
+                    onOpenSourceCode = {},
+                    onOpenLicenses = {},
+                    onOpenBackup = { opened++ },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_backup)).performScrollTo().assertHeightIsAtLeast(48.dp).performClick()
+
+        assertThat(opened).isEqualTo(1)
+    }
 }

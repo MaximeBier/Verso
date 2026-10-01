@@ -5,10 +5,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.maximebier.verso.core.settings.LineSpacing
 import com.maximebier.verso.core.settings.Margins
 import com.maximebier.verso.core.settings.ReadingFont
@@ -19,6 +23,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** Réglages de l'app (DataStore). Une valeur illisible ou inconnue revient à la valeur par défaut. */
@@ -106,6 +111,59 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         save { it[SHOW_STATISTICS] = value }
     }
 
+    /** Dernière sauvegarde créée sur ce téléphone ; null tant qu’aucune n’a été enregistrée. */
+    val lastBackup: Flow<LastBackup?> = preferences.map { prefs ->
+        val at = prefs[LAST_BACKUP_AT]
+        val size = prefs[LAST_BACKUP_SIZE]
+        val name = prefs[LAST_BACKUP_NAME]
+        if (at != null && size != null && name != null) LastBackup(at, size, name) else null
+    }.distinctUntilChanged()
+
+    suspend fun setLastBackup(value: LastBackup) {
+        save {
+            it[LAST_BACKUP_AT] = value.at
+            it[LAST_BACKUP_SIZE] = value.sizeBytes
+            it[LAST_BACKUP_NAME] = value.fileName
+        }
+    }
+
+    /**
+     * Toutes les clés avec leur type, triées par nom, sauf la carte « Dernière sauvegarde » (propre au téléphone).
+     * Contrairement aux lectures de l’écran, une lecture ratée lève l’IOException : la sauvegarde échoue plutôt que
+     * d’enregistrer des réglages vides.
+     */
+    suspend fun exportRaw(): List<RawSetting> = dataStore.data.first().asMap()
+        .filterKeys { it.name !in DEVICE_ONLY_KEYS }
+        .filterValues(RawSetting::isSupported)
+        .map { (key, value) -> RawSetting(key.name, value) }
+        .sortedBy { it.key }
+
+    /**
+     * Remplace tous les réglages par [values] en une seule écriture DataStore, sauf la carte « Dernière sauvegarde »,
+     * gardée. Une écriture ratée lève l’IOException (la restauration revient alors en arrière).
+     */
+    suspend fun importRaw(values: List<RawSetting>) {
+        dataStore.edit { prefs ->
+            val kept = prefs.asMap().filterKeys { it.name in DEVICE_ONLY_KEYS }.map { (key, value) -> RawSetting(key.name, value) }
+            prefs.clear()
+            (values.filter { it.key !in DEVICE_ONLY_KEYS } + kept).forEach { prefs.putRaw(it) }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun MutablePreferences.putRaw(setting: RawSetting) {
+        when (val value = setting.value) {
+            is Boolean -> this[booleanPreferencesKey(setting.key)] = value
+            is Int -> this[intPreferencesKey(setting.key)] = value
+            is Long -> this[longPreferencesKey(setting.key)] = value
+            is Float -> this[floatPreferencesKey(setting.key)] = value
+            is Double -> this[doublePreferencesKey(setting.key)] = value
+            is String -> this[stringPreferencesKey(setting.key)] = value
+            is Set<*> -> this[stringSetPreferencesKey(setting.key)] = value as Set<String>
+            else -> error("Type de réglage non pris en charge : ${value::class.simpleName}")
+        }
+    }
+
     /** Écriture ratée (disque plein) : journalisée, le réglage garde sa valeur précédente ; jamais de plantage. */
     private suspend fun save(change: (MutablePreferences) -> Unit) {
         try {
@@ -130,6 +188,12 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val READING_MARGINS = stringPreferencesKey("reading_margins")
         val DEFAULT_SCROLL_MODE = stringPreferencesKey("default_scroll_mode")
         val SHOW_STATISTICS = booleanPreferencesKey("show_statistics")
+        val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
+        val LAST_BACKUP_SIZE = longPreferencesKey("last_backup_size")
+        val LAST_BACKUP_NAME = stringPreferencesKey("last_backup_name")
+
+        /** Clés propres au téléphone : ni sauvegardées, ni remplacées par une restauration. */
+        val DEVICE_ONLY_KEYS = setOf(LAST_BACKUP_AT.name, LAST_BACKUP_SIZE.name, LAST_BACKUP_NAME.name)
         const val TAG = "SettingsRepository"
     }
 }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -105,8 +106,39 @@ fun NotesScreen(state: NotesUiState, actions: NotesActions, modifier: Modifier =
     state.noteSheet?.let { NoteSheet(it, actions.onNoteChange, actions.onSaveNote, actions.onCancelNote) }
 }
 
+/** Au-delà de cette échelle de texte, « Exporter » passe sous le titre (sinon « surlignages » serait coupé). */
+private const val EXPORT_BELOW_FONT_SCALE = 1.3f
+
 @Composable
 private fun NotesHeader(state: NotesUiState, actions: NotesActions) {
+    val stacked = LocalDensity.current.fontScale >= EXPORT_BELOW_FONT_SCALE
+    Column {
+        NotesTitleRow(state, actions, showExport = !stacked)
+        if (stacked && state.items.isNotEmpty()) {
+            ExportButton(actions.onExport, Modifier.padding(start = 52.dp, bottom = 4.dp))
+        }
+    }
+}
+
+@Composable
+private fun ExportButton(onExport: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = VersoTheme.colors
+    Row(
+        modifier = modifier
+            .heightIn(min = VersoDimens.controlMin)
+            .clip(VersoShapes.pill)
+            .clickable(role = Role.Button, onClick = onExport)
+            .padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(VersoIcons.Download, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
+        Text(stringResource(R.string.notes_export), style = VersoTheme.typography.button, color = colors.text)
+    }
+}
+
+@Composable
+private fun NotesTitleRow(state: NotesUiState, actions: NotesActions, showExport: Boolean) {
     val colors = VersoTheme.colors
     Row(
         modifier = Modifier
@@ -135,20 +167,7 @@ private fun NotesHeader(state: NotesUiState, actions: NotesActions) {
                 )
             }
         }
-        if (state.items.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .heightIn(min = VersoDimens.controlMin)
-                    .clip(VersoShapes.pill)
-                    .clickable(role = Role.Button, onClick = actions.onExport)
-                    .padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(VersoIcons.Download, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
-                Text(stringResource(R.string.notes_export), style = VersoTheme.typography.button, color = colors.text)
-            }
-        }
+        if (showExport && state.items.isNotEmpty()) ExportButton(actions.onExport)
     }
 }
 

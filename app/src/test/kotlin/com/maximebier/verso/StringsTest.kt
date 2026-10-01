@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.ui.common.formatDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -60,5 +63,14 @@ class StringsTest {
     fun readingHelpUsesNarrowNoBreakSpacesAroundTheGlyphInsideGuillemets() {
         assertThat(context.getString(R.string.settings_reading_help))
             .isEqualTo("Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.")
+    }
+
+    @Test
+    fun backupLabelsFollowFrenchTypography() {
+        val at = LocalDateTime.of(2026, 9, 20, 21, 14).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        assertThat(formatDate(at, context.getString(R.string.backup_last_date_pattern))).isEqualTo("20 septembre 2026, 21 h 14")
+        assertThat(context.getString(R.string.backup_restore_dialog_title)).isEqualTo("Remplacer votre bibliothèque ?")
+        assertThat(context.getString(R.string.backup_none)).isEqualTo("Aucune sauvegarde pour l’instant")
+        assertThat(context.getString(R.string.backup_creating)).isEqualTo("Création de la sauvegarde…")
     }
 }

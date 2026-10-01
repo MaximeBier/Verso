@@ -13,6 +13,7 @@ abstract class VersoDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
     abstract fun sessionDao(): SessionDao
     abstract fun highlightDao(): HighlightDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val NAME = "verso.db"

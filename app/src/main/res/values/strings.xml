@@ -5,7 +5,7 @@
     = espace insécable (dans « … », durées, heures, unités)
   Apostrophe typographique ’ : aucun échappement nécessaire.
 -->
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
 
     <!-- ===================== Application ===================== -->
     <string name="app_name" translatable="false">Verso</string>
@@ -54,9 +54,9 @@
     <string name="library_import">Importer</string>
     <string name="library_title">Bibliothèque</string>
     <plurals name="library_book_count">
-        <item quantity="one">%1$d livre</item>
-        <item quantity="many">%1$d livres</item>
-        <item quantity="other">%1$d livres</item>
+        <item quantity="one">%1$d livre</item>
+        <item quantity="many">%1$d livres</item>
+        <item quantity="other">%1$d livres</item>
     </plurals>
 
     <!-- Bibliothèque vide (1.01) -->
@@ -221,6 +221,10 @@
     <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>
     <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
+    <!-- ===================== Paramètres : ligne Sauvegarde (3.07) ===================== -->
+    <string name="settings_backup">Sauvegarde</string>
+    <!-- PROPOSÉ : résumé de la ligne (non dessiné) -->
+    <string name="settings_backup_summary">Créer ou restaurer une sauvegarde de votre bibliothèque</string>
     <string name="settings_section_about">À propos</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_source_code">Code source</string>
@@ -432,4 +436,32 @@
     <string name="return_card_stay">Rester ici</string>
     <string name="return_card_go_back">Revenir</string>
 
+    <!-- ===================== Sauvegarde (3.07) ===================== -->
+    <string name="backup_title">Sauvegarde</string>
+    <string name="backup_intro">Un seul fichier contient vos livres, vos positions, vos notes et vos réglages. Gardez-le sur votre Drive ou votre ordinateur.</string>
+    <string name="backup_last_title">Dernière sauvegarde</string>
+    <!-- « 20 septembre 2026, 21 h 14 » : U+00A0 autour du h, « h » entre apostrophes (lettre de motif) -->
+    <string name="backup_last_date_pattern" translatable="false">d MMMM yyyy, H \'h\' mm</string>
+    <!-- « 48 Mo · verso-sauvegarde-2026-09-20.zip » ; %1$s = taille (details_size_mb / details_size_kb) -->
+    <string name="backup_last_details">%1$s · %2$s</string>
+    <string name="backup_create">Créer une sauvegarde</string>
+    <string name="backup_restore">Restaurer une sauvegarde</string>
+    <string name="backup_restore_warning">La restauration remplace votre bibliothèque actuelle. Verso vous demandera de confirmer.</string>
+    <!-- PROPOSÉ : carte sans sauvegarde (texte de la spec, non dessiné) -->
+    <string name="backup_none">Aucune sauvegarde pour l’instant</string>
+    <!-- PROPOSÉ : progression, sous les boutons désactivés -->
+    <string name="backup_creating">Création de la sauvegarde…</string>
+    <string name="backup_checking">Vérification de la sauvegarde…</string>
+    <string name="backup_restoring">Restauration en cours…</string>
+    <!-- PROPOSÉ : messages (snackbar) -->
+    <string name="backup_created">Sauvegarde enregistrée.</string>
+    <string name="backup_create_failed">La sauvegarde n’a pas pu être enregistrée.</string>
+    <string name="backup_restore_invalid">Ce fichier n’est pas une sauvegarde Verso, ou il est incomplet. Votre bibliothèque n’a pas changé.</string>
+    <string name="backup_restore_newer">Cette sauvegarde vient d’une version plus récente de Verso. Mettez Verso à jour pour la restaurer.</string>
+    <string name="backup_restore_failed">La restauration n’a pas abouti. Votre bibliothèque n’a pas changé.</string>
+    <!-- PROPOSÉ : confirmation de restauration (spec : « avec le nombre de livres », non dessinée) ; %1$s et %2$s = library_book_count -->
+    <string name="backup_restore_dialog_title">Remplacer votre bibliothèque ?</string>
+    <string name="backup_restore_dialog_body">Votre bibliothèque actuelle (%1$s) sera remplacée par celle de la sauvegarde (%2$s), avec ses positions, son journal, ses notes et ses réglages.</string>
+    <string name="backup_restore_dialog_cancel">Annuler</string>
+    <string name="backup_restore_dialog_confirm">Remplacer</string>
 </resources>
