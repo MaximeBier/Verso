@@ -373,23 +373,23 @@
     <string name="selection_highlight">Surligner</string>
     <string name="selection_note">Note</string>
     <string name="selection_copy">Copier</string>
-    <!-- PROPOSÉ : confirmation sous Android 12 et moins (Android 13 et plus affiche la sienne) -->
+    <!-- Validé par Maxime (2026-10-01) : confirmation sous Android 12 et moins (Android 13 et plus affiche la sienne) -->
     <string name="selection_copied">Passage copié</string>
 
     <!-- ===================== Surlignage touché ===================== -->
-    <!-- PROPOSÉ : titre de la feuille d’un surlignage touché dans le texte -->
+    <!-- Validé par Maxime (2026-10-01) : titre de la feuille d’un surlignage touché dans le texte -->
     <string name="highlight_sheet_title">Surlignage</string>
     <string name="highlight_add_note">Ajouter une note</string>
     <string name="highlight_edit_note">Modifier la note</string>
     <string name="highlight_delete">Supprimer</string>
     <string name="highlight_action_copy">Copier</string>
-    <!-- PROPOSÉ : snackbar après « Supprimer » -->
+    <!-- Validé par Maxime (2026-10-01) : snackbar après « Supprimer » -->
     <string name="highlight_deleted">Surlignage supprimé</string>
     <string name="highlight_deleted_undo">Annuler</string>
 
     <!-- ===================== Ajouter une note (3.05) ===================== -->
     <string name="note_sheet_title">Ajouter une note</string>
-    <!-- PROPOSÉ : même feuille sur une note existante -->
+    <!-- Validé par Maxime (2026-10-01) : même feuille sur une note existante -->
     <string name="note_sheet_title_edit">Modifier la note</string>
     <string name="note_field_label">Votre note</string>
     <string name="note_cancel">Annuler</string>
@@ -414,14 +414,14 @@
     <string name="notes_edit_note">Modifier la note</string>
     <string name="notes_add_note">Ajouter une note</string>
     <string name="notes_delete">Supprimer</string>
-    <!-- PROPOSÉ : livre sans surlignage -->
+    <!-- Validé par Maxime (2026-10-01) : livre sans surlignage -->
     <string name="notes_empty">Aucun surlignage pour l’instant. Sélectionnez un passage pendant la lecture pour le surligner.</string>
     <!-- Nom proposé au sélecteur : « Madame Bovary – notes.md » (tiret demi-cadratin) -->
     <string name="notes_export_file_name">%1$s – notes.md</string>
-    <!-- PROPOSÉ : ligne sous le titre du fichier exporté, « Gustave Flaubert · 3 éléments · 1 octobre 2026 » -->
+    <!-- Validé par Maxime (2026-10-01) : ligne sous le titre du fichier exporté, « Gustave Flaubert · 3 éléments · 1 octobre 2026 » -->
     <string name="notes_export_meta">%1$s · %2$s · %3$s</string>
     <string name="notes_export_meta_no_author">%1$s · %2$s</string>
-    <!-- PROPOSÉ : snackbars de l’export -->
+    <!-- Validé par Maxime (2026-10-01) : snackbars de l’export -->
     <string name="notes_exported">Notes exportées</string>
     <string name="notes_export_failed">L’export n’a pas pu être enregistré.</string>
     <!-- Barre de lecture : 5ᵉ outil (V3) -->
@@ -447,19 +447,19 @@
     <string name="backup_create">Créer une sauvegarde</string>
     <string name="backup_restore">Restaurer une sauvegarde</string>
     <string name="backup_restore_warning">La restauration remplace votre bibliothèque actuelle. Verso vous demandera de confirmer.</string>
-    <!-- PROPOSÉ : carte sans sauvegarde (texte de la spec, non dessiné) -->
+    <!-- Validé par Maxime (2026-10-01) : carte sans sauvegarde (texte de la spec, non dessiné) -->
     <string name="backup_none">Aucune sauvegarde pour l’instant</string>
-    <!-- PROPOSÉ : progression, sous les boutons désactivés -->
+    <!-- Validé par Maxime (2026-10-01) : progression, sous les boutons désactivés -->
     <string name="backup_creating">Création de la sauvegarde…</string>
     <string name="backup_checking">Vérification de la sauvegarde…</string>
     <string name="backup_restoring">Restauration en cours…</string>
-    <!-- PROPOSÉ : messages (snackbar) -->
+    <!-- Validé par Maxime (2026-10-01) : messages (snackbar) -->
     <string name="backup_created">Sauvegarde enregistrée.</string>
     <string name="backup_create_failed">La sauvegarde n’a pas pu être enregistrée.</string>
     <string name="backup_restore_invalid">Ce fichier n’est pas une sauvegarde Verso, ou il est incomplet. Votre bibliothèque n’a pas changé.</string>
     <string name="backup_restore_newer">Cette sauvegarde vient d’une version plus récente de Verso. Mettez Verso à jour pour la restaurer.</string>
     <string name="backup_restore_failed">La restauration n’a pas abouti. Votre bibliothèque n’a pas changé.</string>
-    <!-- PROPOSÉ : confirmation de restauration (spec : « avec le nombre de livres », non dessinée) ; %1$s et %2$s = library_book_count -->
+    <!-- Validé par Maxime (2026-10-01) : confirmation de restauration (spec : « avec le nombre de livres », non dessinée) ; %1$s et %2$s = library_book_count -->
     <string name="backup_restore_dialog_title">Remplacer votre bibliothèque ?</string>
     <string name="backup_restore_dialog_body">Votre bibliothèque actuelle (%1$s) sera remplacée par celle de la sauvegarde (%2$s), avec ses positions, son journal, ses notes et ses réglages.</string>
     <string name="backup_restore_dialog_cancel">Annuler</string>
