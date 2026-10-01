@@ -298,6 +298,7 @@ private fun ResumeCardItem(resume: ResumeInfo, actions: LibraryActions, modifier
         contentDescription = stringResource(R.string.resume_card_content_description, book.title, book.percent),
         onClick = { actions.onOpenBook(book.id) },
         modifier = modifier,
+        options = { BookOptions(book, actions) },
     )
 }
 
