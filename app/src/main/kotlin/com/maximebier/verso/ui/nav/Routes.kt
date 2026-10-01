@@ -15,3 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object LicensesRoute
 
 @Serializable data object BackupRoute
+
+@Serializable data class CollectionRoute(val collectionId: Long)
+
+@Serializable data class NewCollectionRoute(val preselectedBookId: Long? = null)

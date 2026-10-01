@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,8 @@ enum class CoverSize(val widthDp: Int, val heightDp: Int, val letters: Int, val 
     COMPACT(56, 84, 2, 18),
     RESUME(64, 96, 2, 18),
     DETAILS(96, 144, 2, 22),
+    STACK(52, 78, 2, 16),
+    SMALL(36, 54, 2, 14),
 }
 
 /** Règles pures des vignettes générées (testées dans CoverArtTest). */
@@ -68,6 +71,7 @@ object CoverArt {
 @Composable
 fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
+    val monogramSize = with(LocalDensity.current) { size.monogramSp.dp.toSp() }
     val palette = VersoTheme.coverPalette
     Box(
         modifier = modifier
@@ -91,7 +95,8 @@ fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, 
                 Text(
                     text = CoverArt.monogram(title, size.letters),
                     color = colors.onCover,
-                    style = VersoTheme.typography.body.copy(fontSize = size.monogramSp.sp, lineHeight = size.monogramSp.sp, fontWeight = FontWeight(600)),
+                    // Vignette de taille fixe en dp : les initiales, décoratives, ne suivent pas la taille de texte d’Android.
+                    style = VersoTheme.typography.body.copy(fontSize = monogramSize, lineHeight = monogramSize, fontWeight = FontWeight(600)),
                     maxLines = 1,
                 )
             }
