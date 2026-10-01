@@ -37,6 +37,8 @@ enum class CoverSize(val widthDp: Int, val heightDp: Int, val letters: Int, val 
     DETAILS(96, 144, 2, 22),
     STACK(52, 78, 2, 16),
     SMALL(36, 54, 2, 14),
+    ROW(40, 60, 2, 14),
+    CARD(44, 66, 1, 22),
 }
 
 /** Règles pures des vignettes générées (testées dans CoverArtTest). */

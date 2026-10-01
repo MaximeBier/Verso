@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.maximebier.verso.importer.IncomingImports
+import com.maximebier.verso.ui.collections.CollectionDestination
 import com.maximebier.verso.ui.collections.NewCollectionDestination
 import com.maximebier.verso.ui.details.DetailsDestination
 import com.maximebier.verso.ui.library.LibraryDestination
@@ -50,6 +51,7 @@ fun VersoNavHost(
                 onOpenDetails = { bookId -> if (entry.resumed()) navController.navigate(DetailsRoute(bookId)) },
                 onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
                 onNewCollection = { if (entry.resumed()) navController.navigate(NewCollectionRoute()) },
+                onOpenCollection = { id -> if (entry.resumed()) navController.navigate(CollectionRoute(id)) },
             )
         }
         composable<NewCollectionRoute> { entry ->
@@ -57,8 +59,23 @@ fun VersoNavHost(
             NewCollectionDestination(
                 preselectedBookId = route.preselectedBookId,
                 onClose = { if (entry.resumed()) navController.popBackStack() },
-                // Étape 23 : retour à l’onglet (l’écran de la collection arrive à l’étape 24).
-                onCreated = { navController.popBackStack() },
+                // Depuis la feuille 4.04 (livre présélectionné) : retour à la feuille ; sinon, l’écran de la collection créée.
+                onCreated = { id ->
+                    if (route.preselectedBookId != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(CollectionRoute(id)) { popUpTo<NewCollectionRoute> { inclusive = true } }
+                    }
+                },
+            )
+        }
+        composable<CollectionRoute> { entry ->
+            val route = entry.toRoute<CollectionRoute>()
+            CollectionDestination(
+                collectionId = route.collectionId,
+                onBack = { if (entry.resumed()) navController.popBackStack() },
+                onOpenReader = { bookId -> if (entry.resumed()) navController.openReader(bookId) },
+                onOpenDetails = { bookId -> if (entry.resumed()) navController.navigate(DetailsRoute(bookId)) },
             )
         }
         composable<DetailsRoute> { entry ->

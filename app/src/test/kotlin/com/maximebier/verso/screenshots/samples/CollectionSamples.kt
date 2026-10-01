@@ -1,8 +1,13 @@
 package com.maximebier.verso.screenshots.samples
 
 import androidx.compose.runtime.Composable
+import com.maximebier.verso.core.collections.CollectionSummary
 import com.maximebier.verso.core.model.BookStatus
+import com.maximebier.verso.ui.collections.CollectionActions
 import com.maximebier.verso.ui.collections.CollectionCard
+import com.maximebier.verso.ui.collections.CollectionContent
+import com.maximebier.verso.ui.collections.CollectionDetail
+import com.maximebier.verso.ui.collections.CollectionUiState
 import com.maximebier.verso.ui.collections.CollectionsUiState
 import com.maximebier.verso.ui.collections.CoverRef
 import com.maximebier.verso.ui.collections.NewCollectionContent
@@ -72,4 +77,44 @@ internal fun NewCollectionSample() {
         ),
         actions = NewCollectionActions(),
     )
+}
+
+private val zolaBooks = listOf(
+    CollectionData.book(1, "La Fortune des Rougon", "Émile Zola", BookStatus.FINISHED, 1.0),
+    CollectionData.book(2, "La Curée", "Émile Zola", BookStatus.FINISHED, 1.0),
+    CollectionData.book(3, "L’Assommoir", "Émile Zola", BookStatus.IN_PROGRESS, 0.4),
+    CollectionData.book(4, "Germinal", "Émile Zola", BookStatus.IN_PROGRESS, 0.12),
+    CollectionData.book(5, "La Bête humaine", "Émile Zola", BookStatus.TO_READ),
+)
+
+private val zolaSummary = CollectionSummary(
+    fraction = 0.44, percent = 44, finished = 2, inProgress = 2, toRead = 1,
+    remainingMinutes = 26 * 60, resumeIndex = 2, author = "Émile Zola",
+)
+
+private val zolaState = CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", zolaBooks, zolaSummary))
+
+@Composable
+internal fun CollectionSample() {
+    CollectionContent(zolaState, CollectionActions())
+}
+
+@Composable
+internal fun CollectionReorderSample() {
+    CollectionContent(zolaState.copy(reordering = true), CollectionActions())
+}
+
+@Composable
+internal fun CollectionEmptySample() {
+    CollectionContent(
+        CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Mousquetaires", emptyList(), CollectionSummary(0.0, 0, 0, 0, 0, 0, null, null))),
+        CollectionActions(),
+    )
+}
+
+@Composable
+internal fun CollectionFinishedSample() {
+    val done = zolaBooks.map { it.copy(status = BookStatus.FINISHED, progression = 1.0, percent = 100) }
+    val summary = zolaSummary.copy(fraction = 1.0, percent = 100, finished = 5, inProgress = 0, toRead = 0, remainingMinutes = 0, resumeIndex = null)
+    CollectionContent(CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", done, summary)), CollectionActions())
 }
