@@ -84,7 +84,6 @@ fun ReaderBars(
     state: ReaderBarsState,
     onBack: () -> Unit,
     onTocClick: () -> Unit,
-    onJournalClick: () -> Unit,
     onSearchClick: () -> Unit,
     onNotesClick: () -> Unit = {},
     onSettingsClick: () -> Unit,
@@ -111,7 +110,7 @@ fun ReaderBars(
         ) {
             ReaderBottomBar(
                 state = state,
-                tools = readerTools(onTocClick, onJournalClick, onSearchClick, onNotesClick, onSettingsClick),
+                tools = readerTools(onTocClick, onSearchClick, onNotesClick, onSettingsClick),
                 modifier = Modifier.onSizeChanged { onBottomBarHeightChanged(it.height) },
             )
         }
@@ -172,17 +171,15 @@ sealed interface ToolGlyph {
     data class Text(val text: String) : ToolGlyph
 }
 
-/** Ordre de la maquette 2.01, plus « Notes » (V3) avant les réglages : Sommaire, Journal, Rechercher, Notes, Réglages. */
+/** Ordre de la maquette 2.01, « Notes » (V3) à la place de « Journal », ouvert depuis la fiche : Sommaire, Rechercher, Notes, Réglages. */
 @Composable
 private fun readerTools(
     onTocClick: () -> Unit,
-    onJournalClick: () -> Unit,
     onSearchClick: () -> Unit,
     onNotesClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ): List<ReaderTool> = buildList {
     add(ReaderTool(stringResource(R.string.reader_toc), ToolGlyph.Icon(VersoIcons.ListBullets), onTocClick))
-    add(ReaderTool(stringResource(R.string.reader_journal), ToolGlyph.Icon(VersoIcons.History), onJournalClick))
     add(ReaderTool(stringResource(R.string.reader_search), ToolGlyph.Icon(VersoIcons.Search), onSearchClick))
     add(ReaderTool(stringResource(R.string.reader_notes), ToolGlyph.Icon(VersoIcons.Note), onNotesClick))
     add(ReaderTool(stringResource(R.string.reader_settings), ToolGlyph.Text(stringResource(R.string.reader_settings_glyph)), onSettingsClick))

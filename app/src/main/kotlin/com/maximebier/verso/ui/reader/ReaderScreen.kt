@@ -172,8 +172,6 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             onSettingsClick = viewModel::showReadingSettings,
             onBack = onBackToLibrary,
             onTocClick = viewModel::showToc,
-            // Journal : bascule uiState.journalVisible ; la feuille est affichée plus bas.
-            onJournalClick = viewModel::showJournal,
             onSearchClick = viewModel::showSearch,
             onNotesClick = viewModel::showNotes,
             onBottomBarHeightChanged = { bottomBarHeightPx = it },

@@ -499,6 +499,12 @@ class ReaderViewModelTest {
             val fake = FakeReaderController(start)
             viewModel.onReaderReady(fake)
             runCurrent()
+            // La lecture du surlignage passe par le fil de Room : on laisse tourner jusqu’au saut (5 s au plus).
+            val deadline = System.currentTimeMillis() + 5_000
+            while (fake.goCalls.none { it.href.toString() == "chapitre-1.xhtml" } && System.currentTimeMillis() < deadline) {
+                Thread.sleep(10)
+                runCurrent()
+            }
             assertThat(fake.goCalls.map { it.href.toString() }).contains("chapitre-1.xhtml")
         }
     }

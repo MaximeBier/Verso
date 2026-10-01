@@ -40,7 +40,7 @@ class ReaderSnackbarTest {
                     ReaderBars(
                         visible = true,
                         state = ReaderBarsState("Titre", emptyList(), 5, 0.05f, 60),
-                        onBack = {}, onTocClick = {}, onJournalClick = {}, onSearchClick = {},
+                        onBack = {}, onTocClick = {}, onSearchClick = {},
                         onSettingsClick = { settings++ },
                     )
                     VersoSnackbarHost(

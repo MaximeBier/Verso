@@ -57,7 +57,7 @@ internal val tocSample = listOf(
 internal fun ReaderBarsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
         SampleReadingText()
-        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onJournalClick = {}, onSearchClick = {}, onSettingsClick = {})
+        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onSearchClick = {}, onSettingsClick = {})
     }
 }
 
@@ -88,7 +88,6 @@ internal fun ReaderToolsSample() {
             state = readerBarsSampleState,
             onBack = {},
             onTocClick = {},
-            onJournalClick = {},
             onSearchClick = {},
             onSettingsClick = {},
         )
