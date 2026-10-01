@@ -69,3 +69,7 @@ fun Resources.locationTexts(): LocationTexts = LocationTexts(
     join = { part, chapter -> getString(R.string.common_location_long, part, chapter) },
     passage = { from, to -> getString(R.string.journal_passage, from, to) },
 )
+
+/** « Deuxième partie, chap. I · 30 % » d’un surlignage (3.06), ou « 30 % » hors sommaire. */
+fun Resources.highlightLocation(location: String?, percent: Int): String =
+    if (location == null) getString(R.string.notes_item_percent, percent) else getString(R.string.notes_item_location, location, percent)

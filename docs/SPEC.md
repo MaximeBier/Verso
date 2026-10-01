@@ -258,19 +258,23 @@ Verso ne lit que des EPUB : le PDF, le TXT, le Markdown et le HTML sont dans « 
 - Export : fichier `<Titre> – notes.md` enregistré par le sélecteur Android, groupé par chapitre, chaque passage en citation suivi de sa note.
 - Sauvegarde : ligne « Sauvegarde » dans les Paramètres. Un zip `verso-sauvegarde-AAAA-MM-JJ.zip` avec les EPUB, les couvertures, les données en JSON (pas une copie de la base) et les réglages, enregistré par le sélecteur Android. La restauration valide tout le fichier avant de remplacer quoi que ce soit, demande confirmation avec le nombre de livres, et remplace tout ou rien.
 
-Design et découpage : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`.
+- Passage dans le texte (étape 17) : un surlignage se retrouve dans le texte brut de son chapitre (espaces normalisés) par son texte et 32 caractères de contexte de chaque côté ; le chevauchement se décide sur ces plages, et le surlignage fusionné reçoit un locator reconstruit (texte, contexte, progression du début), sans sélecteur CSS. Un passage introuvable n'est jamais fusionné. Le chemin du sommaire est enregistré avec le surlignage (la liste et l'export ne rouvrent pas l'EPUB).
+- Machine à états (étape 17) : événements `SelectionStarted` et `SelectionEnded` ; entre les deux, l'affiché suit sans lecture ni navigation, les fins de geste sont ignorées ; la fin de sélection prend l'affiché comme nouveau point de départ, sans effet. Un tap qui annule une sélection (dans les 600 ms) n'affiche pas la barre de lecture.
+- Barre de sélection (étape 17) : le passage est relu toutes les 300 ms pendant la sélection (les poignées d'Android échappent à l'app) ; elle prend la place de la barre de lecture et le retour système efface la sélection. Libellés proposés, à confirmer : « Passage copié » (Android 12 et moins), « Surlignage » (titre de la feuille d'un surlignage touché).
+
+Design et découpage : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`. Plan : `docs/superpowers/plans/2026-10-01-verso-v3.md`.
 
 #### Critères d'acceptation V3
 
 Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels de test.
 
-- [ ] Un appui long sur un passage affiche la barre « Surligner / Note / Copier » à la place du menu d'Android, avec le début de la sélection.
-- [ ] « Surligner » marque le passage d'un fond et d'un soulignement, dans les cinq thèmes ; le surlignage survit à un redémarrage, en continu comme en mode pages.
-- [ ] « Copier » met le passage dans le presse-papiers.
+- [x] Un appui long sur un passage affiche la barre « Surligner / Note / Copier » à la place du menu d'Android, avec le début de la sélection.
+- [x] « Surligner » marque le passage d'un fond et d'un soulignement, dans les cinq thèmes ; le surlignage survit à un redémarrage, en continu comme en mode pages.
+- [x] « Copier » met le passage dans le presse-papiers.
 - [ ] « Note » ouvre la feuille avec le passage ; « Enregistrer » crée le surlignage et sa note, « Annuler » ne crée rien.
-- [ ] Surligner un passage qui en recoupe un autre n'en laisse qu'un, notes gardées.
+- [x] Surligner un passage qui en recoupe un autre n'en laisse qu'un, notes gardées.
 - [ ] Toucher un surlignage dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier » ; « Annuler » après « Supprimer » le rétablit.
-- [ ] Sélectionner, déplacer les poignées ou toucher un surlignage ne change jamais la position de lecture et n'affiche pas la carte « Revenir ».
+- [x] Sélectionner, déplacer les poignées ou toucher un surlignage ne change jamais la position de lecture et n'affiche pas la carte « Revenir ».
 - [ ] « Notes et surlignages » s'ouvre depuis la fiche et depuis la barre de lecture ; les éléments sont dans l'ordre du livre avec chapitre et pourcentage ; toucher un élément ouvre le passage, et la carte « Revenir » me ramène où j'étais.
 - [ ] « Exporter » enregistre à l'endroit choisi un fichier Markdown lisible, groupé par chapitre.
 - [ ] « Créer une sauvegarde » enregistre un zip à l'endroit choisi ; la carte affiche sa date, sa taille et son nom.
@@ -630,3 +634,4 @@ Sorti de la V3 le 2026-09-30 : je ne lis que des EPUB. Règles de conversion dé
 - 2026-09-30 (étape 16) : passe d’acceptation V2 ; README mis à jour (captures en Clair et Literata, sans barre d’état). Critère 10 : la fenêtre glissante « plus de 3 écrans en moins de 5 s » mesure désormais le déplacement depuis la position affichée au début de la fenêtre (le dernier échantillon d’avant la fenêtre est gardé) ; avant, une page lue plus de 5 s sortait de la fenêtre au premier tour, et quatre pages feuilletées vite restaient de la lecture. Critères 2, 12 et 13 vérifiés après un arrêt forcé puis confirmés par Maxime après un redémarrage complet ; critère 19 vérifié par `AccessibilityTreeTest` à 200 % puis confirmé par Maxime sur le téléphone (texte Android à 200 % et TalkBack). Écart accepté : « Thème sombre » placé sous « Thème » dans la section Lecture (2.09 date d’avant ce réglage).
 - 2026-09-30 : l'import PDF sort de la V3 et passe dans « Plus tard » (version indéterminée) : les livres visés existent légalement en EPUB. La V3 garde TXT, Markdown et HTML, les surlignages et notes, la sauvegarde et la restauration. Les maquettes 3.01 à 3.03 ne sont pas réexportées.
 - 2026-09-30 : l'import TXT, Markdown et HTML sort aussi de la V3 (« Plus tard », avec ses règles de conversion) ; la V3 devient « Notes et sauvegarde ». Décisions et critères d'acceptation V3, étapes 17 à 21 dans `docs/superpowers/specs/2026-09-30-verso-v3-design.md`.
+- 2026-10-01 (étape 17) : surlignages. Appui long : la barre « Texte sélectionné » (3.04) remplace le menu d'Android (ActionMode au menu vidé), en continu comme en mode pages ; « Surligner » crée ou fusionne le surlignage, « Copier » passe par le presse-papiers ; surlignages dessinés par les décorations Readium (même gabarit que la recherche : fond par ombre intérieure et soulignement) et touchés par `onDecorationActivated` ; table Room `highlights` (migration 2 → 3). La sélection n'est ni lecture ni navigation pour la machine à états (relecture dédiée : sélection ressuscitée par une lecture JavaScript en vol, fin de sélection sur une position périmée, saut en attente et saut pendant une sélection corrigés). Vérifié sur le téléphone (`build/acceptance/20261001-e17/`) : critères V3 1, 2, 3, 5 et 7 ; 5 % lu avant et après toutes les manipulations. Une poignée tirée vers le bas s'arrête sous la barre de sélection (pas de défilement automatique).

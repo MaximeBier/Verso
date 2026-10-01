@@ -10,6 +10,7 @@ import com.maximebier.verso.R
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
+import com.maximebier.verso.core.notes.TextQuotes
 import com.maximebier.verso.core.position.ReadingThresholds
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.settings.ReadingSettings
@@ -27,13 +28,18 @@ import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.HighlightRepository
+import com.maximebier.verso.data.db.HighlightEntity
+import com.maximebier.verso.data.chapterPathList
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.data.db.BookEntity
+import com.maximebier.verso.reader.ChapterText
 import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderController
 import com.maximebier.verso.reader.ReaderGestures
+import com.maximebier.verso.reader.readChapterHtml
 import com.maximebier.verso.reader.sameResource
 import com.maximebier.verso.readium.BookSearch
 import com.maximebier.verso.readium.Locators
@@ -41,6 +47,7 @@ import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.SearchHit
 import com.maximebier.verso.readium.TocAnchors
+import com.maximebier.verso.ui.common.highlightLocation
 import com.maximebier.verso.ui.common.locationTexts
 import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.ui.library.OpenFailures
@@ -48,6 +55,7 @@ import com.maximebier.verso.ui.reader.search.BookSearchModel
 import com.maximebier.verso.ui.reader.search.SearchUiState
 import java.io.File
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -74,6 +82,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
@@ -142,6 +151,11 @@ class ReaderViewModel(
     private val openJournalOnLoad: Boolean = false,
     /** Recherche plein texte d’une publication ouverte ([BookSearch]) ; les tests la remplacent par une recherche pilotée. */
     private val searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
+    /** Surlignages et notes (V3). */
+    private val highlightRepository: HighlightRepository,
+    /** « Deuxième partie, chap. I · 30 % » d’un surlignage, lu dans les ressources. */
+    private val highlightLocationText: (location: String?, percent: Int) -> String =
+        { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -189,6 +203,16 @@ class ReaderViewModel(
 
     /** Requête et résultats de la recherche ; gardés tant que le lecteur est ouvert. */
     val search: StateFlow<SearchUiState> = searchModel.state
+
+    // --- Surlignages et notes (V3) ---------------------------------------------------------------
+    private val chapterTexts = HashMap<String, String>()
+    private var highlightCoordinator: HighlightCoordinator? = null
+    private val highlightState = MutableStateFlow(HighlightUiState())
+
+    /** Barre de sélection, feuilles de note et de surlignage. */
+    val highlights: StateFlow<HighlightUiState> = highlightState.asStateFlow()
+    private val highlightEventsFlow = MutableSharedFlow<HighlightEvent>(extraBufferCapacity = 8)
+    val highlightEvents: SharedFlow<HighlightEvent> = highlightEventsFlow.asSharedFlow()
 
     /** Palette affichée, reçue de ReaderScreen ; null tant qu’elle n’est pas connue (rien n’est envoyé au lecteur). */
     private var theme: AppTheme? = null
@@ -264,6 +288,7 @@ class ReaderViewModel(
         tocLinks = publication.tableOfContents.ifEmpty { publication.readingOrder }
         positions = ReadingOrderPositions.load(publication)
         bookSearch = searchIn(publication)
+        startHighlights(publication)
         val anchors = TocAnchors.load(publication, tocLinks)
         val saved = book.readingLocatorJson?.let(Locators::fromJson)
         val start = saved ?: publication.readingOrder.firstOrNull()?.let(publication::locatorFromLink)
@@ -335,9 +360,72 @@ class ReaderViewModel(
         coordinator.start()
     }
 
+    private fun startHighlights(publication: Publication) {
+        if (highlightCoordinator != null) return
+        val created = HighlightCoordinator(
+            bookId = bookId,
+            highlights = highlightRepository,
+            scope = viewModelScope,
+            chapterText = { locator -> chapterPlainText(publication, locator) },
+            chapterPath = { locator -> chapterPathAt(_uiState.value.toc, Locators.hrefKey(locator), locator.locations.progression) },
+            locationLabel = { row -> highlightLocationText(shortLocation(row.chapterPathList(), locationTexts), percentOf(row.progression)) },
+            withTotalProgression = ::withTotalProgression,
+            clock = clock,
+        )
+        highlightCoordinator = created
+        viewModelScope.launch {
+            created.state.collect { state ->
+                highlightState.value = state
+                // La barre de sélection et la feuille d’un surlignage remplacent la barre de lecture.
+                if (state.selectionText != null || state.actions != null) _uiState.update { it.copy(barsVisible = false) }
+            }
+        }
+        viewModelScope.launch { created.events.collect { highlightEventsFlow.emit(it) } }
+        controller?.let(created::attach)
+    }
+
+    /** Texte brut normalisé du fichier d’un locator, lu une fois par fichier. */
+    private suspend fun chapterPlainText(publication: Publication, locator: Locator): String? {
+        val key = Locators.hrefKey(locator)
+        chapterTexts[key]?.let { return it }
+        val html = readChapterHtml(publication, locator.href.removeFragment()) ?: return null
+        val text = withContext(Dispatchers.Default) { TextQuotes.normalize(ChapterText.plainText(html)) }
+        chapterTexts[key] = text
+        return text
+    }
+
+    fun highlightSelection() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.highlightSelection()
+    }
+
+    fun copySelection() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.copySelection()
+    }
+
+    fun copyHighlight() {
+        highlightCoordinator?.copyHighlight()
+    }
+
+    fun dismissHighlightActions() {
+        highlightCoordinator?.dismissActions()
+    }
+
+    /** « Annuler » de la snackbar « Surlignage supprimé ». */
+    fun undoDeleteHighlight(row: HighlightEntity) {
+        highlightCoordinator?.undoDelete(row)
+    }
+
+    /** Retour système pendant une sélection : elle s’efface, le livre reste ouvert. */
+    fun clearSelection() {
+        controller?.clearSelection()
+    }
+
     fun onReaderReady(readerController: ReaderController) {
         if (controller === readerController) return
         controller = readerController
+        highlightCoordinator?.attach(readerController)
         submitStyle()
         positionSaver.attach(readerController)
         coordinator?.attach(readerController)
@@ -392,6 +480,7 @@ class ReaderViewModel(
         controllerJob = null
         cancelCalibration()
         controller = null
+        highlightCoordinator?.detach()
         // La prochaine surface n’a pas la décoration.
         searchMatchShown = false
         coordinator?.detach()
@@ -750,6 +839,8 @@ class ReaderViewModel(
                     reportOpenFailure = OpenFailures::report,
                     settings = container.settings,
                     openJournalOnLoad = openJournal,
+                    highlightRepository = container.highlights,
+                    highlightLocationText = { location, percent -> app.resources.highlightLocation(location, percent) },
                 )
             }
         }

@@ -1,5 +1,7 @@
 package com.maximebier.verso.ui.reader
 
+import android.content.ClipData
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -9,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,17 +23,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.maximebier.verso.R
 import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
+import com.maximebier.verso.ui.components.VersoSnackbarHost
 import com.maximebier.verso.ui.reader.search.SearchScreen
 import com.maximebier.verso.ui.theme.VersoTheme
 
@@ -44,6 +54,27 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val journal by viewModel.journal.collectAsStateWithLifecycle()
     val search by viewModel.search.collectAsStateWithLifecycle()
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val clipboard = LocalClipboard.current
+    val copiedMessage = stringResource(R.string.selection_copied)
+    val deletedMessage = stringResource(R.string.highlight_deleted)
+    val undoLabel = stringResource(R.string.highlight_deleted_undo)
+    LaunchedEffect(viewModel) {
+        viewModel.highlightEvents.collect { event ->
+            when (event) {
+                is HighlightEvent.Copied -> {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(event.text, event.text)))
+                    // Android 13 et plus confirme lui-même la copie.
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) snackbarHostState.showSnackbar(copiedMessage)
+                }
+                is HighlightEvent.Deleted -> {
+                    val result = snackbarHostState.showSnackbar(deletedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+                    if (result == SnackbarResult.ActionPerformed) viewModel.undoDeleteHighlight(event.row)
+                }
+            }
+        }
+    }
     val density = LocalDensity.current
     val activity = LocalActivity.current
     var bottomBarHeightPx by remember { mutableIntStateOf(0) }
@@ -67,6 +98,8 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
     BackHandler(enabled = state.settingsVisible) { viewModel.hideReadingSettings() }
     BackHandler(enabled = state.searchVisible) { viewModel.hideSearch() }
+    // Retour pendant une sélection : elle s’efface, le livre reste ouvert.
+    BackHandler(enabled = highlights.selectionText != null) { viewModel.clearSelection() }
     if (state.failed) {
         LaunchedEffect(Unit) { onOpenFailed() }
     }
@@ -135,6 +168,15 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                     .padding(horizontal = 16.dp),
             )
         }
+        highlights.selectionText?.let { text ->
+            SelectionBar(
+                selectionText = text,
+                onHighlight = viewModel::highlightSelection,
+                onNote = null,
+                onCopy = viewModel::copySelection,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
         if (state.searchVisible) {
             SearchScreen(
                 state = search,
@@ -144,6 +186,10 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 onResultClick = viewModel::openSearchResult,
             )
         }
+        VersoSnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(16.dp),
+        )
     }
 
     if (state.tocVisible) {
@@ -179,6 +225,15 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             onMarginsSelected = { margins -> viewModel.updateReadingSettings { it.copy(margins = margins) } },
             onDismiss = viewModel::hideReadingSettings,
             scrollModeRow = { ScrollModeRow(selected = state.scrollMode, onSelect = viewModel::setScrollMode) },
+        )
+    }
+    highlights.actions?.let { actions ->
+        HighlightActionsSheet(
+            state = actions,
+            onCopy = viewModel::copyHighlight,
+            onEditNote = null,
+            onDelete = null,
+            onDismiss = viewModel::dismissHighlightActions,
         )
     }
 }

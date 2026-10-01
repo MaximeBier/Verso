@@ -24,18 +24,19 @@ object SearchMatchDecoration {
 
     fun palette(theme: AppTheme): VersoColors = ReadingStyle.palette(theme)
 
-    fun decorations(locator: Locator, theme: AppTheme): List<Decoration> {
+    fun decorations(locator: Locator, theme: AppTheme): List<Decoration> = listOf(decoration(ID, locator, theme))
+
+    /** Une décoration aux couleurs du thème (fond `highlight`, soulignement `text`) ; gabarit commun avec les surlignages. */
+    fun decoration(id: String, locator: Locator, theme: AppTheme): Decoration {
         val colors = palette(theme)
-        return listOf(
-            Decoration(
-                id = ID,
-                locator = locator,
-                style = Decoration.Style.Highlight(tint = colors.highlight.toArgb()),
-                extras = mapOf(
-                    EXTRA_BACKGROUND to colors.highlight.css(),
-                    EXTRA_LINE to colors.text.css(),
-                    EXTRA_BLEND to if (theme.isDark) "lighten" else "darken",
-                ),
+        return Decoration(
+            id = id,
+            locator = locator,
+            style = Decoration.Style.Highlight(tint = colors.highlight.toArgb()),
+            extras = mapOf(
+                EXTRA_BACKGROUND to colors.highlight.css(),
+                EXTRA_LINE to colors.text.css(),
+                EXTRA_BLEND to if (theme.isDark) "lighten" else "darken",
             ),
         )
     }

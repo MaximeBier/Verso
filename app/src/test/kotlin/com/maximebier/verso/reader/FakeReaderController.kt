@@ -50,6 +50,35 @@ class FakeReaderController(initial: Locator?) : ReaderController {
         searchMatches += locator
     }
 
+    override val selecting = MutableStateFlow(false)
+    override val selection = MutableStateFlow<TextSelection?>(null)
+    override val highlightTaps = MutableSharedFlow<Long>(extraBufferCapacity = 16)
+
+    /** Réponse de `currentSelection()` ; à défaut, `selection.value`. */
+    var nativeSelection: TextSelection? = null
+    var selectionCleared = 0
+    val shownHighlights = mutableListOf<List<HighlightMark>>()
+
+    override suspend fun currentSelection(): TextSelection? = nativeSelection ?: selection.value
+
+    override fun clearSelection() {
+        selectionCleared++
+        nativeSelection = null
+        selection.value = null
+        selecting.value = false
+    }
+
+    override suspend fun showHighlights(marks: List<HighlightMark>) {
+        shownHighlights += marks
+    }
+
+    /** Simule un appui long sur [text], dans le chapitre de la position affichée. */
+    fun select(text: String, before: String = "", after: String = "") {
+        val base = displayed.value ?: testLocator()
+        selecting.value = true
+        selection.value = TextSelection(base.copy(text = Locator.Text(before = before, highlight = text, after = after)))
+    }
+
     /** Extrait qui répond après ce délai ; null : jamais (WebView détruite pendant l’appel JavaScript, non annulable). */
     var excerptDelayMs: Long? = 0L
 

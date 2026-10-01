@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.compose.AndroidFragment
 import com.maximebier.verso.core.text.preorder
+import com.maximebier.verso.readium.HighlightDecoration
 import com.maximebier.verso.readium.ReadingOrderPositions
 import com.maximebier.verso.readium.ReadingStyle
 import com.maximebier.verso.readium.SearchMatchDecoration
@@ -53,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONTokener
+import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.HyperlinkNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -195,7 +197,9 @@ fun ReaderSurface(
                 initialStyle.scrollMode,
                 fontScale = ReadingStyle.readingFontScale(densityInfo, initialStyle.settings.fontSizeSp),
             ),
-            configuration = EpubNavigatorFragment.Configuration { applyVerso(initialStyle.theme) },
+            configuration = EpubNavigatorFragment.Configuration {
+                applyVerso(initialStyle.theme, SelectionActionModeCallback(controller::onSelectionStarted, controller::onSelectionEnded))
+            },
         )
     }
     // Posée à chaque composition, donc avant que AndroidFragment instancie le fragment.
@@ -233,8 +237,33 @@ fun ReaderSurface(
         val decorations = searchMatch?.let { SearchMatchDecoration.decorations(it, style.theme) } ?: emptyList()
         nav.applyDecorations(decorations, SearchMatchDecoration.GROUP)
     }
+    // Surlignages du livre (V3) ; redessinés aux couleurs du thème quand il change.
+    var highlightMarks by remember { mutableStateOf<List<HighlightMark>>(emptyList()) }
+    LaunchedEffect(navigator, highlightMarks, style.theme) {
+        val nav = navigator ?: return@LaunchedEffect
+        nav.applyDecorations(HighlightDecoration.decorations(highlightMarks, style.theme), HighlightDecoration.GROUP)
+    }
+    // Toucher un surlignage : Readium l’annonce comme décoration activée, sans tap (pas de barre de lecture).
+    DisposableEffect(navigator) {
+        val nav = navigator ?: return@DisposableEffect onDispose {}
+        val listener = object : DecorableNavigator.Listener {
+            override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
+                val id = HighlightDecoration.idOf(event.decoration.id) ?: return false
+                controller.onHighlightActivated(id)
+                return true
+            }
+        }
+        nav.addDecorationListener(HighlightDecoration.GROUP, listener)
+        onDispose {
+            nav.removeDecorationListener(listener)
+            // Surface retirée pendant une sélection (rotation) : la sélection est perdue avec elle.
+            controller.onSelectionEnded()
+        }
+    }
     LaunchedEffect(navigator) {
         val nav = navigator ?: return@LaunchedEffect
+        controller.bindSelection(read = { nav.currentSelection() }, clear = { nav.clearSelection() })
+        controller.bindHighlights { highlightMarks = it }
         controller.bind(
             navigate = { nav.go(it, animated = false) },
             probeEdges = { edgesOf(nav.evaluateJavascript(EDGES_SCRIPT)) },

@@ -2,6 +2,7 @@
 
 package com.maximebier.verso.readium
 
+import android.view.ActionMode
 import com.maximebier.verso.core.settings.ReadingFont
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
@@ -80,8 +81,10 @@ object VersoReadingPreferences {
      * une seconde fois. La couleur des liens est fixée à la création : elle est commune au clair et au sépia, et au
      * sombre et à la nuit (`ReadingStyle.linkTheme`), et passer de l’un à l’autre groupe recrée l’activité.
      */
-    fun EpubNavigatorFragment.Configuration.applyVerso(theme: AppTheme) {
+    fun EpubNavigatorFragment.Configuration.applyVerso(theme: AppTheme, selectionCallback: ActionMode.Callback? = null) {
         servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)
+        // Menu de sélection d’Android remplacé par la barre de Verso (3.04).
+        selectionActionModeCallback = selectionCallback
         // Liens (visités ou non) à la couleur d’accent des jetons, contrastée à 7:1 : en sombre, le mode nuit de
         // ReadiumCSS mettrait les liens visités en #0099E5 (5,8:1). Variables en ligne : elles priment sur ce mode.
         val link = CssColor.Int(ReadingStyle.colors(theme).link)

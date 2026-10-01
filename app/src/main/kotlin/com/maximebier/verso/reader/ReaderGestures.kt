@@ -54,4 +54,16 @@ object ReaderGestures {
      * qui était affiché. À revoir sur le téléphone si le retour tombe à côté.
      */
     const val MODE_SWITCH_SETTLE_MS = 300L
+
+    /**
+     * Pendant une sélection, intervalle de relecture du passage sélectionné (barre 3.04) : les poignées d’Android sont
+     * des fenêtres à part, que la surface ne voit pas bouger.
+     */
+    const val SELECTION_POLL_MS = 300L
+
+    /**
+     * Après la fin d’une sélection, un tap signalé par Readium dans ce délai est celui qui l’a annulée (le JavaScript
+     * peut le voir une fois la sélection déjà vide) : il n’affiche pas la barre de lecture.
+     */
+    const val SELECTION_DISMISS_TAP_MS = 600L
 }

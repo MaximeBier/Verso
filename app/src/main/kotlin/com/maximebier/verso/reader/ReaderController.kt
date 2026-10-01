@@ -1,5 +1,6 @@
 package com.maximebier.verso.reader
 
+import com.maximebier.verso.core.notes.TextQuotes
 import com.maximebier.verso.core.settings.ReadingSettings
 import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.AppTheme
@@ -38,7 +39,33 @@ interface ReaderController {
 
     /** Mode pages : page suivante ou précédente (action TalkBack du pied de page), comme un swipe. Sans effet en continu. */
     fun turn(forward: Boolean)
+
+    /** Sélection de texte en cours (appui long), du début à la fin de l’ActionMode d’Android. */
+    val selecting: StateFlow<Boolean>
+
+    /** Passage sélectionné, relu pendant la sélection ([ReaderGestures.SELECTION_POLL_MS]) ; null sans sélection. */
+    val selection: StateFlow<TextSelection?>
+
+    /** Passage sélectionné relu dans la WebView à l’instant (au moment d’une action de la barre). */
+    suspend fun currentSelection(): TextSelection?
+
+    /** Efface la sélection (après une action de la barre). */
+    fun clearSelection()
+
+    /** Surlignages dessinés dans le texte ; remplace la liste précédente. */
+    suspend fun showHighlights(marks: List<HighlightMark>)
+
+    /** Id du surlignage touché dans le texte. */
+    val highlightTaps: Flow<Long>
 }
+
+/** Passage sélectionné ; [locator] porte `text.highlight/before/after` et la progression totale. */
+data class TextSelection(val locator: Locator) {
+    val text: String get() = TextQuotes.normalize(locator.text.highlight.orEmpty())
+}
+
+/** Surlignage à dessiner. */
+data class HighlightMark(val id: Long, val locator: Locator)
 
 /** `chapterTurn` : le glissé, commencé au bord, a ouvert le chapitre voisin (lecture, pas navigation). */
 data class GestureSignal(val timeMs: Long, val isFling: Boolean, val chapterTurn: Boolean = false)

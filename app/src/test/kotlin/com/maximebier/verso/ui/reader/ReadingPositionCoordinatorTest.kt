@@ -12,8 +12,10 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.reader.FakeReaderController
 import com.maximebier.verso.reader.GestureSignal
+import com.maximebier.verso.reader.HighlightMark
 import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.reader.ReaderController
+import com.maximebier.verso.reader.TextSelection
 import com.maximebier.verso.reader.testLocator
 import com.maximebier.verso.readium.Locators
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -292,6 +294,12 @@ class ReadingPositionCoordinatorTest {
             override suspend fun showSearchMatch(locator: Locator?) = Unit
             override fun submit(settings: ReadingSettings, theme: AppTheme, scrollMode: ScrollMode) = Unit
             override fun turn(forward: Boolean) = Unit
+            override val selecting = MutableStateFlow(false)
+            override val selection = MutableStateFlow<TextSelection?>(null)
+            override suspend fun currentSelection(): TextSelection? = null
+            override fun clearSelection() = Unit
+            override suspend fun showHighlights(marks: List<HighlightMark>) = Unit
+            override val highlightTaps = MutableSharedFlow<Long>()
         }
         val coordinator = coordinatorAt(start)
         coordinator.attach(engine)
@@ -369,5 +377,32 @@ class ReadingPositionCoordinatorTest {
         coordinator.onGoBack()
         runCurrent()
         assertThat(fake.goCalls.single().href.toString()).isEqualTo("chapitre-2.xhtml")
+    }
+
+    @Test
+    fun selectionNeverMovesReadingNorShowsTheCard() = runTest {
+        val start = testLocator(total = 0.300)
+        val fake = FakeReaderController(start)
+        val coordinator = coordinatorAt(start)
+        val effects = effectsOf(coordinator)
+        coordinator.attach(fake)
+        runCurrent()
+        // Appui long, puis poignée tirée : le texte défile tout seul de 5 écrans, un geste se termine.
+        fake.selecting.value = true
+        runCurrent()
+        for (step in 1..5) {
+            advanceTimeBy(200)
+            fake.displayed.value = testLocator(total = 0.300 + step * 0.001)
+            runCurrent()
+        }
+        fake.gestures.emit(GestureSignal(timeMs = testScheduler.currentTime, isFling = false))
+        advanceTimeBy(3_000)
+        fake.selecting.value = false
+        advanceTimeBy(10_000)
+        runCurrent()
+        assertThat(coordinator.state.value.showReturnCard).isFalse()
+        assertThat(coordinator.state.value.reading).isEqualTo(Locators.toPosition(start))
+        assertThat(effects).isEmpty()
+        assertThat(saved).isEmpty()
     }
 }

@@ -6,6 +6,8 @@ import com.maximebier.verso.core.position.ReaderEvent.Displayed
 import com.maximebier.verso.core.position.ReaderEvent.GestureEnded
 import com.maximebier.verso.core.position.ReaderEvent.GoBack
 import com.maximebier.verso.core.position.ReaderEvent.Jumped
+import com.maximebier.verso.core.position.ReaderEvent.SelectionEnded
+import com.maximebier.verso.core.position.ReaderEvent.SelectionStarted
 import com.maximebier.verso.core.position.ReaderEvent.StayHere
 import com.maximebier.verso.core.position.ReaderEvent.Tick
 import com.maximebier.verso.core.position.TrackerEffect.ReadingMoved
@@ -827,5 +829,76 @@ class ReadingPositionTrackerTest {
             Tick(1_700),
         )
         assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 12.5))
+    }
+
+    // ---------- Sélection de texte (V3) ----------
+
+    @Test
+    fun selectionWithAutoScrollNeverMovesReading() {
+        val tracker = tracker()
+        val effects = tracker.feed(
+            SelectionStarted(1_000),
+            // Poignée tirée en bas de l’écran : le texte défile tout seul de 3 écrans.
+            Displayed(1_200, pos(11.0)),
+            Displayed(1_400, pos(13.0)),
+            GestureEnded(1_500, pos(13.0), isFling = false),
+            Tick(3_000),
+            SelectionEnded(3_200, pos(13.0)),
+            Tick(6_000),
+        )
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 13.0))
+    }
+
+    @Test
+    fun readingResumesFromWhereTheSelectionLeftTheText() {
+        val tracker = tracker()
+        tracker.feed(SelectionStarted(1_000), Displayed(1_200, pos(10.5)), SelectionEnded(2_000, pos(10.5)))
+        val effects = tracker.feed(
+            Displayed(3_000, pos(10.8)),
+            GestureEnded(3_100, pos(10.8), isFling = false),
+            Tick(5_000),
+        )
+        assertThat(effects).contains(SaveReading(pos(10.8)))
+        assertThat(tracker.state).isEqualTo(following(10.8))
+    }
+
+    @Test
+    fun selectionKeepsTheReturnCardAsItWas() {
+        val tracker = awayAt15()
+        val effects = tracker.feed(SelectionStarted(5_000), Displayed(5_100, pos(15.4)), SelectionEnded(6_000, pos(15.4)), Tick(9_000))
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(away(reading = 10.0, displayed = 15.4))
+    }
+
+    @Test
+    fun pendingReadingIsSettledWhenTheSelectionStarts() {
+        val tracker = tracker()
+        // Petit mouvement pas encore validé (repos pas atteint), puis appui long.
+        val effects = tracker.feed(Displayed(1_000, pos(10.4)), SelectionStarted(1_200))
+        assertThat(effects).contains(SaveReading(pos(10.4)))
+        assertThat(tracker.state).isEqualTo(following(10.4))
+    }
+
+    @Test
+    fun selectionEndedWithoutStartIsHarmless() {
+        val tracker = tracker()
+        val effects = tracker.feed(SelectionEnded(1_000, pos(10.2)), Tick(5_000))
+        assertThat(effects).isEmpty()
+        assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 10.2))
+    }
+
+    @Test
+    fun selectionDuringAJumpWithoutArrivalDoesNotSwallowTheNextMove() {
+        val tracker = tracker()
+        // Saut vers une cible déjà à l’écran : aucune position ne vient, puis appui long.
+        tracker.feed(Jumped(1_000, pos(10.0)), SelectionStarted(1_100), SelectionEnded(1_500, pos(10.0)))
+        val effects = tracker.feed(
+            Displayed(2_000, pos(10.4)),
+            GestureEnded(2_100, pos(10.4), isFling = false),
+            Tick(4_000),
+        )
+        assertThat(effects).contains(SaveReading(pos(10.4)))
+        assertThat(tracker.state).isEqualTo(following(10.4))
     }
 }

@@ -21,6 +21,7 @@ import com.maximebier.verso.core.text.preorder
 import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.data.HighlightRepository
 import com.maximebier.verso.data.SessionRepository
 import com.maximebier.verso.data.SettingsRepository
 import com.maximebier.verso.data.ThemeMode
@@ -1078,6 +1079,7 @@ class ReaderViewModelTest {
                 settings = testSettings(),
                 openJournalOnLoad = openJournal,
                 searchIn = searchIn,
+                highlightRepository = HighlightRepository(db.highlightDao()) { 0L },
             ).also { viewModels += it }
         }
     }

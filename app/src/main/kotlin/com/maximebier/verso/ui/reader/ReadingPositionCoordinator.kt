@@ -62,12 +62,30 @@ class ReadingPositionCoordinator(
     /** « Revenir » touché sans surface branchée (recréation) : rejoué au prochain [attach]. */
     private var pendingScrollTo: Locator? = null
 
+    /** Sélection annoncée au tracker et pas encore close (une surface retirée pendant la sélection ne la ferme pas). */
+    private var selectionOpen = false
+
     /** Branche la surface de lecture (et le battement d’horloge) ; remplace la précédente. */
     fun attach(readerController: ReaderController) {
         if (controller === readerController) return
         detach()
         controller = readerController
         jobs = listOf(
+            // Sélection de texte : ni lecture ni navigation pour le tracker (spec V3).
+            scope.launch {
+                readerController.selecting.collect { active ->
+                    if (active && !selectionOpen) {
+                        selectionOpen = true
+                        dispatch(ReaderEvent.SelectionStarted(clock()))
+                    } else if (!active && selectionOpen) {
+                        selectionOpen = false
+                        // Position de l’écran lue à l’instant : la collecte de `displayed` peut ne pas l’avoir encore vue.
+                        val screen = readerController.displayed.value?.let(Locators::toPosition) ?: lastDisplayed
+                        lastDisplayed = screen
+                        dispatch(ReaderEvent.SelectionEnded(clock(), screen))
+                    }
+                }
+            },
             scope.launch {
                 readerController.displayed.filterNotNull().collect { locator ->
                     val position = Locators.toPosition(locator)
