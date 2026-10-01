@@ -83,10 +83,16 @@ class CollectionScreenTest {
 
     @Test
     fun allFinishedHidesResumeAndRemainingTime() {
-        val done = summary.copy(finished = 5, inProgress = 0, toRead = 0, resumeIndex = null, remainingMinutes = 0, percent = 100)
+        val done = summary.copy(finished = 5, inProgress = 0, toRead = 0, resumeIndex = null, remainingMinutes = 0, percent = 100, remainingKnown = false)
         show(zola.copy(detail = zola.detail!!.copy(summary = done)))
         compose.onNodeWithText(text(R.string.collection_resume)).assertDoesNotExist()
         compose.onNodeWithText(context.resources.getQuantityString(R.plurals.collection_finished, 5, 5)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.collection_remaining_less_than_minute)).assertDoesNotExist()
+    }
+
+    @Test
+    fun remainingTimeIsHiddenWhenWordCountsAreUnknown() {
+        show(zola.copy(detail = zola.detail!!.copy(summary = summary.copy(remainingMinutes = 0, remainingKnown = false))))
         compose.onNodeWithText(text(R.string.collection_remaining_less_than_minute)).assertDoesNotExist()
     }
 

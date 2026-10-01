@@ -293,7 +293,7 @@ private fun ProgressSection(summary: CollectionSummary, modifier: Modifier) {
         if (parts.isNotEmpty()) {
             Text(parts.joinToString(stringResource(R.string.collection_counts_separator)), style = typography.body, color = colors.text)
         }
-        if (summary.inProgress + summary.toRead > 0) {
+        if (summary.remainingKnown) {
             Text(collectionRemainingText(summary.remainingMinutes), style = typography.caption, color = colors.textSecondary)
         }
     }

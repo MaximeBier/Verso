@@ -114,4 +114,13 @@ class CollectionRulesTest {
         assertThat(CollectionOrder.dropIndex(from = 1, offsetPx = 10_000f, heights = heights)).isEqualTo(3)
         assertThat(CollectionOrder.dropIndex(from = 2, offsetPx = -10_000f, heights = heights)).isEqualTo(0)
     }
+
+    @Test
+    fun remainingTimeIsUnknownWhenUnfinishedBooksHaveNoWordCount() {
+        val unknown = CollectionRules.summarize(listOf(book(0, 0.0, TO_READ), book(50_000, 1.0, FINISHED)))
+        assertThat(unknown.remainingKnown).isFalse()
+        val known = CollectionRules.summarize(listOf(book(0, 0.0, TO_READ), book(1_000, 0.5, IN_PROGRESS)))
+        assertThat(known.remainingKnown).isTrue()
+        assertThat(CollectionRules.summarize(emptyList()).remainingKnown).isFalse()
+    }
 }

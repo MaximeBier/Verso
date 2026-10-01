@@ -25,6 +25,8 @@ data class CollectionSummary(
     val remainingMinutes: Int,
     val resumeIndex: Int?,
     val author: String?,
+    /** Faux si aucun livre non terminé n’a de nombre de mots : le temps restant n’est pas connu (ligne masquée). */
+    val remainingKnown: Boolean = remainingMinutes > 0,
 ) {
     val bookCount: Int get() = finished + inProgress + toRead
 }
@@ -41,6 +43,7 @@ object CollectionRules {
         var totalWords = 0L
         var readWords = 0.0
         var remaining = 0
+        var unfinishedWords = 0L
         for (book in books) {
             val words = book.totalWords.coerceAtLeast(0)
             totalWords += words
@@ -48,6 +51,7 @@ object CollectionRules {
                 readWords += words
             } else {
                 readWords += words * clamp(book.progression)
+                unfinishedWords += words
                 remaining += remainingMinutes(words, clamp(book.progression), book.wordsPerMinute)
             }
         }
@@ -67,6 +71,7 @@ object CollectionRules {
             remainingMinutes = remaining,
             resumeIndex = books.indexOfFirst { it.status != BookStatus.FINISHED }.takeIf { it >= 0 },
             author = commonAuthor(books.map { it.author }),
+            remainingKnown = unfinishedWords > 0,
         )
     }
 

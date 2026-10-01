@@ -121,7 +121,9 @@ internal fun CollectionEmptySample() {
 @Composable
 internal fun CollectionFinishedSample() {
     val done = zolaBooks.map { it.copy(status = BookStatus.FINISHED, progression = 1.0, percent = 100) }
-    val summary = zolaSummary.copy(fraction = 1.0, percent = 100, finished = 5, inProgress = 0, toRead = 0, remainingMinutes = 0, resumeIndex = null)
+    val summary = zolaSummary.copy(
+        fraction = 1.0, percent = 100, finished = 5, inProgress = 0, toRead = 0, remainingMinutes = 0, resumeIndex = null, remainingKnown = false,
+    )
     CollectionContent(CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", done, summary)), CollectionActions())
 }
 
