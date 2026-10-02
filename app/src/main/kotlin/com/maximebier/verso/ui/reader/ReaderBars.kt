@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -85,9 +86,9 @@ fun ReaderBars(
     onBack: () -> Unit,
     onTocClick: () -> Unit,
     onSearchClick: () -> Unit,
-    onNotesClick: () -> Unit = {},
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onNotesClick: () -> Unit = {},
     onBottomBarHeightChanged: (Int) -> Unit = {},
 ) {
     val reduced = rememberReducedMotion()
@@ -126,7 +127,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+                .windowInsetsPadding(barsSideInsets())
                 .heightIn(min = VersoDimens.topBarReader)
                 // Marge verticale sans effet à 100 % (hauteur minimale) ; elle décolle le texte des bords à 200 %.
                 .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
@@ -193,7 +194,7 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
         HorizontalDivider(thickness = 1.dp, color = colors.divider)
         Column(
             modifier = Modifier
-                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+                .windowInsetsPadding(barsSideInsets())
                 // 2.01 : 16 dp en haut et en bas, 20 dp sur les côtés.
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -302,3 +303,12 @@ fun ImmersiveSystemBars(showSystemBars: Boolean) {
         onDispose { controller.show(WindowInsetsCompat.Type.systemBars()) }
     }
 }
+
+/**
+ * Marges latérales des barres : encoche et barre de navigation, qui passe sur le côté en paysage (navigation à
+ * trois boutons). Les barres s'affichent avec celles du système : mesurées même masquées, pour ne pas bouger.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun barsSideInsets(): WindowInsets =
+    WindowInsets.displayCutout.union(WindowInsets.navigationBarsIgnoringVisibility).only(WindowInsetsSides.Horizontal)

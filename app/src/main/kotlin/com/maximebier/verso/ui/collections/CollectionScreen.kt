@@ -218,11 +218,16 @@ private fun CollectionBody(detail: CollectionDetail, reordering: Boolean, action
     var draggedId by remember { mutableStateOf<Long?>(null) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val rowHeights = remember { mutableStateMapOf<Long, Int>() }
+    // Pendant « Réordonner », la carte garde le livre du début : déplacer un livre ne change pas le premier non
+    // terminé sous le doigt, ce qui changerait la hauteur de la carte et décalerait toutes les lignes.
+    val resumeBook = summary.resumeIndex?.let { detail.books[it] }
+    val heldResumeBook = remember(reordering) { resumeBook }
+    val shownResumeBook = if (reordering) heldResumeBook else resumeBook
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottom + 16.dp)) {
         item(key = "progression") { ProgressSection(summary, Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp)) }
-        summary.resumeIndex?.let { index ->
+        shownResumeBook?.let { book ->
             item(key = "reprendre") {
-                ResumeBookCard(detail.books[index], actions.onOpenReader, Modifier.padding(horizontal = 16.dp))
+                ResumeBookCard(book, actions.onOpenReader, Modifier.padding(horizontal = 16.dp))
             }
         }
         if (detail.books.isEmpty()) {

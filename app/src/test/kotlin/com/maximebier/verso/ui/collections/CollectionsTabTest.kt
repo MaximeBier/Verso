@@ -37,7 +37,7 @@ class CollectionsTabTest {
     }
 
     private fun description(card: CollectionCard) =
-        context.getString(R.string.collections_card_content_description, card.name, books(card.bookCount), card.percent)
+        context.getString(R.string.collections_card_content_description, card.name, card.author?.let { context.getString(R.string.collections_card_author_and_count, it, books(card.bookCount)) } ?: books(card.bookCount), card.percent)
 
     @Test
     fun cardsShowNameAuthorCountAndProgress() {

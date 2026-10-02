@@ -111,7 +111,8 @@ private fun CollectionCardItem(card: CollectionCard, onOpen: ((Long) -> Unit)?, 
     val typography = VersoTheme.typography
     val countText = pluralStringResource(R.plurals.library_book_count, card.bookCount, card.bookCount)
     val subtitle = card.author?.let { stringResource(R.string.collections_author_and_count, it, countText) } ?: countText
-    val description = stringResource(R.string.collections_card_content_description, card.name, countText, card.percent)
+    val spokenSubtitle = card.author?.let { stringResource(R.string.collections_card_author_and_count, it, countText) } ?: countText
+    val description = stringResource(R.string.collections_card_content_description, card.name, spokenSubtitle, card.percent)
     val clickModifier = if (onOpen != null) Modifier.clickable(role = Role.Button) { onOpen(card.id) } else Modifier
     val cardModifier = modifier
         .fillMaxWidth()

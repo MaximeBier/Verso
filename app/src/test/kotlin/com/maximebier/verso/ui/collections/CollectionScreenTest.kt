@@ -1,5 +1,8 @@
 package com.maximebier.verso.ui.collections
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import android.content.Context
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
@@ -153,6 +156,18 @@ class CollectionScreenTest {
         compose.onNodeWithText(text(R.string.collection_reorder_done)).performScrollTo().performClick()
         assertThat(moves).containsExactly(0 to 1)
         assertThat(ended).isEqualTo(1)
+    }
+
+    @Test
+    fun resumeCardKeepsItsBookWhileReordering() {
+        var state by mutableStateOf(zola.copy(reordering = true))
+        compose.setContent { VersoTheme { CollectionContent(state, CollectionActions()) } }
+        // Germinal déplacé en tête : il devient le premier non terminé, mais la carte garde L’Assommoir jusqu’à « Terminé ».
+        val moved = listOf(books[3], books[0], books[1], books[2], books[4])
+        state = state.copy(detail = state.detail!!.copy(books = moved, summary = summary.copy(resumeIndex = 0)))
+        compose.onNodeWithContentDescription(text(R.string.collection_resume_content_description, "L’Assommoir")).assertExists()
+        state = state.copy(reordering = false)
+        compose.onNodeWithContentDescription(text(R.string.collection_resume_content_description, "Germinal")).assertExists()
     }
 
     @Test
