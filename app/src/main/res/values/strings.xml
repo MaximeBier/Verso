@@ -161,15 +161,15 @@
     <string name="details_stats_reading_time_label">Temps de lecture</string>
     <!-- « 2 h 28 en 5 sessions » ; %1$s = durée (common_duration_*), %2$d = nombre de sessions -->
     <plurals name="details_stats_reading_time">
-        <item quantity="one">%1$s en %2$d session</item>
-        <item quantity="many">%1$s en %2$d sessions</item>
-        <item quantity="other">%1$s en %2$d sessions</item>
+        <item quantity="one">%1$s en %2$d session</item>
+        <item quantity="many">%1$s en %2$d sessions</item>
+        <item quantity="other">%1$s en %2$d sessions</item>
     </plurals>
     <string name="details_stats_speed_label">Vitesse moyenne</string>
     <plurals name="details_stats_speed">
-        <item quantity="one">%1$d mot par minute</item>
-        <item quantity="many">%1$d mots par minute</item>
-        <item quantity="other">%1$d mots par minute</item>
+        <item quantity="one">%1$d mot par minute</item>
+        <item quantity="many">%1$d mots par minute</item>
+        <item quantity="other">%1$d mots par minute</item>
     </plurals>
     <string name="details_stats_remaining_label">Temps restant estimé</string>
     <!-- « Environ 5 h 30 à votre rythme » ; %1$s = durée (common_duration_*) -->
@@ -331,14 +331,14 @@
     <string name="toc_subtitle">%1$s · %2$s</string>
     <string name="toc_subtitle_counts">%1$s, %2$s</string>
     <plurals name="toc_part_count">
-        <item quantity="one">%1$d partie</item>
-        <item quantity="many">%1$d parties</item>
-        <item quantity="other">%1$d parties</item>
+        <item quantity="one">%1$d partie</item>
+        <item quantity="many">%1$d parties</item>
+        <item quantity="other">%1$d parties</item>
     </plurals>
     <plurals name="toc_chapter_count">
-        <item quantity="one">%1$d chapitre</item>
-        <item quantity="many">%1$d chapitres</item>
-        <item quantity="other">%1$d chapitres</item>
+        <item quantity="one">%1$d chapitre</item>
+        <item quantity="many">%1$d chapitres</item>
+        <item quantity="other">%1$d chapitres</item>
     </plurals>
     <string name="toc_chapter_read">Lu</string>
     <!-- « En cours · 31 % » -->
@@ -474,33 +474,35 @@
     <!-- ===================== Collections (4.01) ===================== -->
     <string name="collections_title">Collections</string>
     <plurals name="collections_count">
-        <item quantity="one">%1$d collection</item>
-        <item quantity="many">%1$d collections</item>
-        <item quantity="other">%1$d collections</item>
+        <item quantity="one">%1$d collection</item>
+        <item quantity="many">%1$d collections</item>
+        <item quantity="other">%1$d collections</item>
     </plurals>
     <!-- « Émile Zola · 5 livres » ; %2$s = library_book_count -->
     <string name="collections_author_and_count">%1$s · %2$s</string>
     <!-- « · 2 terminés sur 5 », après « 44 % » en gras -->
     <plurals name="collections_finished_of">
-        <item quantity="one">· %1$d terminé sur %2$d</item>
-        <item quantity="many">· %1$d terminés sur %2$d</item>
-        <item quantity="other">· %1$d terminés sur %2$d</item>
+        <item quantity="one">· %1$d terminé sur %2$d</item>
+        <item quantity="many">· %1$d terminés sur %2$d</item>
+        <item quantity="other">· %1$d terminés sur %2$d</item>
     </plurals>
     <string name="collections_new">Nouvelle collection</string>
     <!-- Validé par Maxime (2026-10-02) : onglet Collections sans collection -->
     <string name="collections_empty">Regroupez des livres, par exemple une série, pour suivre leur lecture ensemble.</string>
     <!-- TalkBack d’une carte : « Les Rougon-Macquart, 5 livres, 44 % lus » -->
     <string name="collections_card_content_description">%1$s, %2$s, %3$d %% lus</string>
+    <!-- TalkBack de la carte : « Les Rougon-Macquart, Émile Zola, 20 livres, 6 % lus » -->
+    <string name="collections_card_author_and_count" translatable="false">%1$s, %2$s</string>
 
     <!-- ===================== Une collection (4.02) ===================== -->
     <string name="collection_percent_label">de la collection lue</string>
     <plurals name="collection_finished">
-        <item quantity="one">%1$d terminé</item>
-        <item quantity="many">%1$d terminés</item>
-        <item quantity="other">%1$d terminés</item>
+        <item quantity="one">%1$d terminé</item>
+        <item quantity="many">%1$d terminés</item>
+        <item quantity="other">%1$d terminés</item>
     </plurals>
-    <string name="collection_in_progress">%1$d en cours</string>
-    <string name="collection_to_read">%1$d à lire</string>
+    <string name="collection_in_progress">%1$d en cours</string>
+    <string name="collection_to_read">%1$d à lire</string>
     <string name="collection_counts_separator" translatable="false">" · "</string>
     <string name="collection_remaining">Environ %1$s de lecture restantes</string>
     <!-- Validé par Maxime (2026-10-02) : singulier et moins d’une minute -->
@@ -537,9 +539,9 @@
     <string name="new_collection_name">Nom de la collection</string>
     <string name="new_collection_books">Livres</string>
     <plurals name="new_collection_selected">
-        <item quantity="one">%1$d sélectionné</item>
-        <item quantity="many">%1$d sélectionnés</item>
-        <item quantity="other">%1$d sélectionnés</item>
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="many">%1$d sélectionnés</item>
+        <item quantity="other">%1$d sélectionnés</item>
     </plurals>
     <!-- Validé par Maxime (2026-10-02) : indication du champ vide et TalkBack de la croix -->
     <string name="new_collection_filter">Titre ou auteur</string>

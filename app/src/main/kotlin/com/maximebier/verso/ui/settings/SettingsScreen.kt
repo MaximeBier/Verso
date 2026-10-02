@@ -95,12 +95,12 @@ fun SettingsScreen(
     onClearJournalDismiss: () -> Unit,
     onOpenSourceCode: () -> Unit,
     onOpenLicenses: () -> Unit,
+    modifier: Modifier = Modifier,
     onFontChange: (ReadingFont) -> Unit = {},
     onFontSizeChange: (Int) -> Unit = {},
     onDefaultScrollModeChange: (ScrollMode) -> Unit = {},
     onShowStatisticsChange: (Boolean) -> Unit = {},
     onOpenBackup: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     val colors = VersoTheme.colors
     Column(modifier.fillMaxSize().background(colors.background)) {
