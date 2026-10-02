@@ -39,7 +39,7 @@ class NotesScreenTest {
     @Test fun headerListAndMenu() {
         show()
         rule.onNodeWithText("Notes et surlignages").assertExists()
-        rule.onNodeWithText("Madame Bovary · 2 éléments").assertExists()
+        rule.onNodeWithText("Madame Bovary · 2\u00A0éléments").assertExists()
         rule.onNodeWithText("L’export crée un fichier Markdown à garder ou à partager.").assertExists()
         rule.onNodeWithText("Exporter").assertHeightIsAtLeast(48.dp).performClick()
         rule.onNodeWithText("Il avait les cheveux coupés droit").performClick()

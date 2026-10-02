@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -73,8 +76,15 @@ class NotesActions(
 @Composable
 fun NotesScreen(state: NotesUiState, actions: NotesActions, modifier: Modifier = Modifier, snackbarHost: @Composable () -> Unit = {}) {
     val colors = VersoTheme.colors
-    Box(modifier.fillMaxSize().background(colors.background)) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = WindowInsets.navigationBars.asPaddingValues()) {
+    // Côtés : encoche et barre de navigation en paysage, aussi en panneau du lecteur, hors de VersoNavHost.screen (qui
+    // les a déjà pris pour la fiche). La liste ne prend que le bas : asPaddingValues ignore les insets déjà pris.
+    Box(
+        modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+    ) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues()) {
             item { NotesHeader(state, actions) }
             if (state.items.isEmpty()) {
                 if (state.loaded) {

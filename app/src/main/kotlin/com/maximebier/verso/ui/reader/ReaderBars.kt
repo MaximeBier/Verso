@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.foundation.layout.union
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -58,6 +56,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.maximebier.verso.R
 import com.maximebier.verso.core.text.longLocation
+import com.maximebier.verso.reader.readerContentInsets
 import com.maximebier.verso.ui.common.remainingTimeText
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
 import com.maximebier.verso.ui.components.VersoIconButton
@@ -127,7 +126,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(barsSideInsets())
+                .windowInsetsPadding(readerSideInsets())
                 .heightIn(min = VersoDimens.topBarReader)
                 // Marge verticale sans effet à 100 % (hauteur minimale) ; elle décolle le texte des bords à 200 %.
                 .padding(start = 4.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
@@ -194,7 +193,7 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
         HorizontalDivider(thickness = 1.dp, color = colors.divider)
         Column(
             modifier = Modifier
-                .windowInsetsPadding(barsSideInsets())
+                .windowInsetsPadding(readerSideInsets())
                 // 2.01 : 16 dp en haut et en bas, 20 dp sur les côtés.
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -305,10 +304,9 @@ fun ImmersiveSystemBars(showSystemBars: Boolean) {
 }
 
 /**
- * Marges latérales des barres : encoche et barre de navigation, qui passe sur le côté en paysage (navigation à
- * trois boutons). Les barres s'affichent avec celles du système : mesurées même masquées, pour ne pas bouger.
+ * Marges latérales des barres de lecture et de la carte « Revenir » : celles du texte ([readerContentInsets]), soit
+ * l'encoche et la barre de navigation, qui passe sur le côté en paysage (navigation à trois boutons). Mesurées même
+ * barres système masquées : les barres s'affichent avec elles, sans bouger, alignées sur le texte.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun barsSideInsets(): WindowInsets =
-    WindowInsets.displayCutout.union(WindowInsets.navigationBarsIgnoringVisibility).only(WindowInsetsSides.Horizontal)
+internal fun readerSideInsets(): WindowInsets = readerContentInsets.only(WindowInsetsSides.Horizontal)

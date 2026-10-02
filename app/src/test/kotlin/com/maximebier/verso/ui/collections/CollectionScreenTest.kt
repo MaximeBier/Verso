@@ -1,9 +1,9 @@
 package com.maximebier.verso.ui.collections
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import android.content.Context
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -160,15 +161,29 @@ class CollectionScreenTest {
 
     @Test
     fun resumeCardKeepsItsBookWhileReordering() {
-        var state by mutableStateOf(zola.copy(reordering = true))
+        var state by mutableStateOf(zola)
         compose.setContent { VersoTheme { CollectionContent(state, CollectionActions()) } }
+        state = state.copy(reordering = true)
+        compose.waitForIdle()
         // Germinal déplacé en tête : il devient le premier non terminé, mais la carte garde L’Assommoir jusqu’à « Terminé ».
-        val moved = listOf(books[3], books[0], books[1], books[2], books[4])
-        state = state.copy(detail = state.detail!!.copy(books = moved, summary = summary.copy(resumeIndex = 0)))
+        state = state.copy(detail = state.detail!!.copy(books = germinalFirst, summary = summary.copy(resumeIndex = 0)))
         compose.onNodeWithContentDescription(text(R.string.collection_resume_content_description, "L’Assommoir")).assertExists()
         state = state.copy(reordering = false)
         compose.onNodeWithContentDescription(text(R.string.collection_resume_content_description, "Germinal")).assertExists()
     }
+
+    @Test
+    fun resumeCardKeepsItsBookAcrossRecreationWhileReordering() {
+        // Rotation pendant « Réordonner » : l’activité est recréée, le mode reste dans le ViewModel.
+        val restoration = StateRestorationTester(compose)
+        var state by mutableStateOf(zola.copy(reordering = true))
+        restoration.setContent { VersoTheme { CollectionContent(state, CollectionActions()) } }
+        state = state.copy(detail = state.detail!!.copy(books = germinalFirst, summary = summary.copy(resumeIndex = 0)))
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithContentDescription(text(R.string.collection_resume_content_description, "L’Assommoir")).assertExists()
+    }
+
+    private val germinalFirst = listOf(books[3], books[0], books[1], books[2], books[4])
 
     @Test
     fun dragHandleMovesByWholeRows() {
