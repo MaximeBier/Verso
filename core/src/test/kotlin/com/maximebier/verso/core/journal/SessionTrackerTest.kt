@@ -5,6 +5,8 @@ import com.maximebier.verso.core.journal.SessionEvent.Backgrounded
 import com.maximebier.verso.core.journal.SessionEvent.Closed
 import com.maximebier.verso.core.journal.SessionEvent.Interaction
 import com.maximebier.verso.core.journal.SessionEvent.Opened
+import com.maximebier.verso.core.journal.SessionEvent.PanelHidden
+import com.maximebier.verso.core.journal.SessionEvent.PanelShown
 import com.maximebier.verso.core.journal.SessionEvent.ReadingMoved
 import com.maximebier.verso.core.journal.SessionEvent.Tick
 import com.maximebier.verso.core.model.BookPosition
@@ -73,6 +75,29 @@ class SessionTrackerTest {
         tracker.onEvent(Interaction(180_000)) // intervalle de 2 min pile : compté
         val last = tracker.onEvent(Interaction(330_000)) // 2 min 30 : exclu (mais moins de 5 min)
         assertThat(last).containsExactly(record(startedAt = 0, endedAt = 330_000, activeMs = 180_000, start = 0.1))
+    }
+
+    @Test
+    fun timeSpentInAPanelIsNotActive() {
+        val tracker = tracker()
+        tracker.onEvent(Opened(0, pos(0.1)))
+        tracker.onEvent(Interaction(30_000))
+        tracker.onEvent(PanelShown(40_000))              // 10 s de lecture avant le panneau : comptées
+        assertThat(tracker.onEvent(Interaction(60_000))).isEmpty()   // toucher dans le panneau : ignoré
+        tracker.onEvent(PanelHidden(100_000))
+        val last = tracker.onEvent(Interaction(110_000))  // le compte repart à la fermeture : 10 s
+        assertThat(last.single().activeMs).isEqualTo(50_000)
+        assertThat(last.single().endedAt).isEqualTo(110_000)
+    }
+
+    @Test
+    fun panelEventsAreIdempotentAndIgnoredWithoutSession() {
+        val tracker = tracker()
+        assertThat(tracker.onEvent(PanelShown(0))).isEmpty()
+        tracker.onEvent(Opened(0, pos(0.1)))
+        tracker.onEvent(PanelHidden(5_000))             // aucun panneau ouvert : sans effet
+        tracker.onEvent(Interaction(20_000))
+        assertThat(tracker.current!!.activeMs).isEqualTo(20_000)
     }
 
     @Test

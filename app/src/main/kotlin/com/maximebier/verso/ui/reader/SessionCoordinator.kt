@@ -46,6 +46,8 @@ class SessionCoordinator(
     private val thresholds: SessionThresholds = SessionThresholds(),
     private val tickIntervalMs: Long = TICK_INTERVAL_MS,
     private val onWriteFailed: (Exception) -> Unit = { e -> Log.w(TAG, "Écriture de la session impossible", e) },
+    /** Position dans une partie déclarée hors lecture (index, notes, mentions légales…) : ni mots ni temps actif. */
+    private val isNonReading: (BookPosition) -> Boolean = { false },
 ) {
     private val tracker = SessionTracker(bookId, thresholds)
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -61,6 +63,11 @@ class SessionCoordinator(
     private var ticker: Job? = null
     private var tickerWanted = false
 
+    // Pause du temps actif : un panneau couvre le texte, ou la lecture est dans une partie hors lecture.
+    private var panelsOpen = false
+    private var inNonReading = false
+    private var paused = false
+
     /** Seul consommateur des événements ; se termine quand [close] a fermé la file et qu'elle est vidée. */
     private val consumer: Job = scope.launch {
         for (event in events) {
@@ -73,6 +80,26 @@ class SessionCoordinator(
     fun onOpened(position: BookPosition) {
         lastPosition = position
         send(SessionEvent.Opened(clock(), position))
+        inNonReading = isNonReading(position)
+        syncPause()
+    }
+
+    /** Recherche, notes, sommaire, réglages, journal, feuille de note ou sélection ouverts (true) ou fermés. */
+    fun onPanelsChanged(open: Boolean) {
+        panelsOpen = open
+        syncPause()
+    }
+
+    private fun syncPause() {
+        val pause = panelsOpen || inNonReading
+        if (pause == paused) return
+        paused = pause
+        send(if (pause) SessionEvent.PanelShown(clock()) else SessionEvent.PanelHidden(clock()))
+    }
+
+    private fun setNonReading(value: Boolean) {
+        inNonReading = value
+        syncPause()
     }
 
     /** Scroll (Displayed), fin de geste ou toucher. */
@@ -87,7 +114,9 @@ class SessionCoordinator(
             is TrackerEffect.ReadingMoved -> {
                 val delta = (effect.to.totalProgression - effect.from.totalProgression).coerceAtLeast(0.0)
                 lastPosition = effect.to
-                SessionEvent.ReadingMoved(clock(), effect.to, (delta * totalWords).roundToLong())
+                // Un mouvement qui touche une partie hors lecture ne compte aucun mot.
+                val words = if (isNonReading(effect.from) || isNonReading(effect.to)) 0L else (delta * totalWords).roundToLong()
+                SessionEvent.ReadingMoved(clock(), effect.to, words)
             }
             is TrackerEffect.SaveReading -> {
                 lastPosition = effect.position
@@ -96,7 +125,12 @@ class SessionCoordinator(
             is TrackerEffect.ScrollTo -> return
         }
         if (backgrounded) return
+        // Sortie d’une partie hors lecture avant le mouvement (le temps actif repart de maintenant), entrée après (le
+        // temps lu jusque-là compte).
+        val nonReading = isNonReading(event.to)
+        if (!nonReading) setNonReading(false)
         send(event)
+        if (nonReading) setNonReading(true)
     }
 
     /** onStop de l'écran de lecture : plus de Tick jusqu'à [onStarted] (aucun réveil en arrière-plan). */
@@ -151,13 +185,15 @@ class SessionCoordinator(
     }
 
     private suspend fun persist(record: SessionRecord) {
-        // Session sans lecture ou de moins de 30 s de temps actif : pas encore (ou jamais) écrite (spec, « Journal
-        // de lecture »). Le temps actif ne fait que croître : une session écrite reste gardée.
+        // Session sans lecture, de moins de 30 s de temps actif ou de moins de 150 mots lus : pas encore (ou jamais)
+        // écrite (spec, « Journal de lecture »). Temps actif et mots lus ne font que croître : une session écrite reste
+        // écrite ; une session qui finit en survol est retirée au prochain nettoyage (deleteDiscarded).
         // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.
         val id = try {
             if (record.isEmpty && !movedWithoutWords(record)) return
             if (record.activeMs < thresholds.minActiveMs) return
+            if (totalWords > 0 && record.wordsRead < thresholds.minWords) return
             upsert(record.toEntity())
         } catch (e: CancellationException) {
             throw e

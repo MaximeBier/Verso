@@ -54,10 +54,27 @@ class SessionDaoTest {
         db.sessionDao().upsert(testSession(bookId, startedAt = 4_000).copy(activeMs = 30_000))
         db.sessionDao().upsert(empty.copy(bookId = other))
 
-        db.sessionDao().deleteDiscarded(minActiveMs = 30_000)
+        db.sessionDao().deleteDiscarded(minActiveMs = 30_000, minWords = 150, maxWordsPerMinute = 1_000)
 
         assertThat(db.sessionDao().observeForBook(bookId).first().map { it.startedAt }).containsExactly(4_000L, 2_000L)
         assertThat(db.sessionDao().countForBook(other)).isEqualTo(0)
+    }
+
+    @Test
+    fun deleteDiscardedRemovesSkimmingAndTooLittleText() = runTest {
+        val bookId = db.bookDao().insert(testBook("b"))
+        val noWords = db.bookDao().insert(testBook("i").copy(totalWords = 0))
+        val base = testSession(bookId, startedAt = 0).copy(activeMs = 60_000)
+        db.sessionDao().upsert(base.copy(startedAt = 1, wordsRead = 149))           // moins d’un écran
+        db.sessionDao().upsert(base.copy(startedAt = 2, wordsRead = 150))
+        db.sessionDao().upsert(base.copy(startedAt = 3, wordsRead = 1_000))         // 1 000 mots/min : gardée
+        db.sessionDao().upsert(base.copy(startedAt = 4, wordsRead = 1_001))         // survol
+        db.sessionDao().upsert(base.copy(bookId = noWords, startedAt = 5, wordsRead = 0)) // livre sans mots comptés
+
+        db.sessionDao().deleteDiscarded(minActiveMs = 30_000, minWords = 150, maxWordsPerMinute = 1_000)
+
+        assertThat(db.sessionDao().observeForBook(bookId).first().map { it.startedAt }).containsExactly(3L, 2L)
+        assertThat(db.sessionDao().countForBook(noWords)).isEqualTo(1)
     }
 
     @Test

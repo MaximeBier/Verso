@@ -36,5 +36,5 @@ fun testSession(bookId: Long, startedAt: Long, id: Long = 0L): SessionEntity = S
     endLocatorJson = """{"href":"ch2.xhtml","type":"application/xhtml+xml"}""",
     startProgression = 0.1,
     endProgression = 0.2,
-    wordsRead = 1_200L,
+    wordsRead = 200L, // 218 mots/min : une lecture plausible
 )

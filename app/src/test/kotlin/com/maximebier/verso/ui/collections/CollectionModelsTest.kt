@@ -64,4 +64,10 @@ class CollectionModelsTest {
             .containsExactly(BookStatus.FINISHED, BookStatus.IN_PROGRESS, BookStatus.TO_READ).inOrder()
         assertThat(detail.summary.resumeIndex).isEqualTo(1)
     }
+
+    @Test
+    fun bookWithoutSessionTakesTheSpeedOfAllBooks() {
+        val other = ReadingStats(totalActiveMs = 40 * 60_000L, sessionCount = 2, wordsPerMinute = 300, speedActiveMs = 40 * 60_000L, fallbackWordsPerMinute = 500)
+        assertThat(collectionSummaryOf(listOf(germinal), mapOf(99L to other)).remainingMinutes).isEqualTo(100) // 50 000 mots à 500
+    }
 }

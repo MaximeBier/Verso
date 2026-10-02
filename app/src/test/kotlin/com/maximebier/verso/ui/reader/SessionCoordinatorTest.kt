@@ -96,6 +96,61 @@ class SessionCoordinatorTest {
     }
 
     @Test
+    fun sessionIsWrittenOnlyOnceAScreenOfTextIsRead() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 40_000; c.readingMove(0.10, 0.10149)           // 149 mots
+        runCurrent()
+        assertThat(store.rows).isEmpty()
+        now = 50_000; c.readingMove(0.10149, 0.1015)         // 150 mots
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows.values.single().wordsRead).isEqualTo(150)
+    }
+
+    @Test
+    fun timeSpentInAPanelIsNotActive() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 40_000; c.readingMove(0.10, 0.102)            // 200 mots en 40 s
+        c.onPanelsChanged(true)                             // recherche, notes, sommaire…
+        now = 100_000; c.onInteraction()                    // toucher dans le panneau : pas de lecture
+        c.onPanelsChanged(false)
+        now = 110_000; c.onInteraction()
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows.values.single().activeMs).isEqualTo(50_000)
+    }
+
+    @Test
+    fun declaredNonReadingPartsCountNeitherWordsNorTime() = runTest {
+        var now = 0L
+        val c = SessionCoordinator(
+            bookId = BOOK_ID,
+            totalWords = TOTAL_WORDS,
+            upsert = store::upsert,
+            clock = { now },
+            dispatcher = StandardTestDispatcher(testScheduler),
+            isNonReading = { it.totalProgression >= 0.9 },  // notes de fin, index…
+        )
+
+        c.onOpened(position(0.10))
+        now = 40_000; c.readingMove(0.10, 0.102)            // 200 mots en 40 s
+        now = 50_000; c.readingMove(0.102, 0.95)            // vers les notes de fin : 0 mot
+        now = 80_000; c.onInteraction()                     // dans les notes : pas de temps actif
+        now = 90_000; c.readingMove(0.95, 0.96)
+        c.close(); advanceUntilIdle()
+
+        val row = store.rows.values.single()
+        assertThat(row.wordsRead).isEqualTo(200)
+        assertThat(row.activeMs).isEqualTo(50_000)
+    }
+
+    @Test
     fun sessionIsWrittenOnceItReachesThirtySecondsOfActiveTime() = runTest {
         var now = 0L
         val c = coordinator { now }
