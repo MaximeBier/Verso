@@ -312,16 +312,16 @@
     <string name="search_in_progress">Recherche en cours</string>
     <string name="search_status_running_empty">Recherche dans tout le livre…</string>
     <plurals name="search_status_running">
-        <item quantity="one">Recherche dans tout le livre… %d résultat pour l’instant</item>
-        <item quantity="many">Recherche dans tout le livre… %d résultats pour l’instant</item>
-        <item quantity="other">Recherche dans tout le livre… %d résultats pour l’instant</item>
+        <item quantity="one">Recherche dans tout le livre… %d résultat pour l’instant</item>
+        <item quantity="many">Recherche dans tout le livre… %d résultats pour l’instant</item>
+        <item quantity="other">Recherche dans tout le livre… %d résultats pour l’instant</item>
     </plurals>
     <!-- Absents des maquettes (formulés dans leur esprit, signalés à Maxime) ; 0 a sa chaîne : « one » couvre 0 en français. -->
     <string name="search_status_done_none">Aucun résultat dans le livre</string>
     <plurals name="search_status_done">
-        <item quantity="one">%d résultat dans le livre</item>
-        <item quantity="many">%d résultats dans le livre</item>
-        <item quantity="other">%d résultats dans le livre</item>
+        <item quantity="one">%d résultat dans le livre</item>
+        <item quantity="many">%d résultats dans le livre</item>
+        <item quantity="other">%d résultats dans le livre</item>
     </plurals>
 
     <!-- ===================== Sommaire (1.12) ===================== -->
@@ -403,9 +403,9 @@
     <!-- « Madame Bovary · 3 éléments » -->
     <string name="notes_subtitle">%1$s · %2$s</string>
     <plurals name="notes_item_count">
-        <item quantity="one">%d élément</item>
-        <item quantity="many">%d éléments</item>
-        <item quantity="other">%d éléments</item>
+        <item quantity="one">%d élément</item>
+        <item quantity="many">%d éléments</item>
+        <item quantity="other">%d éléments</item>
     </plurals>
     <string name="notes_export">Exporter</string>
     <string name="notes_export_hint">L’export crée un fichier Markdown à garder ou à partager.</string>

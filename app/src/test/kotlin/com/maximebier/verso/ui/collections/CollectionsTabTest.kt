@@ -36,8 +36,18 @@ class CollectionsTabTest {
         compose.setContent { VersoTheme { CollectionsTab(state, actions) } }
     }
 
-    private fun description(card: CollectionCard) =
-        context.getString(R.string.collections_card_content_description, card.name, card.author?.let { context.getString(R.string.collections_card_author_and_count, it, books(card.bookCount)) } ?: books(card.bookCount), card.percent)
+    private fun description(card: CollectionCard): String {
+        val count = books(card.bookCount)
+        val subtitle = card.author?.let { context.getString(R.string.collections_card_author_and_count, it, count) } ?: count
+        return context.getString(R.string.collections_card_content_description, card.name, subtitle, card.percent)
+    }
+
+    @Test
+    fun talkBackReadsTheAuthorAfterTheName() {
+        show(CollectionsUiState(loading = false, cards = listOf(zola, mixed)))
+        compose.onNodeWithContentDescription("Les Rougon-Macquart, Émile Zola, 5\u00A0livres, 44\u202F% lus").assertExists()
+        compose.onNodeWithContentDescription("En vrac, 3\u00A0livres, 29\u202F% lus").assertExists()
+    }
 
     @Test
     fun cardsShowNameAuthorCountAndProgress() {

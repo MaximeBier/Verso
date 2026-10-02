@@ -177,7 +177,8 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
             onBottomBarHeightChanged = { bottomBarHeightPx = it },
         )
         state.returnCard?.let { card ->
-            // Au-dessus de la barre du bas quand elle est affichée, sinon à 24 dp du bas plus la barre de gestes.
+            // Au-dessus de la barre du bas quand elle est affichée, sinon à 24 dp du bas plus la barre de gestes. Sur les
+            // côtés, les marges des barres de lecture : en paysage, la barre de navigation ne recouvre pas « Revenir ».
             val placement = if (state.barsVisible && bottomBarHeightPx > 0) {
                 Modifier.padding(bottom = with(density) { bottomBarHeightPx.toDp() } + 16.dp)
             } else {
@@ -191,6 +192,7 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .then(placement)
+                    .windowInsetsPadding(readerSideInsets())
                     .padding(horizontal = 16.dp),
             )
         }

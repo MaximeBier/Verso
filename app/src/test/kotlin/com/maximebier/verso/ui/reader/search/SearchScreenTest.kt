@@ -71,7 +71,7 @@ class SearchScreenTest {
     fun runningSearchShowsCountGroupAndPercent() {
         val state = SearchUiState(query = "rivière", running = true, groups = listOf(SearchGroup("Deuxième partie, chapitre I", listOf(hit))), resultCount = 3, progress = 0.45f)
         show(state)
-        rule.onNodeWithText("Recherche dans tout le livre… 3 résultats pour l’instant").assertIsDisplayed()
+        rule.onNodeWithText("Recherche dans tout le livre… 3\u00A0résultats pour l’instant").assertIsDisplayed()
         rule.onNodeWithText("Deuxième partie, chapitre I").assertIsDisplayed()
         rule.onNodeWithText(context.getString(R.string.common_percent, 30)).assertIsDisplayed()
         rule.onNodeWithContentDescription(context.getString(R.string.search_in_progress)).assertIsDisplayed()
@@ -87,7 +87,7 @@ class SearchScreenTest {
     @Test
     fun oneResultUsesTheSingular() {
         show(SearchUiState(query = "Yonville", done = true, groups = listOf(SearchGroup("I", listOf(hit))), resultCount = 1, progress = 1f))
-        rule.onNodeWithText("1 résultat dans le livre").assertIsDisplayed()
+        rule.onNodeWithText("1\u00A0résultat dans le livre").assertIsDisplayed()
     }
 
     @Test
