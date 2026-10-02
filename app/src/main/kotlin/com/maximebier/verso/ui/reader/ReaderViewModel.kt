@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.maximebier.verso.R
 import com.maximebier.verso.VersoApplication
+import com.maximebier.verso.core.journal.NonReadingParts
 import com.maximebier.verso.core.journal.SessionRecord
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.notes.TextQuotes
@@ -95,6 +96,7 @@ import org.readium.r2.shared.publication.Layout
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.publication.epub.landmarks
 import org.readium.r2.shared.util.Url
 
 /** Carte « Revenir » : forme courte de la position de lecture (null si hors sommaire) et pourcentage lu. */
@@ -353,23 +355,32 @@ class ReaderViewModel(
         viewModelScope.launch { created.state.collect(::onPositionState) }
         // Relais dans l’ordre d’émission ; lancé avant attach() (onReaderReady), donc aucun effet perdu.
         viewModelScope.launch { created.readingEffects.collect { readingEffectsFlow.emit(it) } }
-        startSessions(book.totalWords, initialPosition)
+        startSessions(book.totalWords, initialPosition, nonReadingHrefs(publication))
         // Livre réellement ouvert : il devient le dernier lu (carte « Reprendre », réouverture au lancement).
         books.markOpened(bookId, clock())
     }
 
-    private fun startSessions(totalWords: Long, initial: BookPosition) {
+    /** Ressources que l’EPUB déclare hors lecture (index, notes, mentions légales…) : ni mots ni temps actif. */
+    private fun nonReadingHrefs(publication: Publication): Set<String> =
+        NonReadingParts.hrefs(publication.landmarks.map { link -> link.url().toString() to link.rels.toList() })
+
+    private fun startSessions(totalWords: Long, initial: BookPosition, nonReadingHrefs: Set<String> = emptySet()) {
         if (sessionCoordinator != null) return
         val coordinator = SessionCoordinator(
             bookId = bookId,
             totalWords = totalWords,
             upsert = sessions::upsert,
             clock = clock,
+            isNonReading = nonReadingCheck(nonReadingHrefs),
         )
         sessionCoordinator = coordinator
         viewModelScope.launch { sessions.deleteDiscarded() }
         viewModelScope.launch { coordinator.current.collect { sessionCurrent.value = it } }
         viewModelScope.launch { readingEffects.collect(coordinator::onTrackerEffect) }
+        // Recherche, notes, sommaire, réglages, journal, feuille de note ou sélection : le temps actif est suspendu.
+        viewModelScope.launch {
+            combine(_uiState, highlightState, ::anyPanelOpen).distinctUntilChanged().collect(coordinator::onPanelsChanged)
+        }
         coordinator.onOpened(initial)
         // Arrière-plan pendant le chargement : pas de session ni de battement avant le retour au premier plan.
         if (stopped) coordinator.onBackgrounded()
@@ -954,3 +965,22 @@ internal fun List<Link>.toTocNodes(anchors: Map<String, TocAnchors.Anchor> = emp
 private fun Link.displayTitle(index: Int): String =
     title?.takeIf { it.isNotBlank() }
         ?: url().removeFragment().toString().substringAfterLast('/').ifBlank { (index + 1).toString() }
+
+/** Position dans une ressource de [hrefs] ; le dernier locator lu est mémorisé (appelé à chaque mouvement). */
+internal fun nonReadingCheck(hrefs: Set<String>): (BookPosition) -> Boolean {
+    if (hrefs.isEmpty()) return { false }
+    var lastJson: String? = null
+    var lastResult = false
+    return { position ->
+        if (position.locatorJson != lastJson) {
+            lastJson = position.locatorJson
+            lastResult = Locators.fromJson(position.locatorJson)?.let(Locators::hrefKey) in hrefs
+        }
+        lastResult
+    }
+}
+
+/** Un panneau couvre le texte : sommaire, journal, réglages, recherche, notes, sélection, feuille de note ou d’un surlignage. */
+internal fun anyPanelOpen(ui: ReaderUiState, highlights: HighlightUiState): Boolean =
+    ui.tocVisible || ui.journalVisible || ui.settingsVisible || ui.searchVisible || ui.notesVisible ||
+        highlights.selectionText != null || highlights.noteSheet != null || highlights.actions != null

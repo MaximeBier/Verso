@@ -22,14 +22,16 @@ interface SessionDao {
     suspend fun clearAll()
 
     /**
-     * Sessions qui ne sont pas gardées au journal, de tous les livres : sans lecture (aucun mot lu, livres dont
-     * les mots sont comptés) ou de moins de [minActiveMs] de temps actif.
+     * Sessions qui ne sont pas gardées au journal, de tous les livres : de moins de [minActiveMs] de temps actif, ou,
+     * pour les livres dont les mots sont comptés, de moins de [minWords] mots lus (dont aucun) ou de plus de
+     * [maxWordsPerMinute] mots par minute (survol).
      */
     @Query(
         "DELETE FROM sessions WHERE activeMs < :minActiveMs " +
-            "OR (wordsRead = 0 AND bookId IN (SELECT id FROM books WHERE totalWords > 0))",
+            "OR (bookId IN (SELECT id FROM books WHERE totalWords > 0) " +
+            "AND (wordsRead < :minWords OR wordsRead * 60000 > :maxWordsPerMinute * activeMs))",
     )
-    suspend fun deleteDiscarded(minActiveMs: Long)
+    suspend fun deleteDiscarded(minActiveMs: Long, minWords: Long, maxWordsPerMinute: Int)
 
     @Query("SELECT COUNT(*) FROM sessions WHERE bookId = :bookId")
     suspend fun countForBook(bookId: Long): Int

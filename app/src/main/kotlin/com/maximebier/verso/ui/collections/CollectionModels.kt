@@ -39,18 +39,24 @@ fun collectionBooks(collectionId: Long, memberships: List<CollectionBookEntity>,
         .sortedWith(compareBy({ it.position }, { it.bookId }))
         .mapNotNull { booksById[it.bookId] }
 
-fun collectionSummaryOf(books: List<BookEntity>, stats: Map<Long, ReadingStats>): CollectionSummary =
-    CollectionRules.summarize(
+/**
+ * Vitesse de chaque livre comme dans sa fiche ; un livre sans session prend la vitesse de tous les livres (la même
+ * dans chaque entrée de [stats]), sinon 250 mots/min.
+ */
+fun collectionSummaryOf(books: List<BookEntity>, stats: Map<Long, ReadingStats>): CollectionSummary {
+    val overall = stats.values.firstNotNullOfOrNull { it.fallbackWordsPerMinute } ?: DEFAULT_WORDS_PER_MINUTE
+    return CollectionRules.summarize(
         books.map { book ->
             CollectionBook(
                 author = book.author,
                 totalWords = book.totalWords,
                 progression = book.progression,
                 status = book.status(),
-                wordsPerMinute = stats[book.id]?.effectiveWordsPerMinute ?: DEFAULT_WORDS_PER_MINUTE,
+                wordsPerMinute = stats[book.id]?.effectiveWordsPerMinute ?: overall,
             )
         },
     )
+}
 
 fun collectionCards(
     collections: List<CollectionEntity>,

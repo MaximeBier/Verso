@@ -40,7 +40,7 @@ class SessionRepositoryTest {
         val stats = sessions.observeStats(bookId).first()
         assertThat(stats.sessionCount).isEqualTo(2)
         assertThat(stats.totalActiveMs).isEqualTo(20 * 60_000L)
-        assertThat(stats.wordsPerMinute).isEqualTo(240)
+        assertThat(stats.wordsPerMinute).isEqualTo(200) // médiane pondérée de 200 et 280, à poids égal : la plus basse
     }
 
     @Test
@@ -59,7 +59,21 @@ class SessionRepositoryTest {
         val stats = sessions.observeAllStats().first()
         assertThat(stats.getValue(a).sessionCount).isEqualTo(2)
         assertThat(stats.getValue(b).sessionCount).isEqualTo(1)
-        assertThat(stats.getValue(a).wordsPerMinute).isEqualTo(1309)   // 2 400 mots en 110 s
+        assertThat(stats.getValue(a).wordsPerMinute).isEqualTo(218)    // 2 × 200 mots en 2 × 55 s
         assertThat(stats.getValue(b).wordsPerMinute).isNull()          // 55 s : moins d’une minute, pas de vitesse
+    }
+
+    @Test
+    fun shortHistoryTakesTheSpeedOfAllBooks() = runTest {
+        val fresh = db.bookDao().insert(testBook("nouveau"))
+        val read = db.bookDao().insert(testBook("lu"))
+        sessions.upsert(testSession(fresh, startedAt = 0).copy(activeMs = 5 * 60_000, wordsRead = 2_000))   // 400 mots/min, 5 min
+        sessions.upsert(testSession(read, startedAt = 1).copy(activeMs = 40 * 60_000, wordsRead = 12_000))  // 300 mots/min, 40 min
+
+        val stats = sessions.observeStats(fresh).first()
+        assertThat(stats.wordsPerMinute).isEqualTo(400)
+        assertThat(stats.effectiveWordsPerMinute).isEqualTo(300)
+        assertThat(sessions.observeAllStats().first().getValue(fresh).effectiveWordsPerMinute).isEqualTo(300)
+        assertThat(sessions.observeStats(read).first().effectiveWordsPerMinute).isEqualTo(300)
     }
 }

@@ -40,6 +40,12 @@ sealed interface SessionEvent {
     data class Closed(override val timeMs: Long) : SessionEvent
 
     data class Tick(override val timeMs: Long) : SessionEvent
+
+    /** Un panneau couvre le texte (recherche, notes, sommaire, réglages, journal, note, sélection) : pas de temps actif. */
+    data class PanelShown(override val timeMs: Long) : SessionEvent
+
+    /** Plus aucun panneau : le temps actif repart de [timeMs], sans compter la pause. */
+    data class PanelHidden(override val timeMs: Long) : SessionEvent
 }
 
 /**
@@ -51,6 +57,8 @@ sealed interface SessionEvent {
  *   (constaté au `Tick` ou à l'interaction suivante). La fin est datée de la dernière interaction.
  * - Temps actif : somme des intervalles entre interactions (l'ouverture compte comme la première),
  *   hors intervalles de plus de [SessionThresholds.activeGapMs].
+ * - Panneaux (`PanelShown` … `PanelHidden`) : les interactions y sont ignorées et leur durée n’est pas du temps actif ;
+ *   un mouvement de lecture y compte ses mots, sans temps actif.
  * - Mots lus : somme des `wordsDelta` des `ReadingMoved` uniquement ; un delta négatif compte pour 0.
  *   La fin de session suit la position de lecture (`ReadingMoved.to`) ; l'app envoie
  *   `ReadingMoved(to, 0)` quand la lecture change sans mouvement de lecture (« Rester ici »…).
@@ -67,6 +75,7 @@ class SessionTracker(
     private var session: SessionRecord? = null
     private var hasInteraction = false
     private var lastInteractionAt = 0L
+    private var panelShown = false
 
     /** Position de lecture connue ; null tant que le livre n'est pas ouvert (ou après `Closed`). */
     private var readingPosition: BookPosition? = null
@@ -84,8 +93,8 @@ class SessionTracker(
                 readingPosition = event.position
                 start(event.timeMs, event.position)
             }
-            is SessionEvent.Interaction -> interact(event.timeMs, out)?.let { out += it }
-            is SessionEvent.ReadingMoved -> interact(event.timeMs, out)?.let { s ->
+            is SessionEvent.Interaction -> if (!panelShown) interact(event.timeMs, out)?.let { out += it }
+            is SessionEvent.ReadingMoved -> (if (panelShown) session else interact(event.timeMs, out))?.let { s ->
                 val updated = s.copy(end = event.to, wordsRead = s.wordsRead + event.wordsDelta.coerceAtLeast(0L))
                 session = updated
                 readingPosition = event.to
@@ -95,6 +104,18 @@ class SessionTracker(
             is SessionEvent.Closed -> {
                 close(out)
                 readingPosition = null
+                panelShown = false
+            }
+            is SessionEvent.PanelShown -> if (readingPosition != null && !panelShown) {
+                // La lecture va jusqu’à l’ouverture du panneau : ce temps-là compte.
+                if (session != null && event.timeMs - lastInteractionAt <= thresholds.inactivityEndMs) {
+                    interact(event.timeMs, out)?.let { out += it }
+                }
+                panelShown = true
+            }
+            is SessionEvent.PanelHidden -> {
+                if (panelShown && session != null) lastInteractionAt = max(lastInteractionAt, event.timeMs)
+                panelShown = false
             }
             is SessionEvent.Tick ->
                 if (session != null && event.timeMs - lastInteractionAt > thresholds.inactivityEndMs) close(out)
