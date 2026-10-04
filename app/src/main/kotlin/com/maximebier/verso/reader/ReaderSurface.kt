@@ -4,6 +4,21 @@ package com.maximebier.verso.reader
 
 import android.util.Log
 import android.view.ViewTreeObserver
+import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
+import android.view.View
+import android.webkit.WebView
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import com.maximebier.verso.core.settings.ScrollMode
+import kotlin.math.abs
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -70,6 +85,11 @@ import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.Url
 
 private const val LOG_TAG = "VersoReader"
+
+private const val PAGE_TURN_PREFETCH_DELAY_MS = 350L
+
+/** Durée pendant laquelle un défilement signalé est attribué à la photo d’une page voisine (deux images et plus). */
+private const val CAPTURE_SCROLL_IGNORE_NANOS = 50_000_000L
 
 /** Bords du document affiché, lus dans la WebView (marge de 4 px pour l’arrondi du défilement). */
 private const val EDGES_SCRIPT =
@@ -209,6 +229,40 @@ fun ReaderSurface(
     }
 
     var navigator by remember { mutableStateOf<EpubNavigatorFragment?>(null) }
+    // Tour de page animé : position de la surface et de la zone du texte dans la fenêtre (photos, coordonnées du doigt).
+    val boxBounds = remember { android.graphics.Rect() }
+    val fragmentOffset = remember { mutableStateOf(Offset.Zero) }
+    val currentBackground by rememberUpdatedState(ReadingStyle.colors(style.theme).background)
+    val footerPainter = rememberPageFooterPainter()
+    val pageTurn = remember(controller) {
+        PageTurnDriver(
+            scope = scope,
+            captureScreen = { onResult -> capturePageScreen(activity, boxBounds, onResult) },
+            captureWeb = { pages, screen ->
+                navigator?.view?.let { captureWebPage(it, boxBounds, pages, currentBackground) }
+                    ?.also { footerPainter.paint(it, screen, controller.pageInfo.value, pages) }
+            },
+            turn = controller::turn,
+            displayed = controller.displayed,
+        )
+    }
+    // Lecteur quitté en plein tour (sortie, rotation) : ni animation ni pied de page caché ne restent.
+    DisposableEffect(pageTurn) {
+        onDispose { pageTurn.reset() }
+    }
+    // Photos d’avance des pages voisines, une fois la page posée ; refaites quand la mise en page ou le thème changent.
+    LaunchedEffect(navigator, pageTurn, style) {
+        pageTurn.invalidate()
+        if (navigator == null) return@LaunchedEffect
+        controller.displayed.collectLatest {
+            delay(PAGE_TURN_PREFETCH_DELAY_MS)
+            if (controller.scrollMode == ScrollMode.PAGES && pageCurlAvailable(reducedMotion)) pageTurn.prefetch()
+        }
+    }
+    val pageTurnEnabled = {
+        controller.scrollMode == ScrollMode.PAGES && pageCurlAvailable(reducedMotion) &&
+            !controller.selecting.value
+    }
     // Largeur de la surface, en dp : la marge de 24 dp dépend de la gouttière de ReadiumCSS (paliers selon la largeur).
     var widthDp by remember { mutableFloatStateOf(0f) }
     DisposableEffect(navigator) {
@@ -226,7 +280,7 @@ fun ReaderSurface(
     val hostView = LocalView.current
     DisposableEffect(hostView, controller) {
         val observer = hostView.viewTreeObserver
-        val scrollListener = ViewTreeObserver.OnScrollChangedListener { controller.onScrolled() }
+        val scrollListener = ViewTreeObserver.OnScrollChangedListener { if (!PageTurnState.capturingScroll()) controller.onScrolled() }
         observer.addOnScrollChangedListener(scrollListener)
         onDispose { if (observer.isAlive) observer.removeOnScrollChangedListener(scrollListener) }
     }
@@ -272,7 +326,9 @@ fun ReaderSurface(
                     ?: nav.firstVisibleElementLocator()?.text?.highlight
             },
             turnPage = { forward ->
-                if (forward) nav.goForward(animated = !reducedMotion) else nav.goBackward(animated = !reducedMotion)
+                // Pliage disponible : la page tourne sans animation de Readium (l’animation vient du geste ou n’a pas lieu).
+                val animated = !reducedMotion && !pageCurlAvailable(reducedMotion)
+                if (forward) nav.goForward(animated = animated) else nav.goBackward(animated = animated)
             },
             pageLayout = { locator ->
                 val ids = anchorIds[locator.href.removeFragment().toString()].orEmpty()
@@ -301,7 +357,18 @@ fun ReaderSurface(
         }
     }
 
-    Box(modifier.fillMaxSize().background(Color(ReadingStyle.colors(style.theme).background))) {
+    var boxOrigin by remember { mutableStateOf(Offset.Zero) }
+    Box(
+        modifier
+            .fillMaxSize()
+            .background(Color(ReadingStyle.colors(style.theme).background))
+            .onGloballyPositioned {
+                val r = it.boundsInWindow()
+                boxOrigin = r.topLeft
+                boxBounds.set(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt())
+                pageTurn.width = r.width
+            },
+    ) {
         AndroidFragment<EpubNavigatorFragment>(
             modifier = Modifier
                 .fillMaxSize()
@@ -311,10 +378,16 @@ fun ReaderSurface(
                     controller.viewportHeightPx = it.height
                     widthDp = it.width / density
                 }
-                .observeGestures(controller),
+                .onGloballyPositioned { fragmentOffset.value = it.positionInWindow() - boxOrigin }
+                .observeGestures(controller, pageTurn, pageTurnEnabled, fragmentOffset),
         ) { fragment ->
             if (navigator !== fragment) navigator = fragment
         }
+        PageTurnOverlay(
+            anim = pageTurn.anim,
+            background = ReadingStyle.colors(style.theme).background,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -377,7 +450,12 @@ internal fun sameResource(a: Url, b: Url): Boolean =
  * et le déplacement au lâcher décident du fling et du changement de chapitre ; un appui bref sans glissement est
  * un tap.
  */
-private fun Modifier.observeGestures(controller: FragmentReaderController): Modifier =
+private fun Modifier.observeGestures(
+    controller: FragmentReaderController,
+    pageTurn: PageTurnDriver,
+    pageTurnEnabled: () -> Boolean,
+    fragmentOffset: androidx.compose.runtime.State<Offset>,
+): Modifier =
     pointerInput(controller) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -387,16 +465,45 @@ private fun Modifier.observeGestures(controller: FragmentReaderController): Modi
             var moved = false
             var upAt: Long? = null
             var upY = down.position.y
-            while (true) {
+            // Tour de page animé : le glissé horizontal est pris à Readium (ACTION_CANCEL à la WebView).
+            val turnEnabled = pageTurnEnabled()
+            if (turnEnabled) pageTurn.onPointerDown()
+            // 1 : tour de page animé ; -1 : geste avalé ; null : pas décidé ou laissé au lecteur.
+            var turning: Int? = null
+            val turnSlop = viewConfiguration.touchSlop * 0.6f
+            val origin = fragmentOffset.value
+            // Geste interrompu sans lâcher (pointeur perdu, saisie annulée) : le tour en cours revient à plat
+            // (sans effet si le lâcher a déjà été traité).
+            try { while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                 velocityTracker.addPosition(change.uptimeMillis, change.position)
                 upY = change.position.y
+                val delta = change.position - down.position
+                // Appui tenu (appui long : sélection qui commence) ou sélection en cours : jamais de tour de page.
+                val held = change.uptimeMillis - down.uptimeMillis > viewConfiguration.longPressTimeoutMillis
+                if (turnEnabled && turning == null && !moved && !held && !controller.selecting.value &&
+                    abs(delta.x) > turnSlop && abs(delta.x) > abs(delta.y)
+                ) {
+                    turning = pageTurn.start(delta.x < 0, down.position + origin).takeIf { it != 0 }
+                }
+                if (turning != null) {
+                    event.changes.forEach { it.consume() }
+                    if (turning == 1) pageTurn.drag(change.position + origin)
+                    if (!change.pressed) {
+                        val v = velocityTracker.calculateVelocity()
+                        if (turning == 1) pageTurn.release(Offset(v.x, v.y))
+                        return@awaitEachGesture
+                    }
+                    continue
+                }
                 if (!moved && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) moved = true
                 if (!change.pressed) {
                     upAt = change.uptimeMillis
                     break
                 }
+            } } finally {
+                if (turning == 1) pageTurn.release(Offset.Zero)
             }
             val releasedAt = upAt ?: return@awaitEachGesture
             when {
@@ -418,3 +525,64 @@ internal suspend fun readChapterHtml(publication: Publication, href: Url): Strin
             resource.close()
         }
     }
+
+/** Photo de la surface de lecture telle qu’affichée (pied de page compris), asynchrone. */
+private fun capturePageScreen(activity: android.app.Activity?, box: android.graphics.Rect, onResult: (Bitmap?) -> Unit) {
+    val window = activity?.window
+    if (window == null || box.width() <= 0 || box.height() <= 0) return onResult(null)
+    val bitmap = createBitmap(box.width(), box.height())
+    PixelCopy.request(
+        window,
+        android.graphics.Rect(box),
+        bitmap,
+        { result -> onResult(if (result == PixelCopy.SUCCESS) bitmap else null) },
+        Handler(Looper.getMainLooper()),
+    )
+}
+
+/**
+ * Page affichée + `pages` dessinée depuis la WebView de Readium (dessin logiciel), sans mouvement visible. Null hors
+ * du fichier affiché (bord de chapitre). Le nombre de pages et la page affichée sont lus par réflexion dans
+ * `R2WebView` (membres internes de Readium 3.4.0) ; s’ils disparaissent, pas de photo d’avance (repli : la page
+ * tourne sous l’animation dès le début du geste). Ne pas activer `WebView.enableSlowWholeDocumentDraw()` : il casse
+ * l’extension des sélections.
+ */
+private fun captureWebPage(root: View, box: android.graphics.Rect, pages: Int, background: Int): Bitmap? {
+    if (box.width() <= 0 || box.height() <= 0) return null
+    val web = findVisibleWebView(root) ?: return null
+    val numPages = runCatching { web.javaClass.getMethod("getNumPages\$readium_navigator").invoke(web) as Int }.getOrNull()
+    val current = runCatching { web.javaClass.getMethod("getMCurItem\$readium_navigator").invoke(web) as Int }.getOrNull()
+    if (numPages == null || current == null || current + pages !in 0 until numPages) return null
+    val bitmap = createBitmap(box.width(), box.height())
+    val canvas = android.graphics.Canvas(bitmap)
+    canvas.drawColor(background)
+    val location = IntArray(2)
+    web.getLocationInWindow(location)
+    canvas.translate((location[0] - box.left).toFloat(), (location[1] - box.top).toFloat())
+    canvas.clipRect(0, 0, web.width, web.height)
+    // La WebView ne dessine que sa partie visible : elle est décalée d’une page le temps du dessin, puis remise en
+    // place, le tout avant la prochaine image (rien ne bouge à l’écran).
+    val originX = web.scrollX
+    val targetX = originX + pages * web.width
+    // L’écouteur de défilement n’est prévenu qu’à l’image suivante : ce défilement-là est ignoré pendant un instant.
+    if (pages != 0) PageTurnState.ignoreScrollUntilNanos = System.nanoTime() + CAPTURE_SCROLL_IGNORE_NANOS
+    try {
+        if (pages != 0) web.scrollTo(targetX, web.scrollY)
+        canvas.translate(-targetX.toFloat(), -web.scrollY.toFloat())
+        web.draw(canvas)
+    } finally {
+        if (pages != 0) web.scrollTo(originX, web.scrollY)
+    }
+    return bitmap
+}
+
+private fun findVisibleWebView(view: View): WebView? {
+    if (view is WebView) {
+        val rect = android.graphics.Rect()
+        return view.takeIf { it.isShown && it.getGlobalVisibleRect(rect) && rect.width() >= it.width * 0.9f }
+    }
+    if (view is android.view.ViewGroup) {
+        for (i in 0 until view.childCount) findVisibleWebView(view.getChildAt(i))?.let { return it }
+    }
+    return null
+}

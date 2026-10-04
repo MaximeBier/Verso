@@ -37,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maximebier.verso.R
 import com.maximebier.verso.core.settings.ScrollMode
+import androidx.compose.ui.draw.alpha
+import com.maximebier.verso.reader.PageTurnState
 import com.maximebier.verso.reader.ReaderStyle
 import com.maximebier.verso.reader.ReaderSurface
 import com.maximebier.verso.readium.ReadingStyle
@@ -152,7 +154,9 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                     chapter = chapterLongLabel(state.displayedChapterPath),
                     pageInfo = state.pageInfo,
                     onTurn = viewModel::turnPage,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    // Caché pendant un tour de page animé : il est dessiné sur les pages qui tournent.
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .alpha(if (PageTurnState.turning) 0f else 1f),
                 )
             }
             // Surface quittée (rotation, thème) : plus de sauts vers l’ancienne rendition jusqu’au prochain onReady.
