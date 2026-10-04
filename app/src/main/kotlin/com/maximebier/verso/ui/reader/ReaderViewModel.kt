@@ -30,6 +30,7 @@ import com.maximebier.verso.core.text.remainingMinutes
 import com.maximebier.verso.core.text.shortLocation
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.data.BookRepository
+import com.maximebier.verso.core.translation.Translator
 import com.maximebier.verso.data.HighlightRepository
 import com.maximebier.verso.data.db.HighlightEntity
 import com.maximebier.verso.data.chapterPathList
@@ -140,7 +141,7 @@ data class ReaderUiState(
     val displayedChapterPath: List<String> = emptyList(),
     /** Carte « Revenir » ; jamais persistée. */
     val returnCard: ReturnCardState? = null,
-    /** Surcouche « Notes et surlignages » (3.06) ouverte depuis la barre. */
+    /** Surcouche « Notes » (3.06) ouverte depuis la barre. */
     val notesVisible: Boolean = false,
     /** Réglages de lecture courants (police, taille, interligne, marges). */
     val readingSettings: ReadingSettings = ReadingSettings(),
@@ -162,17 +163,19 @@ class ReaderViewModel(
     private val openJournalOnLoad: Boolean = false,
     /** Recherche plein texte d’une publication ouverte ([BookSearch]) ; les tests la remplacent par une recherche pilotée. */
     private val searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
-    /** Surlignages et notes (V3). */
+    /** Notes (V3). */
     private val highlightRepository: HighlightRepository,
-    /** « Deuxième partie, chap. I · 30 % » d’un surlignage, lu dans les ressources. */
+    /** « Deuxième partie, chap. I · 30 % » d’une note, lu dans les ressources. */
     private val highlightLocationText: (location: String?, percent: Int) -> String =
         { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
     /** Textes de la liste des notes et de l’export (3.06). */
     private val notesTexts: NotesTexts = plainNotesTexts(),
     /** Écriture du fichier choisi par le sélecteur d’Android (export Markdown). */
     private val writeDocument: suspend (Uri, String) -> Unit = { _, _ -> },
-    /** Ouvert depuis « Notes et surlignages » de la fiche : saut vers ce surlignage au chargement. */
+    /** Ouvert depuis « Notes » de la fiche : saut vers cette note au chargement. */
     private val openHighlightOnLoad: Long? = null,
+    /** Traduction de la sélection (V3) ; null sans clé : « Traduire » est masqué. */
+    private val translator: Translator? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -221,12 +224,12 @@ class ReaderViewModel(
     /** Requête et résultats de la recherche ; gardés tant que le lecteur est ouvert. */
     val search: StateFlow<SearchUiState> = searchModel.state
 
-    // --- Surlignages et notes (V3) ---------------------------------------------------------------
+    // --- Sélection, traduction et notes (V3) -------------------------------------------------------
     private val chapterTexts = HashMap<String, String>()
     private var highlightCoordinator: HighlightCoordinator? = null
     private val highlightState = MutableStateFlow(HighlightUiState())
 
-    /** Barre de sélection, feuilles de note et de surlignage. */
+    /** Barre de sélection, feuilles de traduction et de note. */
     val highlights: StateFlow<HighlightUiState> = highlightState.asStateFlow()
     private val highlightEventsFlow = MutableSharedFlow<HighlightEvent>(extraBufferCapacity = 8)
     val highlightEvents: SharedFlow<HighlightEvent> = highlightEventsFlow.asSharedFlow()
@@ -398,13 +401,14 @@ class ReaderViewModel(
             locationLabel = { row -> highlightLocationText(shortLocation(row.chapterPathList(), locationTexts), percentOf(row.progression)) },
             withTotalProgression = ::withTotalProgression,
             clock = clock,
+            translator = translator,
         )
         highlightCoordinator = created
         viewModelScope.launch {
             created.state.collect { state ->
                 highlightState.value = state
-                // La barre de sélection et la feuille d’un surlignage remplacent la barre de lecture.
-                if (state.selectionText != null || state.actions != null) _uiState.update { it.copy(barsVisible = false) }
+                // La barre de sélection et les feuilles de traduction ou d’une note remplacent la barre de lecture.
+                if (state.selectionText != null || state.actions != null || state.translation != null) _uiState.update { it.copy(barsVisible = false) }
             }
         }
         viewModelScope.launch { created.events.collect { highlightEventsFlow.emit(it) } }
@@ -421,9 +425,19 @@ class ReaderViewModel(
         return text
     }
 
-    fun highlightSelection() {
+    /** « Traduire » de la barre de sélection : feuille 3.08 à 3.10. */
+    fun translateSelection() {
         sessionCoordinator?.onInteraction()
-        highlightCoordinator?.highlightSelection()
+        highlightCoordinator?.translateSelection()
+    }
+
+    fun retryTranslation() {
+        sessionCoordinator?.onInteraction()
+        highlightCoordinator?.retryTranslation()
+    }
+
+    fun dismissTranslation() {
+        highlightCoordinator?.dismissTranslation()
     }
 
     fun copySelection() {
@@ -467,12 +481,12 @@ class ReaderViewModel(
         highlightCoordinator?.deleteHighlight()
     }
 
-    /** « Annuler » de la snackbar « Surlignage supprimé ». */
+    /** « Annuler » de la snackbar « Note supprimée ». */
     fun undoDeleteHighlight(row: HighlightEntity) {
         highlightCoordinator?.undoDelete(row)
     }
 
-    // --- « Notes et surlignages » (3.06) ----------------------------------------------------------
+    // --- « Notes » (3.06) ------------------------------------------------------------------------
     private val notesModel = NotesListModel(
         bookId = bookId,
         highlights = highlightRepository,
@@ -939,6 +953,7 @@ class ReaderViewModel(
                     notesTexts = app.resources.notesTexts(),
                     writeDocument = container.documents::writeText,
                     openHighlightOnLoad = highlightId,
+                    translator = container.translator,
                 )
             }
         }
@@ -980,7 +995,7 @@ internal fun nonReadingCheck(hrefs: Set<String>): (BookPosition) -> Boolean {
     }
 }
 
-/** Un panneau couvre le texte : sommaire, journal, réglages, recherche, notes, sélection, feuille de note ou d’un surlignage. */
+/** Un panneau couvre le texte : sommaire, journal, réglages, recherche, notes, sélection, traduction, feuille de note. */
 internal fun anyPanelOpen(ui: ReaderUiState, highlights: HighlightUiState): Boolean =
     ui.tocVisible || ui.journalVisible || ui.settingsVisible || ui.searchVisible || ui.notesVisible ||
-        highlights.selectionText != null || highlights.noteSheet != null || highlights.actions != null
+        highlights.selectionText != null || highlights.noteSheet != null || highlights.actions != null || highlights.translation != null

@@ -4,6 +4,9 @@ import com.maximebier.verso.core.notes.HighlightMerge
 import com.maximebier.verso.core.notes.PlacedHighlight
 import com.maximebier.verso.core.notes.TextQuote
 import com.maximebier.verso.core.notes.TextQuotes
+import com.maximebier.verso.core.translation.Translation
+import com.maximebier.verso.core.translation.TranslationResult
+import com.maximebier.verso.core.translation.Translator
 import com.maximebier.verso.data.HighlightRepository
 import com.maximebier.verso.data.db.HighlightEntity
 import com.maximebier.verso.data.toChapterPathColumn
@@ -30,12 +33,21 @@ data class HighlightUiState(
     val selectionText: String? = null,
     val noteSheet: NoteSheetState? = null,
     val actions: HighlightActionsState? = null,
+    val translation: TranslationSheetState? = null,
+    /** Faux sans clé de traduction : « Traduire » n’apparaît pas. */
+    val canTranslate: Boolean = false,
 )
 
-/** Feuille de note (3.05) : passage, texte du champ ; [editing] = note d’un surlignage existant. */
+/**
+ * Feuille de traduction (3.08 à 3.10) : [source] est le passage sélectionné (espaces normalisées) ; [short] = mot ou
+ * expression de 3 mots au plus, montré en tête de feuille ; [result] null pendant le chargement.
+ */
+data class TranslationSheetState(val source: String, val short: Boolean, val result: TranslationResult?)
+
+/** Feuille de note (3.05) : passage, texte du champ ; [editing] = note existante. */
 data class NoteSheetState(val passage: String, val note: String, val editing: Boolean)
 
-/** Feuille d’un surlignage touché : passage, note, « Deuxième partie, chap. I · 30 % ». */
+/** Feuille d’une note touchée dans le texte : passage, note, « Deuxième partie, chap. I · 30 % ». */
 data class HighlightActionsState(val id: Long, val passage: String, val note: String?, val location: String?)
 
 sealed interface HighlightEvent {
@@ -44,9 +56,11 @@ sealed interface HighlightEvent {
 }
 
 /**
- * Surlignages et notes du livre ouvert (V3) : barre de sélection (3.04), création et fusion, toucher d’un
- * surlignage. Séparé de [ReaderViewModel] comme `SessionCoordinator`. Rien ici ne touche la position de lecture :
- * la machine à états voit la sélection par `ReaderController.selecting` (17.3).
+ * Sélection et notes du livre ouvert (V3) : barre de sélection (3.04), traduction (3.08 à 3.10), note créée et
+ * fusionnée, toucher d’une note. Un passage n’est marqué que s’il porte une note : les surlignages sans note d’avant
+ * le 2026-10-04 restent en base, masqués par [HighlightRepository]. Séparé de [ReaderViewModel] comme
+ * `SessionCoordinator`. Rien ici ne touche la position de lecture : la machine à états voit la sélection par
+ * `ReaderController.selecting` (17.3).
  */
 class HighlightCoordinator(
     private val bookId: Long,
@@ -57,8 +71,9 @@ class HighlightCoordinator(
     private val locationLabel: (HighlightEntity) -> String?,
     private val withTotalProgression: (Locator) -> Locator,
     private val clock: () -> Long,
+    private val translator: Translator? = null,
 ) {
-    private val _state = MutableStateFlow(HighlightUiState())
+    private val _state = MutableStateFlow(HighlightUiState(canTranslate = translator != null))
     val state: StateFlow<HighlightUiState> = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<HighlightEvent>(extraBufferCapacity = 8)
@@ -68,7 +83,7 @@ class HighlightCoordinator(
     private var jobs: List<Job> = emptyList()
     private val writes = mutableListOf<Job>()
 
-    /** Une écriture à la fois : deux « Surligner » rapides ne fusionnent pas sur une liste périmée. */
+    /** Une écriture à la fois : deux « Enregistrer » rapides ne fusionnent pas sur une liste périmée. */
     private val writeLock = Mutex()
 
     fun attach(readerController: ReaderController) {
@@ -78,7 +93,13 @@ class HighlightCoordinator(
         jobs = listOf(
             scope.launch {
                 readerController.selection.collect { selection ->
-                    _state.update { it.copy(selectionText = selection?.text?.takeIf(String::isNotEmpty)?.let(TextQuotes::preview)) }
+                    val text = selection?.text?.takeIf(String::isNotEmpty)
+                    // Tap sur le texte ou retour : la sélection s’efface, la feuille de traduction se ferme avec elle.
+                    // Poignées déplacées : la traduction affichée n’est plus celle du passage, la barre revient.
+                    val shown = _state.value.translation
+                    val stale = shown != null && (text == null || Translation.clean(text) != shown.source)
+                    if (stale) cancelTranslation()
+                    _state.update { it.copy(selectionText = text?.let(TextQuotes::preview), translation = it.translation.takeUnless { stale }) }
                 }
             },
             scope.launch {
@@ -95,17 +116,55 @@ class HighlightCoordinator(
         jobs.forEach { it.cancel() }
         jobs = emptyList()
         controller = null
-        _state.update { it.copy(selectionText = null) }
+        cancelTranslation()
+        _state.update { it.copy(selectionText = null, translation = null) }
     }
 
-    /** « Surligner » : surlignage créé (ou fusionné) aussitôt, sélection effacée, sans snackbar. */
-    fun highlightSelection() {
+    private var translationJob: Job? = null
+
+    /**
+     * « Traduire » : la feuille s’ouvre aussitôt avec le passage et un indicateur, la barre de sélection s’efface, la
+     * sélection reste visible. Une requête par appui, rien n’est gardé.
+     */
+    fun translateSelection() {
         val reader = controller ?: return
-        launchWrite {
-            val selection = reader.currentSelection()
-            reader.clearSelection()
-            if (selection != null) save(selection.locator, note = null)
+        if (translator == null) return
+        scope.launch {
+            val text = reader.currentSelection()?.text?.takeIf(String::isNotEmpty) ?: return@launch
+            // Sélection effacée pendant la lecture JavaScript (tap, retour) : pas de feuille orpheline.
+            if (reader.selection.value == null) return@launch
+            request(Translation.clean(text))
         }
+    }
+
+    /** « Réessayer » : même passage, nouvelle requête. */
+    fun retryTranslation() {
+        val source = _state.value.translation?.source ?: return
+        request(source)
+    }
+
+    /** Croix, glissé vers le bas ou retour : feuille fermée, sélection effacée. */
+    fun dismissTranslation() {
+        cancelTranslation()
+        _state.update { it.copy(translation = null) }
+        controller?.clearSelection()
+    }
+
+    private fun request(source: String) {
+        val service = translator ?: return
+        cancelTranslation()
+        _state.update { it.copy(translation = TranslationSheetState(source, Translation.isShort(source), result = null)) }
+        translationJob = scope.launch {
+            val result = Translation.translateSelection(source, service)
+            _state.update { state ->
+                state.copy(translation = state.translation?.takeIf { it.source == source }?.copy(result = result))
+            }
+        }
+    }
+
+    private fun cancelTranslation() {
+        translationJob?.cancel()
+        translationJob = null
     }
 
     /** « Copier » : passage dans le presse-papiers (par l’écran), sélection effacée. */
@@ -129,7 +188,7 @@ class HighlightCoordinator(
     /** « Annuler » après une suppression : la même ligne revient. */
     fun undoDelete(row: HighlightEntity) = launchWrite { highlights.restore(row) }
 
-    /** Cible de la feuille de note ouverte : passage sélectionné (rien n’existe encore) ou surlignage existant. */
+    /** Cible de la feuille de note ouverte : passage sélectionné (rien n’existe encore) ou note existante. */
     private sealed interface NoteTarget {
         data class Selection(val locator: Locator) : NoteTarget
         data class Existing(val id: Long) : NoteTarget
@@ -148,7 +207,7 @@ class HighlightCoordinator(
         }
     }
 
-    /** « Modifier la note » ou « Ajouter une note » depuis la feuille d’un surlignage touché. */
+    /** « Modifier la note » depuis la feuille d’une note touchée. */
     fun editNote() {
         val actions = _state.value.actions ?: return
         noteTarget = NoteTarget.Existing(actions.id)
@@ -159,9 +218,10 @@ class HighlightCoordinator(
 
     fun onNoteChange(text: String) = _state.update { state -> state.copy(noteSheet = state.noteSheet?.copy(note = text)) }
 
-    /** « Enregistrer » : surlignage créé avec sa note, ou note du surlignage remplacée ; une note vide n’en est pas une. */
+    /** « Enregistrer » : note créée (ou fusionnée), ou note existante remplacée. Note vide : rien (bouton inactif). */
     fun saveNote() {
         val sheet = _state.value.noteSheet ?: return
+        if (sheet.note.isBlank()) return
         val target = noteTarget ?: return
         noteTarget = null
         _state.update { it.copy(noteSheet = null) }
@@ -194,7 +254,7 @@ class HighlightCoordinator(
     }
 
     /**
-     * Enregistre le passage de [selected] avec [note], fusionné avec les surlignages qu’il recoupe dans son chapitre
+     * Enregistre le passage de [selected] avec [note], fusionné avec les notes qu’il recoupe dans son chapitre
      * (même fichier). Passage introuvable dans le texte brut, ou texte illisible : ajouté tel quel.
      */
     internal suspend fun save(selected: Locator, note: String?): Long = writeLock.withLock {

@@ -73,11 +73,11 @@ fun Resources.locationTexts(): LocationTexts = LocationTexts(
     passage = { from, to -> getString(R.string.journal_passage, from, to) },
 )
 
-/** « Deuxième partie, chap. I · 30 % » d’un surlignage (3.06), ou « 30 % » hors sommaire. */
+/** « Deuxième partie, chap. I · 30 % » d’une note (3.06), ou « 30 % » hors sommaire. */
 fun Resources.highlightLocation(location: String?, percent: Int): String =
     if (location == null) getString(R.string.notes_item_percent, percent) else getString(R.string.notes_item_location, location, percent)
 
-/** Textes de « Notes et surlignages » et de son export, lus dans les ressources. */
+/** Textes de « Notes » et de son export, lus dans les ressources. */
 fun Resources.notesTexts(): NotesTexts {
     val locations = locationTexts()
     return NotesTexts(

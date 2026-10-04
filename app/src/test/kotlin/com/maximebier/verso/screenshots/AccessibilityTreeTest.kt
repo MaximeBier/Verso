@@ -38,7 +38,7 @@ class AccessibilityTreeTest(private val fixture: ScreenFixture, private val vari
                 listOf(ScreenVariant.LIGHT, ScreenVariant.FONT_200).map { arrayOf<Any>(fixture, it) }
             }
 
-        /** Tous les écrans V3 (3.04 à 3.07). */
+        /** Tous les écrans V3 (3.04 à 3.10). */
         private fun v3Screens(): List<ScreenFixture> = V3ScreenCatalog.fixtures.map { it.screen }
     }
 }

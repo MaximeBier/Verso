@@ -5,7 +5,10 @@ import com.maximebier.verso.data.db.HighlightDao
 import com.maximebier.verso.data.db.HighlightEntity
 import kotlinx.coroutines.flow.Flow
 
-/** Surlignages et notes d’un livre (V3). */
+/**
+ * Notes d’un livre (V3). Depuis le 2026-10-04, un passage n’est marqué que s’il porte une note : les surlignages sans
+ * note enregistrés avant restent en base (et dans les sauvegardes) mais [observe], [observeCount] et [forBook] les ignorent.
+ */
 class HighlightRepository(private val dao: HighlightDao, private val clock: () -> Long) {
 
     fun observe(bookId: Long): Flow<List<HighlightEntity>> = dao.observeForBook(bookId)

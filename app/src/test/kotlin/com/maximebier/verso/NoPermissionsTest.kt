@@ -16,7 +16,7 @@ import org.xmlpull.v1.XmlPullParser
 class NoPermissionsTest {
 
     @Test
-    fun requestsNoPermissionExceptAndroidxSignatureReceiver() {
+    fun requestsOnlyInternetForTranslationAndAndroidxSignatureReceiver() {
         val ctx = ApplicationProvider.getApplicationContext<Context>()
         @Suppress("DEPRECATION")
         val info = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_PERMISSIONS)
@@ -25,7 +25,8 @@ class NoPermissionsTest {
         val internal = "${ctx.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         val requested = info.requestedPermissions.orEmpty().filterNot { it == internal }
 
-        assertWithMessage("permissions demandées").that(requested).isEmpty()
+        // V3 : INTERNET sert uniquement à la traduction de la sélection.
+        assertWithMessage("permissions demandées").that(requested).containsExactly("android.permission.INTERNET")
     }
 
     @Test

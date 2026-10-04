@@ -22,14 +22,14 @@ interface HighlightDao {
     @Query("SELECT * FROM highlights WHERE id = :id")
     suspend fun byId(id: Long): HighlightEntity?
 
-    /** Ordre du livre ; à progression égale, ordre de création. */
-    @Query("SELECT * FROM highlights WHERE bookId = :bookId ORDER BY progression, id")
+    /** Notes du livre (les surlignages sans note d’avant le 2026-10-04 sont masqués), dans l’ordre du livre ; à progression égale, ordre de création. */
+    @Query("SELECT * FROM highlights WHERE bookId = :bookId AND note IS NOT NULL ORDER BY progression, id")
     suspend fun forBook(bookId: Long): List<HighlightEntity>
 
-    @Query("SELECT * FROM highlights WHERE bookId = :bookId ORDER BY progression, id")
+    @Query("SELECT * FROM highlights WHERE bookId = :bookId AND note IS NOT NULL ORDER BY progression, id")
     fun observeForBook(bookId: Long): Flow<List<HighlightEntity>>
 
-    @Query("SELECT COUNT(*) FROM highlights WHERE bookId = :bookId")
+    @Query("SELECT COUNT(*) FROM highlights WHERE bookId = :bookId AND note IS NOT NULL")
     fun observeCount(bookId: Long): Flow<Int>
 
     @Query("SELECT * FROM highlights ORDER BY id")

@@ -218,7 +218,7 @@
     <string name="settings_show_statistics">Afficher les statistiques</string>
     <string name="settings_show_statistics_summary">Temps et vitesse de lecture, calculés à partir du journal. Tout reste sur ce téléphone.</string>
     <string name="settings_section_privacy">Confidentialité</string>
-    <string name="settings_privacy_body">Verso n’utilise pas Internet. Vos livres, vos positions, votre journal et vos réglages restent sur ce téléphone.</string>
+    <string name="settings_privacy_body">Verso n’utilise Internet que pour traduire le passage que vous sélectionnez. Seul ce passage est envoyé au service de traduction. Vos livres, vos positions, votre journal, vos notes et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>
     <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
     <!-- ===================== Paramètres : ligne Sauvegarde (3.07) ===================== -->
@@ -370,21 +370,33 @@
     <string name="selection_toolbar">Texte sélectionné</string>
     <!-- « Sélection : « la campagne ainsi ressemble à un grand manteau… » » -->
     <string name="selection_label">Sélection : « %1$s »</string>
-    <string name="selection_highlight">Surligner</string>
+    <string name="selection_translate">Traduire</string>
     <string name="selection_note">Note</string>
     <string name="selection_copy">Copier</string>
     <!-- Validé par Maxime (2026-10-01) : confirmation sous Android 12 et moins (Android 13 et plus affiche la sienne) -->
     <string name="selection_copied">Passage copié</string>
 
-    <!-- ===================== Surlignage touché ===================== -->
-    <!-- Validé par Maxime (2026-10-01) : titre de la feuille d’un surlignage touché dans le texte -->
-    <string name="highlight_sheet_title">Surlignage</string>
-    <string name="highlight_add_note">Ajouter une note</string>
+    <!-- ===================== Traduction (3.08 à 3.10) ===================== -->
+    <string name="translation_sheet">Traduction</string>
+    <string name="translation_languages">Anglais → Français</string>
+    <!-- Autres sens : « admis · avoué · accepté » -->
+    <string name="translation_separator">" · "</string>
+    <!-- PROPOSÉ (2026-10-04) : lu par TalkBack pendant le chargement (pas de maquette) -->
+    <string name="translation_loading">Traduction en cours</string>
+    <string name="translation_offline_title">Pas de connexion</string>
+    <string name="translation_offline_body">La traduction a besoin d’Internet. Le reste de Verso fonctionne sans.</string>
+    <string name="translation_unavailable">La traduction n’est pas disponible pour le moment.</string>
+    <string name="translation_too_long">Sélectionnez un passage plus court pour le traduire.</string>
+    <string name="translation_retry">Réessayer</string>
+
+    <!-- ===================== Note touchée dans le texte ===================== -->
+    <!-- PROPOSÉ (2026-10-04) : titre de la feuille d’une note touchée dans le texte (« Surlignage » avant) -->
+    <string name="highlight_sheet_title">Note</string>
     <string name="highlight_edit_note">Modifier la note</string>
     <string name="highlight_delete">Supprimer</string>
     <string name="highlight_action_copy">Copier</string>
-    <!-- Validé par Maxime (2026-10-01) : snackbar après « Supprimer » -->
-    <string name="highlight_deleted">Surlignage supprimé</string>
+    <!-- PROPOSÉ (2026-10-04) : snackbar après « Supprimer » (« Surlignage supprimé » avant) -->
+    <string name="highlight_deleted">Note supprimée</string>
     <string name="highlight_deleted_undo">Annuler</string>
 
     <!-- ===================== Ajouter une note (3.05) ===================== -->
@@ -395,30 +407,29 @@
     <string name="note_cancel">Annuler</string>
     <string name="note_save">Enregistrer</string>
 
-    <!-- ===================== Notes et surlignages (3.06) ===================== -->
+    <!-- ===================== Notes (3.06) ===================== -->
     <!-- « Deuxième partie, chap. I · 30 % » ; « 30 % » hors sommaire -->
     <string name="notes_item_location">%1$s · %2$d %%</string>
     <string name="notes_item_percent">%1$d %%</string>
-    <string name="notes_title">Notes et surlignages</string>
-    <!-- « Madame Bovary · 3 éléments » -->
+    <string name="notes_title">Notes</string>
+    <!-- « Madame Bovary · 2 notes » -->
     <string name="notes_subtitle">%1$s · %2$s</string>
     <plurals name="notes_item_count">
-        <item quantity="one">%d élément</item>
-        <item quantity="many">%d éléments</item>
-        <item quantity="other">%d éléments</item>
+        <item quantity="one">%d note</item>
+        <item quantity="many">%d notes</item>
+        <item quantity="other">%d notes</item>
     </plurals>
     <string name="notes_export">Exporter</string>
     <string name="notes_export_hint">L’export crée un fichier Markdown à garder ou à partager.</string>
-    <string name="notes_item_options">Options de cet élément</string>
+    <string name="notes_item_options">Options de cette note</string>
     <string name="notes_go_to_passage">Aller au passage</string>
     <string name="notes_edit_note">Modifier la note</string>
-    <string name="notes_add_note">Ajouter une note</string>
     <string name="notes_delete">Supprimer</string>
-    <!-- Validé par Maxime (2026-10-01) : livre sans surlignage -->
-    <string name="notes_empty">Aucun surlignage pour l’instant. Sélectionnez un passage pendant la lecture pour le surligner.</string>
+    <!-- PROPOSÉ (2026-10-04) : livre sans note -->
+    <string name="notes_empty">Aucune note pour l’instant. Sélectionnez un passage pendant la lecture pour l’annoter.</string>
     <!-- Nom proposé au sélecteur : « Madame Bovary – notes.md » (tiret demi-cadratin) -->
     <string name="notes_export_file_name">%1$s – notes.md</string>
-    <!-- Validé par Maxime (2026-10-01) : ligne sous le titre du fichier exporté, « Gustave Flaubert · 3 éléments · 1 octobre 2026 » -->
+    <!-- Validé par Maxime (2026-10-01) : ligne sous le titre du fichier exporté, « Gustave Flaubert · 2 notes · 1 octobre 2026 » -->
     <string name="notes_export_meta">%1$s · %2$s · %3$s</string>
     <string name="notes_export_meta_no_author">%1$s · %2$s</string>
     <!-- Validé par Maxime (2026-10-01) : snackbars de l’export -->
@@ -426,8 +437,8 @@
     <string name="notes_export_failed">L’export n’a pas pu être enregistré.</string>
     <!-- Barre de lecture : 5ᵉ outil (V3) -->
     <string name="reader_notes">Notes</string>
-    <!-- Fiche : « Notes et surlignages · 3 » -->
-    <string name="details_open_notes">Notes et surlignages · %1$d</string>
+    <!-- Fiche : « Notes · 2 » -->
+    <string name="details_open_notes">Notes · %1$d</string>
 
     <!-- ===================== Carte de retour (1.14) ===================== -->
     <string name="return_card_title">Vous avez quitté votre lecture</string>

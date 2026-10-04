@@ -9,6 +9,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.maximebier.verso.backup.BackupRestorer
 import com.maximebier.verso.backup.BackupService
 import com.maximebier.verso.backup.BackupWriter
+import com.maximebier.verso.core.translation.Translator
+import com.maximebier.verso.data.AzureTranslator
 import com.maximebier.verso.data.BookRepository
 import com.maximebier.verso.data.CollectionRepository
 import com.maximebier.verso.data.DocumentStore
@@ -43,6 +45,11 @@ class AppContainer(context: Context) {
     val highlights: HighlightRepository = HighlightRepository(database.highlightDao(), System::currentTimeMillis)
 
     val collections: CollectionRepository = CollectionRepository(database.collectionDao(), System::currentTimeMillis)
+
+    /** Traduction de la sélection (V3) ; null sans clé dans local.properties : « Traduire » n’apparaît pas. */
+    val translator: Translator? = BuildConfig.TRANSLATOR_KEY.takeIf(String::isNotBlank)?.let { key ->
+        AzureTranslator(key = key, region = BuildConfig.TRANSLATOR_REGION)
+    }
 
     val documents: DocumentStore = DocumentStore(appContext)
 

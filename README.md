@@ -30,13 +30,13 @@ Verso est un lecteur d’EPUB pour Android, minimaliste et entièrement hors lig
 - **Lecture confortable**, réglée d’après la recherche : Literata par défaut (Atkinson Hyperlegible Next ou la police du téléphone au choix, dans toute l’app), taille, interligne et marges réglables en direct, aligné à gauche sans césure, thèmes Clair, Sépia, Sombre et Nuit, en scroll continu ou en pages, mémorisé par livre.
 - **Une progression qui ne se perd pas** : un fling, un grand saut ou un passage par le sommaire ne déplacent pas la position de lecture ; une carte « Revenir » vous y ramène en un tap.
 - **Journal de lecture** : chaque session avec ses heures, sa durée, le passage lu et « Reprendre ici ».
-- **Surlignages et notes** : un appui long ouvre une barre « Surligner, Note, Copier » ; les passages qui se recoupent fusionnent, notes gardées ; « Notes et surlignages » les liste dans l’ordre du livre et les exporte en Markdown, groupés par chapitre. Sélectionner ne déplace jamais la position de lecture.
+- **Notes et traduction** : un appui long ouvre une barre « Traduire, Note, Copier ». « Traduire » montre, sans quitter le livre, la traduction française d’un mot anglais et ses autres sens, ou celle d’un passage (Microsoft Translator, connexion nécessaire). Les notes qui se recoupent fusionnent ; « Notes » les liste dans l’ordre du livre et les exporte en Markdown, groupées par chapitre. Sélectionner ne déplace jamais la position de lecture.
 - **Sauvegarde** : un seul fichier zip (livres, positions, journal, notes, réglages) enregistré où vous voulez, et une restauration qui vérifie tout avant de remplacer quoi que ce soit, tout ou rien.
 - **Collections** : regroupez une série dans l’ordre de lecture, suivez sa progression pondérée par la longueur des livres et le temps restant, reprenez au premier livre non terminé ; un livre peut appartenir à plusieurs collections.
 - **États et statistiques** : livres à lire, en cours ou terminés, filtres et tri ; temps de lecture, vitesse moyenne et temps restant à votre rythme.
 - **Recherche plein texte** : résultats au fil de la recherche, groupés par chapitre, mot marqué par un fond, du gras et un soulignement, carte « Revenir » après le saut.
 - **Accessible** : contraste d’au moins 7:1, commandes de 48 dp, texte à 200 % sans coupure, intitulés TalkBack.
-- **Privé** : aucune permission, pas d’Internet, pas d’analytics. Rien ne quitte le téléphone.
+- **Privé** : pas d’analytics ; la seule permission est Internet, pour la traduction : seul le passage sélectionné est envoyé. Le reste ne quitte pas le téléphone.
 
 ## Stack
 
@@ -49,7 +49,7 @@ Kotlin 2.4 · Jetpack Compose (Material 3) · Navigation Compose · Readium Kotl
 - Readium ouvre et affiche les EPUB derrière l’interface `ReaderController`, qui isole le moteur du reste de l’app.
 - La position est un *locator* Readium (chapitre, progression, extrait), jamais des pixels : elle survit à un changement de taille de texte.
 - Room garde livres, positions, sessions, surlignages et collections ; DataStore les préférences ; la sauvegarde est un zip avec les données en JSON, pas une copie de la base ; tous les seuils sont des constantes nommées.
-- 1 255 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les surlignages, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
+- 1 310 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les notes, la traduction, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
 
 La spécification complète, avec les décisions et les critères d’acceptation, est dans [`docs/SPEC.md`](docs/SPEC.md).
 
@@ -64,6 +64,13 @@ echo "sdk.dir=/chemin/vers/Android/Sdk" > local.properties
 ./gradlew :core:test :app:testDebugUnitTest   # tests
 ./gradlew :app:assembleDebug                  # APK dans app/build/outputs/apk/debug/
 ./gradlew :app:installDebug                   # installation sur un téléphone branché
+```
+
+Traduction (facultative) : ajouter à `local.properties` la clé et la région d’une ressource Azure AI Translator (offre gratuite F0). Sans elles, « Traduire » n’apparaît pas et le reste fonctionne.
+
+```properties
+translator.key=…
+translator.region=francecentral
 ```
 
 ## Licence

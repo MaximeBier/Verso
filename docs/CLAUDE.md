@@ -23,7 +23,7 @@ Lecteur d'ebook Android (EPUB), personnel et publié en portfolio. Promesse : j'
 - **Position de lecture** : toujours un locator Readium, jamais des pixels. La logique lecture/navigation et la carte « Revenir » forment une machine à états sans dépendance Android, couverte par des tests unitaires. Les seuils sont des constantes nommées.
 - **Textes** : en français, dans `res/values/strings.xml`, repris mot pour mot des maquettes. Espace fine insécable avant `; : ! ?` et `%`, apostrophe typographique, « Environ » plutôt que « ≈ ».
 - **Accessibilité** : texte à au moins 7:1 de contraste (et pas plus de 10:1 environ en thème foncé, voir la spec), commandes de 48 dp minimum, tailles et interlignes en sp, texte à 200 % sans coupure, un intitulé TalkBack sur chaque bouton à icône seule, jamais la couleur seule pour porter une information.
-- **Confidentialité** : aucune permission réseau, aucune analytics. Rien ne quitte le téléphone.
+- **Confidentialité** : aucune analytics. Pas de permission réseau jusqu'à la V2 incluse ; en V3, `INTERNET` sert uniquement à la traduction de la sélection. Rien d'autre ne quitte le téléphone.
 - **Lecture** : alignement à gauche, sans justification ni césure, imposé par-dessus le CSS de l'éditeur.
 - Une étape de la spec = une branche = une pull request. Toute décision qui change la spec est reportée dans `SPEC.md` dans la même pull request.
 

@@ -28,7 +28,7 @@ class NotesScreenTest {
         loaded = true,
         items = listOf(
             NoteItem(1, "Il avait les cheveux coupés droit", "Premier portrait de Charles.", "Première partie, chap. I · 1 %"),
-            NoteItem(2, "On l’aperçoit de loin", null, "Deuxième partie, chap. I · 31 %"),
+            NoteItem(2, "On l’aperçoit de loin", "Le gardeur de vaches.", "Deuxième partie, chap. I · 31 %"),
         ),
     )
 
@@ -38,16 +38,16 @@ class NotesScreenTest {
 
     @Test fun headerListAndMenu() {
         show()
-        rule.onNodeWithText("Notes et surlignages").assertExists()
-        rule.onNodeWithText("Madame Bovary · 2\u00A0éléments").assertExists()
+        rule.onNodeWithText("Notes").assertExists()
+        rule.onNodeWithText("Madame Bovary · 2\u00A0notes").assertExists()
         rule.onNodeWithText("L’export crée un fichier Markdown à garder ou à partager.").assertExists()
         rule.onNodeWithText("Exporter").assertHeightIsAtLeast(48.dp).performClick()
         rule.onNodeWithText("Il avait les cheveux coupés droit").performClick()
-        rule.onAllNodesWithContentDescription("Options de cet élément")[1].assertHeightIsAtLeast(48.dp).performClick()
-        rule.onNodeWithText("Ajouter une note").performClick()   // élément 2 : sans note
-        rule.onAllNodesWithContentDescription("Options de cet élément")[0].performClick()
+        rule.onAllNodesWithContentDescription("Options de cette note")[1].assertHeightIsAtLeast(48.dp).performClick()
+        rule.onNodeWithText("Modifier la note").performClick()
+        rule.onAllNodesWithContentDescription("Options de cette note")[0].performClick()
         rule.onNodeWithText("Aller au passage").performClick()
-        rule.onAllNodesWithContentDescription("Options de cet élément")[0].performClick()
+        rule.onAllNodesWithContentDescription("Options de cette note")[0].performClick()
         rule.onNodeWithText("Supprimer").performClick()
         assertThat(calls).containsExactly("exporter", "ouvrir 1", "note 2", "ouvrir 1", "supprimer 1").inOrder()
     }
@@ -55,7 +55,7 @@ class NotesScreenTest {
     @Test fun emptyBookHidesExport() {
         show(state.copy(items = emptyList()))
         rule.onNodeWithText("Exporter").assertDoesNotExist()
-        rule.onNodeWithText("Aucun surlignage pour l’instant. Sélectionnez un passage pendant la lecture pour le surligner.").assertExists()
+        rule.onNodeWithText("Aucune note pour l’instant. Sélectionnez un passage pendant la lecture pour l’annoter.").assertExists()
     }
 }
 

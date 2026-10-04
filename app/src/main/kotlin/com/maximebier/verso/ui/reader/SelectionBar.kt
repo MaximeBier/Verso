@@ -25,13 +25,14 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Barre « Texte sélectionné » (3.04) : début du passage, puis Surligner, Note, Copier en colonnes égales de 64 dp.
- * Remplace le menu d’Android ; posée en bas de l’écran, par-dessus le texte. [onNote] null : bouton absent.
+ * Barre « Texte sélectionné » (3.04) : début du passage, puis Traduire, Note, Copier en colonnes égales de 64 dp.
+ * Remplace le menu d’Android ; posée en bas de l’écran, par-dessus le texte. [onTranslate] (sans clé de traduction)
+ * ou [onNote] null : bouton absent.
  */
 @Composable
 fun SelectionBar(
     selectionText: String,
-    onHighlight: () -> Unit,
+    onTranslate: (() -> Unit)?,
     onNote: (() -> Unit)?,
     onCopy: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,7 +61,7 @@ fun SelectionBar(
             modifier = Modifier.padding(horizontal = 8.dp),
         )
         val tools = buildList {
-            add(ReaderTool(stringResource(R.string.selection_highlight), ToolGlyph.Icon(VersoIcons.Highlighter), onHighlight))
+            if (onTranslate != null) add(ReaderTool(stringResource(R.string.selection_translate), ToolGlyph.Icon(VersoIcons.Translate), onTranslate))
             if (onNote != null) add(ReaderTool(stringResource(R.string.selection_note), ToolGlyph.Icon(VersoIcons.Note), onNote))
             add(ReaderTool(stringResource(R.string.selection_copy), ToolGlyph.Icon(VersoIcons.Copy), onCopy))
         }

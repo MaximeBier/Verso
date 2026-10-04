@@ -445,11 +445,11 @@
   },
   {
     "id": "3.06",
-    "title": "3.06 Notes et surlignages",
+    "title": "3.06 Notes",
     "version": "V3",
     "theme": "clair",
-    "png": "screens/3.06-notes-et-surlignages.png",
-    "html": "html/3.06-notes-et-surlignages.html",
+    "png": "screens/3.06-notes.png",
+    "html": "html/3.06-notes.html",
     "size_dp": [
       390,
       844
@@ -462,6 +462,42 @@
     "theme": "clair",
     "png": "screens/3.07-sauvegarde.png",
     "html": "html/3.07-sauvegarde.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.08",
+    "title": "3.08 Traduction d’un mot",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.08-traduction-dun-mot.png",
+    "html": "html/3.08-traduction-dun-mot.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.09",
+    "title": "3.09 Traduction d’une phrase",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.09-traduction-dune-phrase.png",
+    "html": "html/3.09-traduction-dune-phrase.html",
+    "size_dp": [
+      390,
+      844
+    ]
+  },
+  {
+    "id": "3.10",
+    "title": "3.10 Traduction sans connexion",
+    "version": "V3",
+    "theme": "clair",
+    "png": "screens/3.10-traduction-sans-connexion.png",
+    "html": "html/3.10-traduction-sans-connexion.html",
     "size_dp": [
       390,
       844

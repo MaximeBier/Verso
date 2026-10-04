@@ -64,8 +64,11 @@ Export du canvas de maquettes (2026-09-25) : les écrans de V1 à V4 et le logo 
 | 3.03 | Pages fidèles | V3 | [PNG](screens/3.03-pages-fideles.png) · [HTML](html/3.03-pages-fideles.html) |
 | 3.04 | Texte sélectionné | V3 | [PNG](screens/3.04-texte-selectionne.png) · [HTML](html/3.04-texte-selectionne.html) |
 | 3.05 | Ajouter une note | V3 | [PNG](screens/3.05-ajouter-une-note.png) · [HTML](html/3.05-ajouter-une-note.html) |
-| 3.06 | Notes et surlignages | V3 | [PNG](screens/3.06-notes-et-surlignages.png) · [HTML](html/3.06-notes-et-surlignages.html) |
+| 3.06 | Notes | V3 | [PNG](screens/3.06-notes.png) · [HTML](html/3.06-notes.html) |
 | 3.07 | Sauvegarde | V3 | [PNG](screens/3.07-sauvegarde.png) · [HTML](html/3.07-sauvegarde.html) |
+| 3.08 | Traduction d’un mot | V3 | [PNG](screens/3.08-traduction-dun-mot.png) · [HTML](html/3.08-traduction-dun-mot.html) |
+| 3.09 | Traduction d’une phrase | V3 | [PNG](screens/3.09-traduction-dune-phrase.png) · [HTML](html/3.09-traduction-dune-phrase.html) |
+| 3.10 | Traduction sans connexion | V3 | [PNG](screens/3.10-traduction-sans-connexion.png) · [HTML](html/3.10-traduction-sans-connexion.html) |
 | 4.01 | Collections | V4 | [PNG](screens/4.01-collections.png) · [HTML](html/4.01-collections.html) |
 | 4.02 | Une collection | V4 | [PNG](screens/4.02-une-collection.png) · [HTML](html/4.02-une-collection.html) |
 | 4.03 | Nouvelle collection | V4 | [PNG](screens/4.03-nouvelle-collection.png) · [HTML](html/4.03-nouvelle-collection.html) |

@@ -43,7 +43,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Surlignage touché dans le texte : passage, note, puis « Modifier la note » (« Ajouter une note » sans note),
+ * Note touchée dans le texte : passage, note, puis « Modifier la note »,
  * « Supprimer », « Copier ». [onEditNote] et [onDelete] null : lignes absentes.
  */
 @Composable
@@ -76,7 +76,7 @@ fun HighlightActionsSheet(
             }
             onEditNote?.let {
                 ActionRow(
-                    title = stringResource(if (state.note == null) R.string.highlight_add_note else R.string.highlight_edit_note),
+                    title = stringResource(R.string.highlight_edit_note),
                     summary = null,
                     icon = VersoIcons.Note,
                     onClick = it,
@@ -165,7 +165,8 @@ fun NoteSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 VersoTextButton(text = stringResource(R.string.note_cancel), onClick = onCancel)
-                PrimaryButton(text = stringResource(R.string.note_save), onClick = onSave)
+                // Une note vide n’en est pas une : rien à enregistrer.
+                PrimaryButton(text = stringResource(R.string.note_save), onClick = onSave, enabled = state.note.isNotBlank())
             }
         }
     }

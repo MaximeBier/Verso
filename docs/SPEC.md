@@ -43,6 +43,7 @@ Différenciation visée par rapport aux lecteurs existants (Apple Books, Google 
 | Distribution | APK installé à la main, code sur GitHub | Usage perso, pas de contrainte Play Store |
 | PDF | Sorti de la V3 le 2026-09-30, gardé pour une version indéterminée (voir « Plus tard ») | Aucun PDF concret à lire aujourd'hui, et les livres visés existent légalement en EPUB ; le nettoyage du texte coûterait autant que toute la V1 |
 | Collections | Ajoutées en V4 | Regrouper une série (ex. Les Rougon-Macquart) avec une progression d'ensemble |
+| Traduction (V3) | Microsoft Translator (Azure AI Translator), offre gratuite F0, anglais → français, en ligne uniquement | Seul service qui donne plusieurs sens pour un mot (« Dictionary Lookup ») ; 2 millions de caractères gratuits par mois ; au-delà, les requêtes sont refusées, jamais facturées |
 
 ## V1 — Fonctionnalités
 
@@ -241,28 +242,38 @@ Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels 
 
 Verso ne lit que des EPUB : le PDF, le TXT, le Markdown et le HTML sont dans « Plus tard » (décidé le 2026-09-30).
 
-- **Surlignages et notes** :
-  - la sélection de texte ouvre une barre en bas : « Surligner », « Note », « Copier » ;
+- **Notes** :
+  - la sélection de texte ouvre une barre en bas : « Traduire », « Note », « Copier » ;
   - « Note » ouvre une feuille avec le passage et un champ « Votre note » ;
-  - le surlignage est un fond et un soulignement (jamais la couleur seule) ;
-  - l'écran « Notes et surlignages » d'un livre liste les éléments dans l'ordre du livre, avec « Exporter » en Markdown.
+  - le passage annoté est marqué dans le texte par un fond et un soulignement (jamais la couleur seule) ;
+  - l'écran « Notes » d'un livre liste les notes dans l'ordre du livre, avec « Exporter » en Markdown.
+- **Traduire la sélection** (anglais → français, connexion nécessaire) :
+  - « Traduire » ouvre une petite feuille sans voile, le passage sélectionné restant visible ;
+  - pour un mot ou une expression de 3 mots au plus : la traduction la plus probable en grand, puis jusqu'à 3 autres sens séparés par « · » ;
+  - pour un passage plus long : une seule traduction ;
+  - en bas : « Anglais → Français » ; aucun nom de service dans l'interface ;
+  - sans connexion : « Pas de connexion » / « La traduction a besoin d'Internet. Le reste de Verso fonctionne sans. » et « Réessayer » ;
+  - service indisponible : « La traduction n'est pas disponible pour le moment. » et « Réessayer » ;
+  - sélection de plus de 1 000 caractères : « Sélectionnez un passage plus court pour le traduire. » ;
+  - rien n'est enregistré : ni historique, ni cache.
+- **Confidentialité (à partir de la V3)** : la phrase devient « Verso n'utilise Internet que pour traduire le passage que vous sélectionnez. Seul ce passage est envoyé au service de traduction. Vos livres, vos positions, votre journal, vos notes et vos réglages restent sur ce téléphone. »
 - **Sauvegarde et restauration** : un fichier unique (livres, positions, notes, journal, réglages), premier pas vers une synchro entre appareils.
   - L'écran affiche la dernière sauvegarde (date, taille, nom du fichier) et deux boutons : « Créer une sauvegarde » et « Restaurer une sauvegarde ».
   - Avertissement : la restauration remplace la bibliothèque actuelle, avec confirmation.
 
 #### Décisions de la V3 (prises le 2026-09-30)
 
-- Sélection : un appui long sélectionne ; la barre 3.04 remplace le menu natif d'Android, en continu comme en mode pages. « Surligner » crée le surlignage aussitôt, sans snackbar ; « Note » ouvre la feuille 3.05 et ne crée rien si on l'annule ; « Copier » met le passage dans le presse-papiers.
-- Un passage qui recoupe un surlignage existant fusionne avec lui, notes mises bout à bout.
+- Sélection : un appui long sélectionne ; la barre 3.04 remplace le menu natif d'Android, en continu comme en mode pages. « Traduire » ouvre la feuille de traduction (3.08 à 3.10) ; « Note » ouvre la feuille 3.05 et ne crée rien si on l'annule ou si la note est vide ; « Copier » met le passage dans le presse-papiers.
+- Un passage qui recoupe une note existante fusionne avec elle, notes mises bout à bout.
 - Pour la machine à états, sélectionner (appui long, poignées, défilement pendant la sélection, toucher qui l'annule) n'est ni lecture ni navigation.
-- Toucher un surlignage dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier ». La suppression est immédiate, avec « Annuler » dans une snackbar.
-- « Notes et surlignages » s'ouvre depuis la fiche (ligne sous « Voir le journal de lecture ») et depuis un 5ᵉ outil « Notes » de la barre de lecture ; si cinq outils ne tiennent pas à 200 %, la fiche seule. Menu ⋮ d'un élément : « Aller au passage », « Modifier la note », « Supprimer » ; aller au passage est un saut explicite (carte « Revenir »).
+- Toucher un passage annoté dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier ». La suppression est immédiate, avec « Annuler » dans une snackbar.
+- « Notes » s'ouvre depuis la fiche (ligne sous « Voir le journal de lecture ») et depuis un 5ᵉ outil « Notes » de la barre de lecture ; si cinq outils ne tiennent pas à 200 %, la fiche seule. Menu ⋮ d'une note : « Aller au passage », « Modifier la note », « Supprimer » ; aller au passage est un saut explicite (carte « Revenir »).
 - Export : fichier `<Titre> – notes.md` enregistré par le sélecteur Android, groupé par chapitre, chaque passage en citation suivi de sa note.
 - Sauvegarde : ligne « Sauvegarde » dans les Paramètres. Un zip `verso-sauvegarde-AAAA-MM-JJ.zip` avec les EPUB, les couvertures, les données en JSON (pas une copie de la base) et les réglages, enregistré par le sélecteur Android. La restauration valide tout le fichier avant de remplacer quoi que ce soit, demande confirmation avec le nombre de livres, et remplace tout ou rien.
 
 - Passage dans le texte (étape 17) : un surlignage se retrouve dans le texte brut de son chapitre (espaces normalisés) par son texte et 32 caractères de contexte de chaque côté ; le chevauchement se décide sur ces plages, et le surlignage fusionné reçoit un locator reconstruit (texte, contexte, progression du début), sans sélecteur CSS. Un passage introuvable n'est jamais fusionné. Le chemin du sommaire est enregistré avec le surlignage (la liste et l'export ne rouvrent pas l'EPUB).
 - Machine à états (étape 17) : événements `SelectionStarted` et `SelectionEnded` ; entre les deux, l'affiché suit sans lecture ni navigation, les fins de geste sont ignorées ; la fin de sélection prend l'affiché comme nouveau point de départ, sans effet. Un tap qui annule une sélection (dans les 600 ms) n'affiche pas la barre de lecture.
-- Barre de sélection (étape 17) : le passage est relu toutes les 300 ms pendant la sélection (les poignées d'Android échappent à l'app) ; elle prend la place de la barre de lecture et le retour système efface la sélection. Libellés proposés, à confirmer : « Passage copié » (Android 12 et moins), « Surlignage » (titre de la feuille d'un surlignage touché).
+- Barre de sélection (étape 17) : le passage est relu toutes les 300 ms pendant la sélection (les poignées d'Android échappent à l'app) ; elle prend la place de la barre de lecture et le retour système efface la sélection. Libellés proposés, à confirmer : « Passage copié » (Android 12 et moins), « Note » (titre de la feuille d'une note touchée ; « Surlignage » jusqu'au 2026-10-04).
 
 Design et découpage : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`. Plan : `docs/superpowers/plans/2026-10-01-verso-v3.md`.
 
@@ -270,20 +281,25 @@ Design et découpage : `docs/superpowers/specs/2026-09-30-verso-v3-design.md`. P
 
 Chaque critère se vérifie à la main sur le téléphone, avec les EPUB réels de test.
 
-- [x] Un appui long sur un passage affiche la barre « Surligner / Note / Copier » à la place du menu d'Android, avec le début de la sélection.
-- [x] « Surligner » marque le passage d'un fond et d'un soulignement, dans les cinq thèmes ; le surlignage survit à un redémarrage, en continu comme en mode pages.
+- [ ] Un appui long sur un passage affiche la barre « Traduire / Note / Copier » à la place du menu d'Android, avec le début de la sélection.
+- [x] Un passage annoté est marqué d'un fond et d'un soulignement, dans les cinq thèmes ; la marque survit à un redémarrage, en continu comme en mode pages.
 - [x] « Copier » met le passage dans le presse-papiers.
-- [x] « Note » ouvre la feuille avec le passage ; « Enregistrer » crée le surlignage et sa note, « Annuler » ne crée rien.
-- [x] Surligner un passage qui en recoupe un autre n'en laisse qu'un, notes gardées.
-- [x] Toucher un surlignage dans le texte ouvre sa note avec « Modifier la note », « Supprimer » et « Copier » ; « Annuler » après « Supprimer » le rétablit.
-- [x] Sélectionner, déplacer les poignées ou toucher un surlignage ne change jamais la position de lecture et n'affiche pas la carte « Revenir ».
-- [x] « Notes et surlignages » s’ouvre depuis la fiche et depuis la barre de lecture ; les éléments sont dans l'ordre du livre avec chapitre et pourcentage ; toucher un élément ouvre le passage, et la carte « Revenir » me ramène où j'étais.
+- [ ] « Note » ouvre la feuille avec le passage ; « Enregistrer » (inactif tant que la note est vide) crée la note, « Annuler » ne crée rien.
+- [x] Annoter un passage qui en recoupe un autre n'en laisse qu'un, notes gardées.
+- [x] Toucher un passage annoté ouvre sa note avec « Modifier la note », « Supprimer » et « Copier » ; « Annuler » après « Supprimer » le rétablit.
+- [x] Sélectionner, déplacer les poignées ou toucher un passage annoté ne change jamais la position de lecture et n'affiche pas la carte « Revenir ».
+- [ ] « Notes » s'ouvre depuis la fiche et depuis la barre de lecture ; les notes sont dans l'ordre du livre avec chapitre et pourcentage ; toucher une note ouvre le passage, et la carte « Revenir » me ramène où j'étais. Les surlignages sans note d'avant le 2026-10-04 n'apparaissent plus.
 - [x] « Exporter » enregistre à l'endroit choisi un fichier Markdown lisible, groupé par chapitre.
 - [x] « Créer une sauvegarde » enregistre un zip à l'endroit choisi ; la carte affiche sa date, sa taille et son nom.
 - [x] Je supprime deux livres puis je restaure : après confirmation, bibliothèque, positions, états, journal, notes et réglages reviennent à l'identique.
 - [x] Restaurer un fichier invalide, ou une restauration interrompue, laisse la bibliothèque actuelle intacte, avec un message.
-- [x] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé (barre de lecture comprise), et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
-- [x] Toujours aucune permission réseau ni autre permission.
+- [ ] « Traduire » sur un mot anglais ouvre aussitôt la feuille sans voile (le mot et un indicateur), puis la traduction la plus probable en grand et jusqu'à 3 autres sens ; le passage sélectionné reste visible.
+- [ ] Sur un passage de plus de 3 mots, la feuille titrée « Traduction » montre une seule traduction ; au-delà de 1 000 caractères, « Sélectionnez un passage plus court pour le traduire. ».
+- [ ] En mode avion, « Pas de connexion » et « Réessayer » ; « Réessayer » relance la traduction une fois la connexion revenue.
+- [ ] La feuille se ferme par la croix, un glissé vers le bas, un tap sur le texte ou le retour ; la position de lecture ne change pas.
+- [ ] Sans clé de traduction dans `local.properties`, « Traduire » n'apparaît pas et l'app fonctionne.
+- [ ] Avec la taille de texte Android à 200 %, aucun texte des nouveaux écrans n'est coupé (barre de lecture et feuille de traduction comprises), et toutes les nouvelles commandes font au moins 48 dp avec un intitulé TalkBack.
+- [ ] Aucune permission hormis `INTERNET`, qui ne sert qu'à la traduction ; « Paramètres › Confidentialité » le dit.
 
 ### V4 — Collections
 
@@ -359,7 +375,8 @@ Pour lire les maquettes : 1 px = 1 dp, les tailles de texte en px sont des sp, l
 | 2.07 / 2.07b | Bibliothèque avec états / Trier et afficher | V2 |
 | 2.08 / 2.09 | Détails du livre (états, statistiques) / Paramètres | V2 |
 | 3.01 – 3.03 | PDF importé / Lecture d'un PDF converti / Pages fidèles | Plus tard (numérotées V3 dans les maquettes) |
-| 3.04 – 3.06 | Texte sélectionné / Ajouter une note / Notes et surlignages | V3 |
+| 3.04 – 3.06 | Texte sélectionné / Ajouter une note / Notes | V3 |
+| 3.08 – 3.10 | Traduction d'un mot / d'une phrase / sans connexion | V3 |
 | 3.07 | Sauvegarde | V3 |
 | 4.01 – 4.04 | Collections / Une collection / Nouvelle collection / Ajouter à une collection | V4 |
 
@@ -383,7 +400,7 @@ Tous les couples texte/fond ont été vérifiés par calcul : chaque texte attei
 | Danger | `#8A2318` | `#E8A89C` | `#E5A48D` | `#7C2016` |
 | Inverse (snackbar, carte de retour) | `#2E2A25` / `#F5F1E8` | `#CBC5BC` / `#1E1B18` | `#CFBCA0` / `#1D1813` | `#3A2E22` / `#EFE3CC` |
 | Accent sur inverse | `#F0C9A0` | `#4F2B22` | `#4C241A` | `#F0C9A0` |
-| Surlignage (V2/V3) | `#F3D9A4` | `#362D1D` | `#352A19` | `#E9C98C` |
+| Surlignage (recherche V2, notes V3) | `#F3D9A4` | `#362D1D` | `#352A19` | `#E9C98C` |
 
 - Le fond clair n'est pas du blanc pur (environ 12 % de lumière en moins), et les fonds foncés ne sont pas du noir pur.
 - **Thèmes foncés** : Sombre est un gris chaud, Nuit un brun au texte beige ambré. Le texte y vise 9 à 10:1 et pas plus (halo du texte clair sur fond foncé, surtout avec un astigmatisme) ; tout texte reste à au moins 7:1. Sur la sélection, le texte est toujours « texte sur sélection ». Les liens du texte de lecture prennent l'accent de Sombre dans les deux thèmes foncés (8,5:1 et 8,7:1) : leur couleur est fixée à la création du navigateur Readium, qui n'est pas recréé entre Sombre et Nuit.
@@ -505,6 +522,7 @@ Ces points sont exclus volontairement, pas oubliés. Les rouvrir demande une dé
 - Choix de police ou de thème au premier lancement : l'onboarding ne demande rien.
 - Filtre « lumière bleue » : aucun bénéfice démontré (voir « Confort de lecture »).
 - Version iPhone : possible plus tard si la stack le permet, mais aucun compromis fait pour ça aujourd'hui.
+- Traduction hors ligne, autres langues que anglais → français, historique des traductions : la traduction reste un outil ponctuel.
 
 ## Orientations techniques
 
@@ -524,6 +542,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 | Textes | `res/values/strings.xml` en français, jamais de texte en dur | Libellés repris tels quels des maquettes, ponctuation française comprise |
 | Tests | JUnit pour la logique pure, tests Compose pour les écrans clés | La détection lecture/navigation et la carte de retour sont une machine à états sans dépendance Android, testée unitairement avec les seuils nommés |
 | CI | GitHub Actions : compilation, tests, lint, APK debug en artefact | Chaque commit sur `master` produit un APK installable |
+| Traduction (V3) | Azure AI Translator, appels `dictionary/lookup` et `translate`, derrière une interface `Translator` | Clé et région dans `local.properties` (jamais versionné), exposées par `BuildConfig` ; sans clé, le bouton « Traduire » est masqué |
 
 ### Modèle de données (première ébauche)
 
@@ -531,13 +550,14 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 | --- | --- |
 | `books` | id, titre, auteur, chemin du fichier copié, empreinte SHA-256, chemin de la couverture, taille, nom du fichier d'origine, date d'import, date de dernière ouverture, **locator de lecture** (JSON Readium), progression (0–1), nombre de mots total ; V2 : état (à lire / en cours / terminé, avec indicateur « modifié à la main »), mode de défilement du livre |
 | `sessions` | id, book_id, début, fin, temps actif (ms), locator de début, locator de fin, progression de début et de fin, mots lus |
-| `highlights` (V3) | id, book_id, locator de la plage, texte, note (facultative), progression dans le livre, dates de création et de modification |
+| `highlights` (V3, notes) | id, book_id, locator de la plage, texte du passage, note, progression dans le livre, dates de création et de modification |
 | `collections` (V4) | id, nom, date de création |
 | `collection_books` (V4) | collection_id, book_id, position dans la collection |
 
 - La table `positions` et l'historique des 5 positions de la version précédente sont supprimés.
 - La position affichée et l'état de la carte de retour ne sont pas persistés. À la réouverture, on revient au locator de lecture.
 - Supprimer un livre supprime ses sessions (suppression en cascade sur `book_id`).
+- La note devient obligatoire : il n'existe plus de surlignage sans note (2026-10-04). La table garde son nom `highlights` ; les surlignages sans note enregistrés avant restent en base et dans les sauvegardes, mais ne sont plus affichés ni fusionnés.
 
 ### Points de vigilance
 
@@ -548,7 +568,7 @@ Ces orientations sont des propositions à valider par Claude Code lors du plan t
 - La graisse allégée du thème sombre suppose des polices variables (axe `wght`) ou une graisse intermédiaire embarquée.
 - Tailles et interlignes en sp, tester avec le texte Android à 200 %. Gérer les insets de la barre d'état et de la barre de gestes, en particulier quand la barre de lecture s'affiche en mode immersif. Les barres (lecture et système) sont une surcouche : le texte reçoit des insets constants (barre d'état et côtés des barres système même masquées, découpe de l'écran ; rien en bas, le texte va jusqu'au bas de l'écran sous la barre de navigation masquée), si bien que les afficher ou les masquer ne change jamais sa mise en page ni la position de lecture.
 - Tester avec des EPUB réels et imparfaits (Gutenberg en génère de très variés), pas seulement un fichier propre.
-- Le manifeste ne déclare pas `INTERNET`. Vérifier dans le manifeste fusionné qu'aucune dépendance ne l'ajoute, et la retirer avec `tools:node="remove"` si besoin. La sauvegarde Android est désactivée (`allowBackup="false"`, `dataExtractionRules` qui exclut la sauvegarde sur le compte Google et le transfert d'appareil à appareil, `fullBackupContent` qui exclut tout avant Android 12) : sinon le système enverrait livres, base et réglages hors du téléphone sans aucune permission. Le garde-fou `scripts/check-no-internet.sh` vérifie les deux.
+- Jusqu'à la V2 incluse, le manifeste ne déclare pas `INTERNET` : vérifier dans le manifeste fusionné qu'aucune dépendance ne l'ajoute, et la retirer avec `tools:node="remove"` si besoin. La permission `INTERNET` n'arrive qu'en V3, avec la traduction, et ne sert qu'à elle (Readium garde un client HTTP qui refuse toute requête). La sauvegarde Android est désactivée (`allowBackup="false"`, `dataExtractionRules` qui exclut la sauvegarde sur le compte Google et le transfert d'appareil à appareil, `fullBackupContent` qui exclut tout avant Android 12) : sinon le système enverrait livres, base et réglages hors du téléphone sans aucune permission. Le garde-fou `scripts/check-no-internet.sh` vérifie les deux (seule `INTERNET` est admise depuis la V3).
 
 ## Questions ouvertes
 
@@ -685,3 +705,5 @@ Sorti de la V3 le 2026-09-30 : je ne lis que des EPUB. Règles de conversion dé
 - 2026-10-02 (étape 28) : correctifs après la V4, trouvés sur le téléphone. En paysage, la bibliothèque, les collections, la fiche, les Paramètres et les barres de lecture passaient sous la barre de navigation (« Importer », ⋮, « Reprendre », « restantes » coupés) : marges latérales de l'encoche et de la barre de navigation sur toutes les destinations hors lecture et sur les barres de lecture. Espace insécable entre un nombre et son libellé. TalkBack de la carte d'une collection avec l'auteur (« Flaubert, Gustave Flaubert, 1 livre, 6 % lus »). Pendant « Réordonner », la carte « Reprendre » garde son livre jusqu'à « Terminé ». Vérifié sur le téléphone en paysage et avec le texte à 200 %, réglages système rétablis à l'identique (`build/acceptance/20261002-e28/`).
 - 2026-10-02 : relecture de code de l'étape 28. En paysage, les listes des Notes (depuis la fiche) et des Licences prenaient deux fois la barre de navigation latérale : elles ne gardent que la marge du bas. La carte « Revenir », barres affichées, et le panneau Notes du lecteur évitent eux aussi l'encoche et la barre de navigation latérale ; barres de lecture et carte « Revenir » reprennent les marges latérales du texte. En mode « Réordonner », la carte « Reprendre » garde son livre à travers une rotation. Espace insécable aussi dans « 3 résultats » (recherche) et « 2 éléments » (Notes et surlignages, export compris). README : 1 248 tests. Vérifié sur le téléphone en portrait seulement (`build/acceptance/20261002-e28b/`) ; le paysage reste à vérifier.
 - 2026-10-04 (étape 29, décision de Maxime) : animation de tour de page en mode pages, choisie parmi plusieurs prototypes (glissé, fondu, recouvrement, profondeur, rotation 3D, pliage, courbure ; branche `spike/page-turn`, jamais fusionnée) : un pliage courbé qui suit le doigt, sans réglage ni maquette. Mise en œuvre au-dessus de Readium, non modifié : photos des pages (la page affichée et ses deux voisines, dessinées depuis la WebView, décalée d'une page le temps du dessin) animées par un shader AGSL (Android 13), le vrai tour de page (`ReaderController.turn`) lancé au lâcher sous l'animation. Machine à états inchangée : un tour validé est un geste de lecture, un tour annulé n'est rien. Le glissé horizontal est pris à Readium ; un appui long (sélection) ne tourne jamais la page. Le pied de page est dessiné sur les pages qui tournent, le vrai est caché pendant le tour. Au bord d'un chapitre, la page voisine n'est pas photographiée d'avance : elle tourne sous l'animation dès le début du geste. Écarté : `WebView.enableSlowWholeDocumentDraw()`, qui casse l'extension des sélections.
+- 2026-10-04 : V3, « Traduire » remplace « Surligner » dans la barre de sélection (anglais → français, Microsoft Translator, en ligne) ; le surlignage seul disparaît, l'écran 3.06 devient « Notes » ; nouveaux écrans 3.08 à 3.10.
+- 2026-10-04 (étape 30) : traduction de la sélection. Logique pure dans `core.translation` (interface `Translator`, règles : 3 mots au plus pour le dictionnaire, ponctuation des bouts ôtée, sens sans doublon, 1 000 caractères au plus, échecs « hors connexion » ou « indisponible ») ; `AzureTranslator` en `HttpURLConnection` (aucune dépendance ajoutée), 10 s d'attente, aucune mise en cache ; clé et région lues dans `local.properties` par `BuildConfig`, « Traduire » masqué sans clé. Feuille sans voile posée en bas : la sélection Android reste affichée, un tap sur le texte l'efface et ferme la feuille ; la croix, le glissé vers le bas et le retour ferment la feuille et la sélection. Chargement (sans maquette) : le passage et un petit indicateur, lu « Traduction en cours » par TalkBack (proposé). Passage long et passage trop long : en-tête « Traduction » ; erreur de service et passage trop long : message seul (sans titre en gras). Notes : « Enregistrer » inactif tant que la note est vide ; les surlignages sans note d'avant restent en base et dans les sauvegardes mais ne sont plus affichés (décision de Maxime : les masquer plutôt que les supprimer). Libellés proposés : « Note » (titre de la feuille d'une note touchée), « Note supprimée », « Aucune note pour l'instant. Sélectionnez un passage pendant la lecture pour l'annoter. », « Notes · N » sur la fiche. Le garde-fou `check-no-internet.sh` admet `INTERNET` et rien d'autre ; Android 17 ajoute de lui-même `ACCESS_LOCAL_NETWORK` aux apps qui ont `INTERNET` (absente du manifeste fusionné). Relecture : feuille orpheline si la sélection disparaît pendant la lecture JavaScript, feuille périmée quand les poignées bougent (la barre revient), légende écrasée en paysage à 200 % ; corrigés. Vérifié sur le téléphone en paysage (`build/acceptance/20261004-e30/`) : barre « Traduire / Note / Copier », « long » → « long », « longtemps · temps · durée », « Anglais → Français » ; un tap sur le texte ferme la feuille et la sélection, page 6 sur 51 inchangée. README : 1 310 tests.

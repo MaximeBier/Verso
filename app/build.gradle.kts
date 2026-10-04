@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,6 +9,14 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.roborazzi)
 }
+
+private val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.reader(Charsets.UTF_8)?.use { load(it) }
+}
+
+/** Valeur de local.properties en littéral Java pour BuildConfig ; "" si absente. */
+fun localProperty(name: String): String =
+    "\"" + localProperties.getProperty(name, "").trim().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
     namespace = "com.maximebier.verso"
@@ -20,6 +29,10 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Traduction (V3) : clé et région Azure lues dans local.properties (jamais versionné). Sans clé, « Traduire » est masqué.
+        buildConfigField("String", "TRANSLATOR_KEY", localProperty("translator.key"))
+        buildConfigField("String", "TRANSLATOR_REGION", localProperty("translator.region"))
     }
 
     buildTypes {

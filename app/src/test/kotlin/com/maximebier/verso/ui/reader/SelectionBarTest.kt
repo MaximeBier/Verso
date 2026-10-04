@@ -25,26 +25,28 @@ class SelectionBarTest {
             VersoTheme(theme = AppTheme.LIGHT) {
                 SelectionBar(
                     selectionText = "la campagne ainsi ressemble à un grand manteau…",
-                    onHighlight = { clicks += "surligner" },
+                    onTranslate = { clicks += "traduire" },
                     onNote = { clicks += "note" },
                     onCopy = { clicks += "copier" },
                 )
             }
         }
         rule.onNodeWithText("Sélection : « la campagne ainsi ressemble à un grand manteau… »").assertExists()
-        listOf("Surligner", "Note", "Copier").forEach {
+        listOf("Traduire", "Note", "Copier").forEach {
             rule.onNodeWithText(it).assertHasClickAction().assertHeightIsAtLeast(48.dp).performClick()
         }
-        assertThat(clicks).containsExactly("surligner", "note", "copier").inOrder()
+        assertThat(clicks).containsExactly("traduire", "note", "copier").inOrder()
+        rule.onNodeWithText("Surligner").assertDoesNotExist()
     }
 
     @Test
-    fun noteIsHiddenUntilItsSheetExists() {
+    fun translateIsHiddenWithoutKey() {
         rule.setContent {
             VersoTheme(theme = AppTheme.LIGHT) {
-                SelectionBar(selectionText = "passage", onHighlight = {}, onNote = null, onCopy = {})
+                SelectionBar(selectionText = "passage", onTranslate = null, onNote = {}, onCopy = {})
             }
         }
-        rule.onNodeWithText("Note").assertDoesNotExist()
+        rule.onNodeWithText("Traduire").assertDoesNotExist()
+        rule.onNodeWithText("Note").assertExists()
     }
 }
