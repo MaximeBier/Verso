@@ -49,7 +49,7 @@ Kotlin 2.4 · Jetpack Compose (Material 3) · Navigation Compose · Readium Kotl
 - Readium ouvre et affiche les EPUB derrière l’interface `ReaderController`, qui isole le moteur du reste de l’app.
 - La position est un *locator* Readium (chapitre, progression, extrait), jamais des pixels : elle survit à un changement de taille de texte.
 - Room garde livres, positions, sessions, surlignages et collections ; DataStore les préférences ; la sauvegarde est un zip avec les données en JSON, pas une copie de la base ; tous les seuils sont des constantes nommées.
-- 1 248 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le suivi des sessions, la recherche, les surlignages, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
+- 1 255 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les surlignages, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
 
 La spécification complète, avec les décisions et les critères d’acceptation, est dans [`docs/SPEC.md`](docs/SPEC.md).
 
