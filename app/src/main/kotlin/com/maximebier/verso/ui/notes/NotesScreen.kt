@@ -55,12 +55,12 @@ import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Actions de l’écran « Notes et surlignages » (3.06). */
+/** Actions de l’écran « Notes » (3.06). */
 class NotesActions(
     val onBack: () -> Unit,
     /** Ouvre le sélecteur d’Android (voir [rememberNotesExport]). */
     val onExport: () -> Unit,
-    /** Toucher l’élément, ou « Aller au passage ». */
+    /** Toucher la note, ou « Aller au passage ». */
     val onOpen: (id: Long) -> Unit,
     val onEditNote: (id: Long) -> Unit,
     val onDelete: (id: Long) -> Unit,
@@ -70,8 +70,8 @@ class NotesActions(
 )
 
 /**
- * « Notes et surlignages » d’un livre (3.06) : barre de titre avec « Exporter », phrase d’aide, éléments dans l’ordre
- * du livre (passage surligné, note, emplacement, menu ⋮). Sans surlignage : phrase d’état, pas d’« Exporter ».
+ * « Notes » d’un livre (3.06) : barre de titre avec « Exporter », phrase d’aide, notes dans l’ordre
+ * du livre (passage marqué, note, emplacement, menu ⋮). Sans note : phrase d’état, pas d’« Exporter ».
  */
 @Composable
 fun NotesScreen(state: NotesUiState, actions: NotesActions, modifier: Modifier = Modifier, snackbarHost: @Composable () -> Unit = {}) {
@@ -116,7 +116,7 @@ fun NotesScreen(state: NotesUiState, actions: NotesActions, modifier: Modifier =
     state.noteSheet?.let { NoteSheet(it, actions.onNoteChange, actions.onSaveNote, actions.onCancelNote) }
 }
 
-/** Au-delà de cette échelle de texte, « Exporter » passe sous le titre (sinon « surlignages » serait coupé). */
+/** Au-delà de cette échelle de texte, « Exporter » passe sous le titre (sinon le titre serait coupé). */
 private const val EXPORT_BELOW_FONT_SCALE = 1.3f
 
 @Composable
@@ -212,7 +212,7 @@ private fun NoteRow(item: NoteItem, actions: NotesActions) {
     HorizontalDivider(thickness = 1.dp, color = colors.divider)
 }
 
-/** Menu ⋮ d’un élément (3.06) : « Aller au passage », « Modifier la note » ou « Ajouter une note », « Supprimer ». */
+/** Menu ⋮ d’une note (3.06) : « Aller au passage », « Modifier la note », « Supprimer ». */
 @Composable
 private fun NoteOptions(item: NoteItem, actions: NotesActions) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -233,7 +233,7 @@ private fun NoteOptions(item: NoteItem, actions: NotesActions) {
                 },
             )
             BookOptionsMenuItem(
-                text = stringResource(if (item.note == null) R.string.notes_add_note else R.string.notes_edit_note),
+                text = stringResource(R.string.notes_edit_note),
                 icon = VersoIcons.Note,
                 onClick = {
                     expanded = false

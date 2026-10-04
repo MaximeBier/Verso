@@ -262,7 +262,7 @@ fun DetailsContent(
                         onOpenJournal = { actions.onOpenJournal(state.bookId) },
                     )
                 }
-                // Sous « Voir le journal de lecture » (spec V3) ; seulement si le livre a des surlignages.
+                // Sous « Voir le journal de lecture » (spec V3) ; seulement si le livre a des notes.
                 if (state.highlightCount > 0) {
                     OutlinedPillButton(
                         text = stringResource(R.string.details_open_notes, state.highlightCount),

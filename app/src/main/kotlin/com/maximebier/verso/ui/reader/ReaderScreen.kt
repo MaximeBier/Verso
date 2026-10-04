@@ -129,6 +129,8 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
     BackHandler(enabled = state.notesVisible) { viewModel.hideNotes() }
     // Retour pendant une sélection : elle s’efface, le livre reste ouvert.
     BackHandler(enabled = highlights.selectionText != null) { viewModel.clearSelection() }
+    // Retour avec la feuille de traduction : elle se ferme avec la sélection.
+    BackHandler(enabled = highlights.translation != null) { viewModel.dismissTranslation() }
     if (state.failed) {
         LaunchedEffect(Unit) { onOpenFailed() }
     }
@@ -200,14 +202,26 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
                     .padding(horizontal = 16.dp),
             )
         }
-        highlights.selectionText?.let { text ->
-            SelectionBar(
-                selectionText = text,
-                onHighlight = viewModel::highlightSelection,
-                onNote = viewModel::noteForSelection,
-                onCopy = viewModel::copySelection,
+        val translation = highlights.translation
+        if (translation != null) {
+            // Sans voile : le passage sélectionné reste visible au-dessus ; un tap sur le texte efface la sélection et
+            // ferme la feuille.
+            TranslationSheet(
+                state = translation,
+                onRetry = viewModel::retryTranslation,
+                onDismiss = viewModel::dismissTranslation,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
+        } else {
+            highlights.selectionText?.let { text ->
+                SelectionBar(
+                    selectionText = text,
+                    onTranslate = if (highlights.canTranslate) viewModel::translateSelection else null,
+                    onNote = viewModel::noteForSelection,
+                    onCopy = viewModel::copySelection,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
         }
         if (state.notesVisible) {
             val notes by viewModel.notes.collectAsStateWithLifecycle()

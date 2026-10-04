@@ -103,7 +103,7 @@ fun VersoNavHost(
             NotesDestination(
                 bookId = route.bookId,
                 onBack = { if (entry.resumed()) navController.popBackStack() },
-                // Aller au passage : le livre s’ouvre et saute au surlignage (carte « Revenir »).
+                // Aller au passage : le livre s’ouvre et saute à la note (carte « Revenir »).
                 onOpenPassage = { bookId, highlightId ->
                     if (entry.resumed()) navController.navigate(ReaderRoute(bookId, highlightId = highlightId)) { launchSingleTop = true }
                 },

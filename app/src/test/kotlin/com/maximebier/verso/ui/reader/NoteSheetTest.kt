@@ -1,5 +1,9 @@
 package com.maximebier.verso.ui.reader
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,7 +24,7 @@ class NoteSheetTest {
 
     @Test
     fun showsThePassageAndSavesTheTypedNote() {
-        var note = ""
+        var note by mutableStateOf("")
         var saved = 0
         var cancelled = 0
         rule.setContent {
@@ -35,6 +39,8 @@ class NoteSheetTest {
         }
         rule.onNodeWithText("Ajouter une note").assertExists()
         rule.onNodeWithText("la campagne ainsi ressemble").assertExists()
+        // Une note vide n’en est pas une : « Enregistrer » reste inactif.
+        rule.onNodeWithText("Enregistrer").assertIsNotEnabled()
         rule.onNode(hasSetTextAction()).performTextReplacement("Image du manteau")
         assertThat(note).isEqualTo("Image du manteau")
         rule.onNodeWithText("Enregistrer").performClick()

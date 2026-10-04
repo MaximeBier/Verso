@@ -69,7 +69,7 @@ fun SettingsDestination(onBack: () -> Unit, onOpenLicenses: () -> Unit, onOpenBa
 }
 
 /**
- * Ouvre le lien dans le navigateur (ACTION_VIEW). Verso n'a pas la permission INTERNET :
+ * Ouvre le lien dans le navigateur (ACTION_VIEW). La permission INTERNET de Verso ne sert qu'à la traduction :
  * c'est le navigateur qui charge la page. Sans navigateur installé, il ne se passe rien.
  */
 internal fun openUrl(context: Context, url: String) {

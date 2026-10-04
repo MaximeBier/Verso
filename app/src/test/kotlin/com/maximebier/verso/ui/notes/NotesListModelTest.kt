@@ -37,7 +37,7 @@ class NotesListModelTest {
         location = { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
         shortChapter = { path -> path.takeIf { it.isNotEmpty() }?.joinToString(", ") },
         longChapter = { path -> path.takeIf { it.isNotEmpty() }?.joinToString(", ") },
-        exportMeta = { author, count, date -> listOf(author, "$count éléments", date).filter(String::isNotEmpty).joinToString(" · ") },
+        exportMeta = { author, count, date -> listOf(author, "$count notes", date).filter(String::isNotEmpty).joinToString(" · ") },
         exportFileName = { title -> "$title – notes.md" },
         exportDate = { "1 octobre 2026" },
     )
@@ -79,7 +79,7 @@ class NotesListModelTest {
             model.export(uri)
             assertThat(awaitItem()).isEqualTo(NotesEvent.Exported)
         }
-        assertThat(written[uri]).startsWith("# Madame Bovary\n\nGustave Flaubert · 2 éléments · 1 octobre 2026\n\n## Première partie, I\n")
+        assertThat(written[uri]).startsWith("# Madame Bovary\n\nGustave Flaubert · 2 notes · 1 octobre 2026\n\n## Première partie, I\n")
     }
 
     @Test fun exportFailureIsReported() = runTest(UnconfinedTestDispatcher()) {

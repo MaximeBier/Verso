@@ -24,7 +24,7 @@ import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.ui.common.notesTexts
 import com.maximebier.verso.ui.components.VersoSnackbarHost
 
-/** « Notes et surlignages » ouvert depuis la fiche (route `NotesRoute`) ; aller au passage ouvre le lecteur. */
+/** « Notes » ouvert depuis la fiche (route `NotesRoute`) ; aller au passage ouvre le lecteur. */
 class NotesViewModel(model: (ViewModel) -> NotesListModel) : ViewModel() {
     val list: NotesListModel = model(this)
 

@@ -48,7 +48,7 @@ class NotesTexts(
 )
 
 /**
- * « Notes et surlignages » d’un livre (3.06) : éléments dans l’ordre du livre, menu ⋮ (note, suppression avec
+ * « Notes » d’un livre (3.06) : notes dans l’ordre du livre, menu ⋮ (note, suppression avec
  * « Annuler »), export Markdown. Partagé par la surcouche du lecteur et l’écran ouvert depuis la fiche ; « Aller au
  * passage » reste à l’appelant (saut dans le lecteur).
  */
@@ -102,6 +102,8 @@ class NotesListModel(
     fun saveNote() {
         val id = editing ?: return
         val sheet = _state.value.noteSheet ?: return
+        // Une note vide masquerait le passage : « Enregistrer » est inactif, rien à faire.
+        if (sheet.note.isBlank()) return
         editing = null
         _state.update { it.copy(noteSheet = null) }
         launchWrite { highlights.setNote(id, sheet.note) }

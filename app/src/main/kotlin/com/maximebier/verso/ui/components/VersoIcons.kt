@@ -83,8 +83,9 @@ object VersoIcons {
     val Bookmark: ImageVector = strokeIcon("bookmark", "M7 4h10v16l-5-3.5L7 20z")
     val Undo: ImageVector = strokeIcon("undo", "M9 14 4 9l5-5", "M4 9h11a5 5 0 0 1 0 10h-3")
 
-    // V3 : tracés des maquettes 3.04, 3.06 et 3.07.
-    val Highlighter: ImageVector = strokeIcon("highlighter", "m9 11-6 6v3h9l3-3", "m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4")
+    // V3 : tracés des maquettes 3.04, 3.06, 3.07 et 3.10.
+    val Translate: ImageVector = strokeIcon("translate", "m5 8 6 6", "m4 14 6-6 2-3", "M2 5h12", "M7 2h1", "m22 22-5-10-5 10", "M14 18h6")
+    val Retry: ImageVector = strokeIcon("retry", "M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5M3.5 4v4.5H8")
     val Note: ImageVector = strokeIcon("note", "M20 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z", "M8 9h8M8 13h5")
     val Copy: ImageVector = strokeIcon("copy", "M10 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z", "M4 16V6a2 2 0 0 1 2-2h10")
     val Download: ImageVector = strokeIcon("download", "M12 4v11M7 10l5 5 5-5M5 20h14")

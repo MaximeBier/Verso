@@ -49,7 +49,7 @@ class ReaderSnackbarTest {
                     )
                 }
             }
-            LaunchedEffect(Unit) { result = host.showSnackbar("Surlignage supprimé", actionLabel = "Annuler", duration = SnackbarDuration.Long) }
+            LaunchedEffect(Unit) { result = host.showSnackbar("Note supprimée", actionLabel = "Annuler", duration = SnackbarDuration.Long) }
         }
         rule.onNodeWithText("Annuler").performClick()
         rule.waitForIdle()

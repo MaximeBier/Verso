@@ -44,11 +44,15 @@ class HighlightDaoTest {
     @Test
     fun listIsInBookOrder() = runTest {
         val bookId = db.bookDao().insert(testBook("a"))
-        dao.insert(highlight(bookId, 0.31))
-        dao.insert(highlight(bookId, 0.01))
-        dao.insert(highlight(bookId, 0.30))
+        dao.insert(highlight(bookId, 0.31, note = "c"))
+        dao.insert(highlight(bookId, 0.01, note = "a"))
+        dao.insert(highlight(bookId, 0.30, note = "b"))
+        // Surlignage sans note d’avant le 2026-10-04 : gardé en base, jamais listé ni compté.
+        dao.insert(highlight(bookId, 0.20))
         assertThat(dao.observeForBook(bookId).first().map { it.progression }).containsExactly(0.01, 0.30, 0.31).inOrder()
         assertThat(dao.observeCount(bookId).first()).isEqualTo(3)
+        assertThat(dao.forBook(bookId)).hasSize(3)
+        assertThat(dao.all()).hasSize(4)
     }
 
     @Test
@@ -56,7 +60,7 @@ class HighlightDaoTest {
         val bookId = db.bookDao().insert(testBook("a"))
         dao.insert(highlight(bookId, 0.5))
         db.bookDao().deleteById(bookId)
-        assertThat(dao.forBook(bookId)).isEmpty()
+        assertThat(dao.all()).isEmpty()
     }
 
     @Test

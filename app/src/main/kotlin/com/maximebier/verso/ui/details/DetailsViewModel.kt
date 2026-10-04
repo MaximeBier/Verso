@@ -51,7 +51,7 @@ data class DetailsUiState(
     val deleted: Boolean = false,
     /** Section « Statistiques » (2.08) ; null = section masquée (interrupteur désactivé). */
     val stats: ReadingStats? = null,
-    /** Surlignages du livre ; la ligne « Notes et surlignages » n’apparaît qu’à partir de 1. */
+    /** Notes du livre ; la ligne « Notes » n’apparaît qu’à partir de 1. */
     val highlightCount: Int = 0,
     /** Collections du livre, la plus récente d’abord (V4). */
     val collectionNames: List<String> = emptyList(),
@@ -68,7 +68,7 @@ class DetailsViewModel(
     private val debounceMs: Long = AUTOSAVE_DEBOUNCE_MS,
     private val statsOf: (Long) -> Flow<ReadingStats> = { flowOf(readingStats(emptyList())) },
     private val showStatistics: Flow<Boolean> = flowOf(true),
-    /** Nombre de surlignages du livre (ligne « Notes et surlignages · 3 », V3). */
+    /** Nombre de notes du livre (ligne « Notes · 3 », V3). */
     private val highlightCountOf: (Long) -> Flow<Int> = { flowOf(0) },
     /** Noms des collections du livre (ligne « Collections », V4). */
     private val collectionNamesOf: (Long) -> Flow<List<String>> = { flowOf(emptyList()) },
