@@ -195,6 +195,8 @@
     <string name="settings_font_literata_summary">Par défaut · avec empattements, pensée pour la lecture longue</string>
     <string name="settings_font_atkinson">Atkinson Hyperlegible Next</string>
     <string name="settings_font_atkinson_summary">Sans empattements, lettres très distinctes</string>
+    <string name="settings_font_libron" translatable="false">Libron</string>
+    <string name="settings_font_libron_summary">Empattements discrets, pensée pour les liseuses</string>
     <string name="settings_font_system">Police du système</string>
     <string name="settings_font_system_summary">Celle de votre téléphone</string>
     <string name="settings_font_sample">Nous étions à l’Étude, quand le Proviseur entra</string>
@@ -254,6 +256,7 @@
     <string name="license_component_readium" translatable="false">Readium Kotlin Toolkit</string>
     <string name="license_component_atkinson" translatable="false">Atkinson Hyperlegible Next</string>
     <string name="license_component_literata" translatable="false">Literata</string>
+    <string name="license_component_libron" translatable="false">Libron</string>
     <string name="license_component_lucide">Lucide (icônes)</string>
     <string name="license_component_androidx">AndroidX (Compose, Navigation, Room, DataStore, Lifecycle, Fragment, Media3, WebKit)</string>
     <string name="license_component_kotlin" translatable="false">Kotlin, kotlinx.coroutines, kotlinx.serialization, kotlinx.datetime</string>
@@ -275,6 +278,7 @@
     <string name="reader_settings_font">Police</string>
     <string name="reader_settings_font_literata">Literata</string>
     <string name="reader_settings_font_atkinson">Atkinson</string>
+    <string name="reader_settings_font_libron" translatable="false">Libron</string>
     <string name="reader_settings_font_system">Système</string>
     <string name="reader_settings_text_size">Taille du texte</string>
     <string name="reader_settings_text_smaller">Réduire le texte</string>

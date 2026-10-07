@@ -54,6 +54,7 @@ object OpenSourceLicenses {
         LicenseEntry(R.string.license_component_readium, R.string.license_name_bsd_3, R.raw.license_bsd_3_readium),
         LicenseEntry(R.string.license_component_atkinson, R.string.license_name_ofl, R.raw.license_ofl_atkinson),
         LicenseEntry(R.string.license_component_literata, R.string.license_name_ofl, R.raw.license_ofl_literata),
+        LicenseEntry(R.string.license_component_libron, R.string.license_name_ofl, R.raw.license_ofl_libron),
         LicenseEntry(R.string.license_component_lucide, R.string.license_name_isc, R.raw.license_isc_lucide),
         LicenseEntry(R.string.license_component_androidx, R.string.license_name_apache_2, R.raw.license_apache_2_0),
         LicenseEntry(R.string.license_component_kotlin, R.string.license_name_apache_2, R.raw.license_apache_2_0),

@@ -120,7 +120,7 @@ fun ReadingSettingsSection(
     }
 }
 
-/** Trois polices en boutons radio, chacune montrée sur une phrase du livre (18 sp, interligne 1,45). */
+/** Quatre polices en boutons radio, chacune montrée sur une phrase du livre (18 sp, interligne 1,45). */
 @Composable
 private fun FontChoices(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) {
     val colors = VersoTheme.colors
@@ -134,6 +134,7 @@ private fun FontChoices(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) 
     val fonts = listOf(
         Triple(ReadingFont.LITERATA, R.string.settings_font_literata, R.string.settings_font_literata_summary),
         Triple(ReadingFont.ATKINSON, R.string.settings_font_atkinson, R.string.settings_font_atkinson_summary),
+        Triple(ReadingFont.LIBRON, R.string.settings_font_libron, R.string.settings_font_libron_summary),
         Triple(ReadingFont.SYSTEM, R.string.settings_font_system, R.string.settings_font_system_summary),
     )
     Column(Modifier.selectableGroup()) {

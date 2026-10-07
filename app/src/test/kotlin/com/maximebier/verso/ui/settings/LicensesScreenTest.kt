@@ -1,7 +1,10 @@
 package com.maximebier.verso.ui.settings
 
 import android.content.Context
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -25,7 +28,7 @@ class LicensesScreenTest {
 
     @Test
     fun everyLicenseTextIsBundledAndNotBlank() {
-        assertThat(OpenSourceLicenses.entries).hasSize(12)
+        assertThat(OpenSourceLicenses.entries).hasSize(13)
         OpenSourceLicenses.entries.forEach { entry ->
             val text = ctx.resources.openRawResource(entry.text).bufferedReader().use { it.readText() }
             assertThat(text.trim()).isNotEmpty()
@@ -39,9 +42,14 @@ class LicensesScreenTest {
         composeRule.onNodeWithText(ctx.getString(R.string.settings_licenses)).assertExists()
         listOf(
             R.string.license_component_readium, R.string.license_component_atkinson,
+            R.string.license_component_libron,
             R.string.license_component_androidx, R.string.license_component_coil,
             R.string.license_component_okio, R.string.license_component_jspecify,
-        ).forEach { composeRule.onNodeWithText(ctx.getString(it), substring = true).performScrollTo().assertExists() }
+        ).forEach {
+            // Liste paresseuse : les dernières lignes ne sont composées qu'une fois amenées à l'écran.
+            composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(ctx.getString(it), substring = true))
+            composeRule.onNodeWithText(ctx.getString(it), substring = true).assertExists()
+        }
     }
 
     @Test

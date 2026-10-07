@@ -19,6 +19,8 @@ class TypographyTest {
     fun eachFontHasItsFamily() {
         assertThat(fontFamilyFor(ReadingFont.LITERATA)).isSameInstanceAs(LiterataFamily)
         assertThat(fontFamilyFor(ReadingFont.ATKINSON)).isSameInstanceAs(AtkinsonFamily)
+        assertThat(fontFamilyFor(ReadingFont.LIBRON)).isSameInstanceAs(LibronFamily)
+        assertThat(VersoTypography.of(ReadingFont.LIBRON).body.fontFamily).isSameInstanceAs(LibronFamily)
         assertThat(fontFamilyFor(ReadingFont.SYSTEM)).isEqualTo(FontFamily.Default)
     }
 

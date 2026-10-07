@@ -33,9 +33,21 @@ val LiterataFamily: FontFamily = variableFamily(R.font.literata, R.font.literata
 val AtkinsonFamily: FontFamily =
     variableFamily(R.font.atkinson_hyperlegible_next, R.font.atkinson_hyperlegible_next_italic)
 
+/**
+ * Libron, police statique en quatre styles : les graisses intermédiaires de l'interface (380, 500, 600) prennent le
+ * style le plus proche.
+ */
+val LibronFamily: FontFamily = FontFamily(
+    Font(R.font.libron, FontWeight.Normal, FontStyle.Normal),
+    Font(R.font.libron_italic, FontWeight.Normal, FontStyle.Italic),
+    Font(R.font.libron_bold, FontWeight.Bold, FontStyle.Normal),
+    Font(R.font.libron_bold_italic, FontWeight.Bold, FontStyle.Italic),
+)
+
 /** Police de toute l'app ; « Police du système » = celle du téléphone. */
 fun fontFamilyFor(font: ReadingFont): FontFamily = when (font) {
     ReadingFont.LITERATA -> LiterataFamily
     ReadingFont.ATKINSON -> AtkinsonFamily
+    ReadingFont.LIBRON -> LibronFamily
     ReadingFont.SYSTEM -> FontFamily.Default
 }

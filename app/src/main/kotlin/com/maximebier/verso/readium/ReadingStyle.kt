@@ -24,6 +24,11 @@ object ReadingStyle {
     const val LITERATA_FAMILY_NAME = "Literata"
     const val LITERATA_ASSET_REGULAR = "fonts/literata.ttf"
     const val LITERATA_ASSET_ITALIC = "fonts/literata_italic.ttf"
+    const val LIBRON_FAMILY_NAME = "Libron"
+    const val LIBRON_ASSET_REGULAR = "fonts/libron.ttf"
+    const val LIBRON_ASSET_ITALIC = "fonts/libron_italic.ttf"
+    const val LIBRON_ASSET_BOLD = "fonts/libron_bold.ttf"
+    const val LIBRON_ASSET_BOLD_ITALIC = "fonts/libron_bold_italic.ttf"
 
     /** Motif « glob simple » des assets servis aux WebView (dossier `src/main/assets/fonts/`). */
     const val SERVED_ASSETS_PATTERN = "fonts/.*"
@@ -45,6 +50,7 @@ object ReadingStyle {
     /**
      * Thèmes foncés (sombre et nuit, `typography.darkThemeAdjust` de tokens.json) : texte allégé et espacé contre le
      * halo du texte clair sur fond foncé. La police du système suit les valeurs d’Atkinson (sans empattements).
+     * Libron, statique, n’a pas de graisse sous 400 : elle garde 400 et prend l’espacement de Literata (empattements).
      */
     const val DARK_FONT_WEIGHT_ATKINSON = 380.0
     const val DARK_FONT_WEIGHT_LITERATA = 370.0
@@ -73,7 +79,7 @@ object ReadingStyle {
     /** Readium applique `400 × facteur` : 380 ⇒ 0,95. */
     fun fontWeightFactor(dark: Boolean, font: ReadingFont): Double {
         val weight = when {
-            !dark -> NORMAL_FONT_WEIGHT
+            !dark || font == ReadingFont.LIBRON -> NORMAL_FONT_WEIGHT
             font == ReadingFont.LITERATA -> DARK_FONT_WEIGHT_LITERATA
             else -> DARK_FONT_WEIGHT_ATKINSON
         }
@@ -83,7 +89,7 @@ object ReadingStyle {
     /** Readium divise la valeur par 2 (`Length.Rem(value / 2)`) : 0,02 em ⇒ 0,04. Rien en clair. */
     fun readiumLetterSpacing(dark: Boolean, font: ReadingFont): Double? = when {
         !dark -> null
-        font == ReadingFont.LITERATA -> DARK_LETTER_SPACING_EM_LITERATA * 2
+        font == ReadingFont.LITERATA || font == ReadingFont.LIBRON -> DARK_LETTER_SPACING_EM_LITERATA * 2
         else -> DARK_LETTER_SPACING_EM_ATKINSON * 2
     }
 

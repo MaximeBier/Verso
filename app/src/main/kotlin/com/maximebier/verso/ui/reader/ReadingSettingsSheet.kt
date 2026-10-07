@@ -253,13 +253,13 @@ internal fun ScrollModeRow(selected: ScrollMode, onSelect: (ScrollMode) -> Unit)
 private val CardGap = 8.dp
 private val CardPadding = 8.dp
 
-/** Trois cartes « Aa » dans leur police (2.02) ; sélection = bordure accent 2 dp, gras, coche. */
+/** Quatre cartes « Aa » dans leur police (2.02) ; sélection = bordure accent 2 dp, gras, coche. */
 @Composable
 private fun FontCards(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) {
     val labels = ReadingFont.entries.map { fontLabel(it) }
     val group = stringResource(R.string.reader_settings_font)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns = fittingColumns(labels, VersoTheme.typography.captionBold, maxWidth, CardGap, CardPadding, listOf(3, 1))
+        val columns = fittingColumns(labels, VersoTheme.typography.captionBold, maxWidth, CardGap, CardPadding, listOf(4, 2, 1))
         AdaptiveGrid(
             items = ReadingFont.entries,
             columns = columns,
@@ -276,6 +276,7 @@ private fun fontLabel(font: ReadingFont): String = stringResource(
     when (font) {
         ReadingFont.LITERATA -> R.string.reader_settings_font_literata
         ReadingFont.ATKINSON -> R.string.reader_settings_font_atkinson
+        ReadingFont.LIBRON -> R.string.reader_settings_font_libron
         ReadingFont.SYSTEM -> R.string.reader_settings_font_system
     },
 )

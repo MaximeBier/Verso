@@ -36,6 +36,13 @@ class ReadingStyleTest {
     }
 
     @Test
+    fun libronKeepsItsWeightInDarkThemes() {
+        // Police statique : pas de graisse sous 400 ; espacement des polices à empattements.
+        assertThat(ReadingStyle.fontWeightFactor(dark = true, ReadingFont.LIBRON)).isWithin(1e-9).of(1.0)
+        assertThat(ReadingStyle.readiumLetterSpacing(dark = true, ReadingFont.LIBRON)!!).isWithin(1e-9).of(0.03)
+    }
+
+    @Test
     fun darkThemeAddsATenthOfLineHeight() {
         assertThat(ReadingStyle.lineHeight(1.6, dark = true)).isWithin(1e-9).of(1.7)
         assertThat(ReadingStyle.lineHeight(1.4, dark = true)).isWithin(1e-9).of(1.5)

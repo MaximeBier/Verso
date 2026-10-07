@@ -65,12 +65,14 @@ class VersoTypography(private val family: FontFamily) {
     companion object {
         private val Literata = VersoTypography(LiterataFamily)
         private val Atkinson = VersoTypography(AtkinsonFamily)
+        private val Libron = VersoTypography(LibronFamily)
         private val System = VersoTypography(FontFamily.Default)
 
         /** Une instance par police (les styles ne sont pas recréés à chaque composition). */
         fun of(font: ReadingFont): VersoTypography = when (font) {
             ReadingFont.LITERATA -> Literata
             ReadingFont.ATKINSON -> Atkinson
+            ReadingFont.LIBRON -> Libron
             ReadingFont.SYSTEM -> System
         }
     }
