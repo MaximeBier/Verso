@@ -118,6 +118,30 @@ class ReadingSettingsSheetTest {
     }
 
     @Test
+    fun sectionsAreInTheChosenOrder() {
+        compose.setContent {
+            VersoTheme(theme = AppTheme.LIGHT, font = ReadingFont.LITERATA) {
+                ReadingSettingsContent(
+                    state = ReadingSettingsSheetState(ReadingSettings(), ThemeMode.AUTO, ScrollMode.CONTINUOUS),
+                    onFontSelected = {}, onSmaller = {}, onLarger = {}, onThemeSelected = {},
+                    onLineSpacingSelected = {}, onMarginsSelected = {}, onClose = {},
+                    scrollModeRow = { ScrollModeRow(selected = ScrollMode.CONTINUOUS, onSelect = {}) },
+                )
+            }
+        }
+        // Thème, Défilement, Police, Taille, Interligne, Marges (décision de Maxime, 2026-10-07).
+        val tops = listOf(
+            R.string.reader_settings_theme,
+            R.string.reader_settings_scroll,
+            R.string.reader_settings_font,
+            R.string.reader_settings_text_size,
+            R.string.reader_settings_line_spacing,
+            R.string.reader_settings_margins,
+        ).map { compose.onNodeWithText(s(it), useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y }
+        assertThat(tops).isInStrictOrder()
+    }
+
+    @Test
     fun sizeButtonsAreDisabledAtTheLimits() {
         show(ReadingSettingsSheetState(ReadingSettings(fontSizeSp = ReadingSettingsLimits.MAX_FONT_SIZE_SP), ThemeMode.AUTO, ScrollMode.CONTINUOUS))
         compose.onNodeWithContentDescription(s(R.string.reader_settings_text_larger)).assertIsNotEnabled()
