@@ -91,6 +91,13 @@ class ReadingSettingsSheetTest {
     }
 
     @Test
+    fun libronCanBeChosen() {
+        val state = show()
+        compose.onNodeWithText(s(R.string.reader_settings_font_libron)).performClick().assertIsSelected()
+        assertThat(state().settings.font).isEqualTo(ReadingFont.LIBRON)
+    }
+
+    @Test
     fun scrollModeRowSaysItIsForThisBook() {
         var chosen: ScrollMode? = null
         compose.setContent {

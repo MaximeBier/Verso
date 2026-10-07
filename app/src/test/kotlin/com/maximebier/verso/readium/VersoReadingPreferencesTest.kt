@@ -64,6 +64,11 @@ class VersoReadingPreferencesTest {
     }
 
     @Test
+    fun libronIsServedToReadium() {
+        assertThat(prefs(ReadingSettings(font = ReadingFont.LIBRON)).fontFamily).isEqualTo(VersoReadingPreferences.LIBRON)
+    }
+
+    @Test
     fun systemFontIsTheWebViewSansSerif() {
         assertThat(prefs(ReadingSettings(font = ReadingFont.SYSTEM)).fontFamily).isEqualTo(FontFamily.SANS_SERIF)
     }

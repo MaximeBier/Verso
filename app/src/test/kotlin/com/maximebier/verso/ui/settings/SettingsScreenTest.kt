@@ -122,10 +122,11 @@ class SettingsScreenTest {
     fun fontsAreRadioButtonsWithASample() {
         show()
         composeRule.onNodeWithText(ctx.getString(R.string.settings_font_literata)).assertIsSelected()
-        composeRule.onAllNodesWithText(ctx.getString(R.string.settings_font_sample)).assertCountEquals(3)
+        composeRule.onAllNodesWithText(ctx.getString(R.string.settings_font_sample)).assertCountEquals(4)
         composeRule.onNodeWithText(ctx.getString(R.string.settings_font_atkinson)).performScrollTo().performClick()
         composeRule.onNodeWithText(ctx.getString(R.string.settings_font_atkinson)).assertIsSelected()
-        assertThat(events).containsExactly("font=ATKINSON")
+        composeRule.onNodeWithText(ctx.getString(R.string.settings_font_libron)).performScrollTo().performClick()
+        assertThat(events).containsExactly("font=ATKINSON", "font=LIBRON").inOrder()
     }
 
     @Test

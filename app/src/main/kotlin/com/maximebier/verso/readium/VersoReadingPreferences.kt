@@ -11,6 +11,8 @@ import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.epub.css.Color as CssColor
 import org.readium.r2.navigator.epub.css.FontStyle
+import org.readium.r2.navigator.epub.css.FontWeight
+import org.readium.r2.navigator.epub.css.MutableFontFamilyDeclaration
 import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
@@ -23,11 +25,13 @@ object VersoReadingPreferences {
 
     val LITERATA: FontFamily = FontFamily(ReadingStyle.LITERATA_FAMILY_NAME)
     val ATKINSON: FontFamily = FontFamily(ReadingStyle.ATKINSON_FAMILY_NAME)
+    val LIBRON: FontFamily = FontFamily(ReadingStyle.LIBRON_FAMILY_NAME)
 
     /** « Police du système » : la police sans empattements de la WebView (celle du téléphone). */
     fun fontFamilyOf(font: ReadingFont): FontFamily = when (font) {
         ReadingFont.LITERATA -> LITERATA
         ReadingFont.ATKINSON -> ATKINSON
+        ReadingFont.LIBRON -> LIBRON
         ReadingFont.SYSTEM -> FontFamily.SANS_SERIF
     }
 
@@ -76,7 +80,7 @@ object VersoReadingPreferences {
         copy(backgroundColor = null, textColor = null, theme = null)
 
     /**
-     * Literata et Atkinson servies depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne
+     * Literata, Atkinson et Libron servies depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne
      * lui-même). Les insets sont posés par Verso (`readerContentInsets`) : Readium ajouterait la découpe de l’écran
      * une seconde fois. La couleur des liens est fixée à la création : elle est commune au clair et au sépia, et au
      * sombre et à la nuit (`ReadingStyle.linkTheme`), et passer de l’un à l’autre groupe recrée l’activité.
@@ -105,6 +109,26 @@ object VersoReadingPreferences {
             ReadingStyle.ATKINSON_ASSET_ITALIC,
             ReadingStyle.ATKINSON_WEIGHT_AXIS,
         )
+        addFontFamilyDeclaration(LIBRON) {
+            staticFace(ReadingStyle.LIBRON_ASSET_REGULAR, FontStyle.NORMAL, FontWeight.NORMAL, preload = true)
+            staticFace(ReadingStyle.LIBRON_ASSET_ITALIC, FontStyle.ITALIC, FontWeight.NORMAL)
+            staticFace(ReadingStyle.LIBRON_ASSET_BOLD, FontStyle.NORMAL, FontWeight.BOLD)
+            staticFace(ReadingStyle.LIBRON_ASSET_BOLD_ITALIC, FontStyle.ITALIC, FontWeight.BOLD)
+        }
+    }
+
+    /** Un style d’une police statique (Libron). */
+    private fun MutableFontFamilyDeclaration.staticFace(
+        asset: String,
+        style: FontStyle,
+        weight: FontWeight,
+        preload: Boolean = false,
+    ) {
+        addFontFace {
+            addSource(asset, preload = preload)
+            setFontStyle(style)
+            setFontWeight(weight)
+        }
     }
 
     private fun EpubNavigatorFragment.Configuration.declareVariableFont(
