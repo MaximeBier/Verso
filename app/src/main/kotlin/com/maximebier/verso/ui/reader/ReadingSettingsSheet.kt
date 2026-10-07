@@ -78,7 +78,7 @@ data class ReadingSettingsSheetState(
 
 /**
  * Feuille « Réglages de lecture » (2.02) : ouverte à mi-hauteur **sans voile**, le texte reste visible au-dessus et
- * change en direct. En haut Police, Taille, Thème ; en faisant glisser, Interligne, Marges et Défilement.
+ * change en direct. Dans l’ordre : Thème, Défilement, puis Police, Taille, Interligne et Marges.
  *
  * La feuille vit dans sa propre fenêtre (Dialog) : aucun toucher, sur elle ou au-dessus, n’atteint la surface de
  * lecture (qui annulerait la remise en page en cours). Un toucher au-dessus de la feuille la referme.
@@ -170,13 +170,18 @@ internal fun ReadingSettingsContent(
             VersoIconButton(icon = VersoIcons.Close, contentDescription = stringResource(R.string.common_close), onClick = onClose)
         }
         Column(Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Ordre choisi par Maxime (2026-10-07) : Thème, Défilement, puis le texte (Police, Taille, Interligne,
+            // Marges). Espacements de la maquette : 16 dp entre deux rangées de segments (12 + 4), filet entre les deux
+            // groupes.
+            SectionLabel(stringResource(R.string.reader_settings_theme))
+            ThemeSwatches(selected = state.themeMode, onSelect = onThemeSelected)
+            if (scrollModeRow != null) {
+                Box(Modifier.padding(top = 4.dp)) { scrollModeRow() }
+            }
+            HorizontalDivider(thickness = 1.dp, color = colors.divider)
             SectionLabel(stringResource(R.string.reader_settings_font))
             FontCards(selected = state.settings.font, onSelect = onFontSelected)
             TextSizeRow(state.settings, onSmaller, onLarger)
-            SectionLabel(stringResource(R.string.reader_settings_theme))
-            ThemeSwatches(selected = state.themeMode, onSelect = onThemeSelected)
-            // Maquette : filet 12 dp sous les pastilles, 16 dp au-dessus d’Interligne (12 + 4).
-            HorizontalDivider(thickness = 1.dp, color = colors.divider)
             Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 LabeledSegments(
                     label = stringResource(R.string.reader_settings_line_spacing),
@@ -198,7 +203,6 @@ internal fun ReadingSettingsContent(
                     selectedIndex = Margins.entries.indexOf(state.settings.margins),
                     onSelect = { onMarginsSelected(Margins.entries[it]) },
                 )
-                scrollModeRow?.invoke()
             }
         }
     }
