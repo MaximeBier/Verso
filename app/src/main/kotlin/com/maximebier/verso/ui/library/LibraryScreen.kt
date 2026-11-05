@@ -311,35 +311,40 @@ private fun LibraryList(state: LibraryUiState, actions: LibraryActions, onOpenSo
     }
 }
 
+/** Marge extérieure des cellules de la grille (maquette 1.03). */
+private val GRID_EDGE = 20.dp
+
 @Composable
 private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions, onOpenSortSheet: () -> Unit) {
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottom + 16.dp),
+        // Pas de marge latérale sur la grille : carte, en-tête et filtres gardent exactement les marges de la liste,
+        // seules les cellules de livre prennent la leur.
+        contentPadding = PaddingValues(bottom = bottom + 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         state.resume?.let { resume ->
             item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
-                ResumeCardItem(resume, actions, Modifier.padding(top = 8.dp))
+                ResumeCardItem(resume, actions, Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp))
             }
         }
         item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-            LibraryHeader(state, onOpenSortSheet = onOpenSortSheet, modifier = Modifier.padding(start = 8.dp))
+            LibraryHeader(state, onOpenSortSheet = onOpenSortSheet, modifier = Modifier.padding(start = 24.dp, end = 8.dp))
         }
         item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
-            LibraryFilterChips(selected = state.filter, onSelect = actions.onFilterChange, modifier = Modifier.padding(start = 4.dp))
+            LibraryFilterChips(selected = state.filter, onSelect = actions.onFilterChange)
         }
         if (state.filteredBooks.isEmpty()) {
             item(key = "filter-empty", span = { GridItemSpan(maxLineSpan) }) {
-                FilterEmptyText(Modifier.padding(start = 8.dp, top = 16.dp))
+                FilterEmptyText(Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp))
             }
         }
         itemsIndexed(state.listedBooks, key = { _, book -> book.id }) { index, book ->
-            // Marge extérieure de 20 dp comme la maquette : 16 dp de la grille + 4 dp.
-            val edge = if (index % 2 == 0) Modifier.padding(start = 4.dp) else Modifier.padding(end = 4.dp)
+            // Marge extérieure de 20 dp comme la maquette, 16 dp entre les deux colonnes.
+            val edge = if (index % 2 == 0) Modifier.padding(start = GRID_EDGE) else Modifier.padding(end = GRID_EDGE)
             BookGridCell(book, actions, edge)
         }
     }

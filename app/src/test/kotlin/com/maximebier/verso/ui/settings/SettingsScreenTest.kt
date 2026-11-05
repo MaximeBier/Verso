@@ -101,21 +101,34 @@ class SettingsScreenTest {
         val row = composeRule.onNode(hasText(ctx.getString(R.string.settings_reopen_last_book)) and isToggleable())
 
         row.assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
-        row.assertIsOn()
+        row.performScrollTo().assertIsOn()
         row.performClick()
         row.assertIsOff()
         assertThat(events).containsExactly("reopen=false")
     }
 
+    private fun themeSwatch(label: Int) = composeRule.onNode(
+        hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.reader_settings_theme))),
+    )
+
+    /** Thème au premier niveau : les cinq vignettes de la feuille « Aa », sans dialogue (étape 34). */
     @Test
-    fun themeRowOpensAChoiceAndAppliesIt() {
+    fun themeSwatchesApplyTheChoiceDirectly() {
         show()
-        composeRule.onNodeWithText(ctx.getString(R.string.settings_theme)).performScrollTo().performClick()
-        composeRule.onNode(hasText(ctx.getString(R.string.settings_theme_dark)) and hasAnyAncestor(isDialog())).performClick()
+        themeSwatch(R.string.reader_settings_theme_auto).performScrollTo().assertIsSelected()
+        themeSwatch(R.string.reader_settings_theme_dark).performClick()
         assertThat(events).containsExactly("theme=DARK")
-        composeRule.onNodeWithText(ctx.getString(R.string.common_close)).performClick()
-        composeRule.onNode(hasText(ctx.getString(R.string.settings_theme)) and hasText(ctx.getString(R.string.settings_theme_dark)))
-            .assertExists()
+        themeSwatch(R.string.reader_settings_theme_dark).assertIsSelected()
+        composeRule.onNode(isDialog()).assertDoesNotExist()
+    }
+
+    /** « Thème sombre » ne s’affiche qu’en automatique, le seul cas où il sert. */
+    @Test
+    fun darkThemeVariantOnlyShowsInAutomatic() {
+        show()
+        darkVariantSegment(R.string.settings_dark_theme_dark).assertExists()
+        themeSwatch(R.string.reader_settings_theme_night).performScrollTo().performClick()
+        darkVariantSegment(R.string.settings_dark_theme_dark).assertDoesNotExist()
     }
 
     @Test

@@ -484,7 +484,7 @@ private fun ReorderRow(
     }
     // Texte très agrandi : « Monter » et « Descendre » passent sous le titre, qui garde la largeur (pas de mot coupé).
     val stacked = LocalDensity.current.fontScale >= STACKED_CARD_FONT_SCALE
-    Column(Modifier.fillMaxWidth().background(colors.background).padding(end = 4.dp)) {
+    Column(Modifier.fillMaxWidth().background(colors.background).padding(end = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier

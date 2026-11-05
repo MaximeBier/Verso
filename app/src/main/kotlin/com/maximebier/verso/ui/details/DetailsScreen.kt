@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -350,6 +352,9 @@ private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpen
     }
 }
 
+/** Marge intérieure du bouton « Modifier », compensée pour aligner son libellé sur le contenu. */
+private val EditButtonPadding = 14.dp
+
 /** Ligne « Collections » (4.04) : noms séparés par des virgules ou « Aucune », et « Modifier », qui ouvre la feuille. */
 @Composable
 private fun CollectionsRow(names: List<String>, onEdit: () -> Unit) {
@@ -365,23 +370,26 @@ private fun CollectionsRow(names: List<String>, onEdit: () -> Unit) {
             )
         }
     }
-    val edit = @Composable {
+    // Le bouton texte a 14 dp de marge intérieure : décalé d’autant, son libellé s’aligne sur le bord du contenu
+    // (à droite à côté des noms, à gauche dessous) ; la zone de toucher déborde dans la marge.
+    val edit = @Composable { offsetX: Dp ->
         VersoTextButton(
             text = stringResource(R.string.details_collections_edit),
             onClick = onEdit,
-            modifier = Modifier.semantics { contentDescription = editDescription },
+            modifier = Modifier.offset(x = offsetX).semantics { contentDescription = editDescription },
+            horizontalPadding = EditButtonPadding,
         )
     }
     // Texte très agrandi : « Modifier » passe sous les noms, qui gardent toute la largeur.
     if (LocalDensity.current.fontScale >= STACKED_CARD_FONT_SCALE) {
         Column {
             texts(Modifier.fillMaxWidth())
-            edit()
+            edit(-EditButtonPadding)
         }
     } else {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             texts(Modifier.weight(1f))
-            edit()
+            edit(EditButtonPadding)
         }
     }
 }

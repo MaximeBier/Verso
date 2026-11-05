@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,20 +34,22 @@ import com.maximebier.verso.core.settings.ScrollMode
 import com.maximebier.verso.data.DarkThemeVariant
 import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.ChoiceRow
+import com.maximebier.verso.ui.reader.RoundOutlinedIconButton
+import com.maximebier.verso.ui.reader.ThemeSwatches
 import com.maximebier.verso.ui.components.RadioRow
 import com.maximebier.verso.ui.components.SegmentedRow
 import com.maximebier.verso.ui.components.SettingsParagraph
 import com.maximebier.verso.ui.components.SettingsSection
 import com.maximebier.verso.ui.components.VersoDialog
-import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoTextButton
+import com.maximebier.verso.ui.theme.CenteredLineHeight
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
 import com.maximebier.verso.ui.theme.fontFamilyFor
 
 /** Dialogue ouvert depuis une ligne de choix de la section Lecture. */
-private enum class ReadingDialog { THEME, TEXT_SIZE, SCROLL }
+private enum class ReadingDialog { TEXT_SIZE, SCROLL }
 
 @Composable
 fun themeModeLabel(mode: ThemeMode): String = stringResource(
@@ -82,12 +85,11 @@ fun ReadingSettingsSection(
     SettingsSection(title = stringResource(R.string.settings_section_reading)) {
         SettingsParagraph(text = stringResource(R.string.settings_reading_help))
         FontChoices(selected = reading.font, onSelect = onFontChange)
-        ChoiceRow(
-            title = stringResource(R.string.settings_theme),
-            value = themeModeLabel(themeMode),
-            onClick = { dialog = ReadingDialog.THEME },
-        )
-        DarkThemeVariantSelector(selected = darkThemeVariant, onSelect = onDarkThemeVariantChange)
+        ThemeChoices(selected = themeMode, onSelect = onThemeModeChange)
+        // « Thème sombre » ne sert qu’en automatique : il choisit le thème foncé quand le téléphone passe en sombre.
+        if (themeMode == ThemeMode.AUTO) {
+            DarkThemeVariantSelector(selected = darkThemeVariant, onSelect = onDarkThemeVariantChange)
+        }
         ChoiceRow(
             title = stringResource(R.string.settings_text_size),
             value = reading.fontSizeSp.toString(),
@@ -101,13 +103,6 @@ fun ReadingSettingsSection(
     }
     val close = { dialog = null }
     when (dialog) {
-        ReadingDialog.THEME -> RadioDialog(
-            title = stringResource(R.string.settings_theme),
-            options = ThemeMode.entries.map { themeModeLabel(it) },
-            selectedIndex = ThemeMode.entries.indexOf(themeMode),
-            onSelect = { onThemeModeChange(ThemeMode.entries[it]) },
-            onDismiss = close,
-        )
         ReadingDialog.SCROLL -> RadioDialog(
             title = stringResource(R.string.settings_scroll),
             options = ScrollMode.entries.map { scrollModeLabel(it) },
@@ -159,7 +154,13 @@ private fun FontChoices(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) 
                     Text(stringResource(summary), style = VersoTheme.typography.caption, color = colors.textSecondary)
                     Text(
                         text = stringResource(R.string.settings_font_sample),
-                        style = TextStyle(fontFamily = fontFamilyFor(font), fontSize = 18.sp, lineHeight = 26.1.sp),
+                        // Interligne centré : même écart sous la description quelle que soit la police (Libron collait).
+                        style = TextStyle(
+                            fontFamily = fontFamilyFor(font),
+                            fontSize = 18.sp,
+                            lineHeight = 26.1.sp,
+                            lineHeightStyle = CenteredLineHeight,
+                        ),
                         color = colors.text,
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -199,20 +200,35 @@ private fun TextSizeDialog(reading: ReadingSettings, onFontSizeChange: (Int) -> 
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            VersoIconButton(
+            // Boutons cerclés, comme dans la feuille « Aa » de la lecture.
+            RoundOutlinedIconButton(
                 icon = VersoIcons.Minus,
-                contentDescription = stringResource(R.string.settings_text_size_decrease),
-                onClick = { onFontSizeChange(reading.smaller().fontSizeSp) },
+                description = stringResource(R.string.settings_text_size_decrease),
                 enabled = reading.canShrink,
+                onClick = { onFontSizeChange(reading.smaller().fontSizeSp) },
             )
             Text(reading.fontSizeSp.toString(), style = VersoTheme.typography.screenTitle, color = VersoTheme.colors.text)
-            VersoIconButton(
+            RoundOutlinedIconButton(
                 icon = VersoIcons.Plus,
-                contentDescription = stringResource(R.string.settings_text_size_increase),
-                onClick = { onFontSizeChange(reading.larger().fontSizeSp) },
+                description = stringResource(R.string.settings_text_size_increase),
                 enabled = reading.canGrow,
+                onClick = { onFontSizeChange(reading.larger().fontSizeSp) },
             )
         }
+    }
+}
+
+/** « Thème » : les cinq vignettes de la feuille « Aa », au premier niveau plutôt que dans un dialogue. */
+@Composable
+private fun ThemeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    Text(
+        text = stringResource(R.string.settings_theme),
+        style = VersoTheme.typography.bodyStrong,
+        color = VersoTheme.colors.text,
+        modifier = Modifier.padding(start = 24.dp, top = 16.dp, end = 24.dp).semantics { heading() },
+    )
+    Box(Modifier.padding(start = 24.dp, top = 12.dp, end = 24.dp, bottom = 8.dp)) {
+        ThemeSwatches(selected = selected, onSelect = onSelect)
     }
 }
 

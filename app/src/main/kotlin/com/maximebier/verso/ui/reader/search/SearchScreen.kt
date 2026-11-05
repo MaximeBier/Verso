@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -97,13 +99,19 @@ fun SearchScreen(
 
     // Écran posé sur le lecteur : un toucher dans une zone vide ne doit pas passer au texte (barre, tour de page).
     Column(
-        modifier.fillMaxSize().background(colors.background).pointerInput(Unit) {}.windowInsetsPadding(WindowInsets.safeDrawing),
+        modifier
+            .fillMaxSize()
+            .background(colors.background)
+            .pointerInput(Unit) {}
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)),
     ) {
+        // Le fond de l’en-tête passe sous la barre d’état, comme sur la maquette 2.06 : pas de bande vide au-dessus.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = VersoDimens.topBarReader)
                 .background(colors.surface)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .heightIn(min = VersoDimens.topBarReader)
                 .padding(start = 4.dp, end = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,

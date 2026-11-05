@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Fenêtre sombre en thème sombre : aucun flash clair au lancement. -->
-    <style name="Theme.Verso" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.Verso" parent="android:Theme.Material.NoActionBar">
+        <!-- Poignées de sélection du texte de lecture : accent du thème sombre (tokens.json, dark.accent). -->
+        <item name="android:colorAccent">#CEB28A</item>
+    </style>
 </resources>

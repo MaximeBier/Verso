@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
@@ -41,12 +42,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -62,6 +65,7 @@ import com.maximebier.verso.data.ThemeMode
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoSegmentedButton
+import com.maximebier.verso.ui.theme.CenteredLineHeight
 import com.maximebier.verso.ui.theme.TintDialogNavigationBar
 import com.maximebier.verso.ui.theme.VersoColors
 import com.maximebier.verso.ui.theme.VersoDimens
@@ -257,6 +261,9 @@ internal fun ScrollModeRow(selected: ScrollMode, onSelect: (ScrollMode) -> Unit)
 private val CardGap = 8.dp
 private val CardPadding = 8.dp
 
+/** Hauteur de la case du « Aa » des cartes de police. */
+private val GlyphSlot = 40.sp
+
 /** Quatre cartes « Aa » dans leur police (2.02) ; sélection = bordure accent 2 dp, gras, coche. */
 @Composable
 private fun FontCards(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) {
@@ -302,14 +309,21 @@ private fun FontCard(font: ReadingFont, label: String, selected: Boolean, onClic
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(
-                text = stringResource(R.string.reader_settings_glyph),
-                fontFamily = fontFamilyFor(font),
-                fontSize = 28.sp,
-                lineHeight = 28.sp,
-                color = colors.text,
-                modifier = Modifier.clearAndSetSemantics {},
-            )
+            // Case de hauteur fixe (en sp, elle suit le texte agrandi), « Aa » centré dedans : les libellés tombent sur la
+            // même ligne dans les quatre cartes, quelles que soient les métriques de chaque police.
+            Box(Modifier.height(with(LocalDensity.current) { GlyphSlot.toDp() }), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.reader_settings_glyph),
+                    style = TextStyle(
+                        fontFamily = fontFamilyFor(font),
+                        fontSize = 28.sp,
+                        lineHeight = 28.sp,
+                        lineHeightStyle = CenteredLineHeight,
+                    ),
+                    color = colors.text,
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
+            }
             Text(
                 text = label,
                 style = if (selected) VersoTheme.typography.captionBold else VersoTheme.typography.caption.copy(fontWeight = FontWeight(500)),
@@ -358,7 +372,7 @@ private fun TextSizeRow(settings: ReadingSettings, onSmaller: () -> Unit, onLarg
 }
 
 @Composable
-private fun RoundOutlinedIconButton(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
+internal fun RoundOutlinedIconButton(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
     val colors = VersoTheme.colors
     IconButton(
         onClick = onClick,
@@ -372,9 +386,9 @@ private fun RoundOutlinedIconButton(icon: ImageVector, description: String, enab
 
 private val SwatchGap = 4.dp
 
-/** Cinq pastilles (2.02) dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Nuit. */
+/** Cinq pastilles (2.02) dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Nuit ; aussi dans les Paramètres. */
 @Composable
-private fun ThemeSwatches(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+internal fun ThemeSwatches(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val labels = ThemeMode.entries.map { themeLabel(it) }
     val group = stringResource(R.string.reader_settings_theme)
     BoxWithConstraints(Modifier.fillMaxWidth()) {

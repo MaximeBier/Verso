@@ -82,7 +82,7 @@ object VersoReadingPreferences {
     /**
      * Literata, Atkinson et Libron servies depuis les assets ; le défilement reste dans le chapitre (Verso enchaîne
      * lui-même). Les insets sont posés par Verso (`readerContentInsets`) : Readium ajouterait la découpe de l’écran
-     * une seconde fois. La couleur des liens est fixée à la création : elle est commune au clair et au sépia, et au
+     * une seconde fois. La couleur des liens (et celle de la sélection) est fixée à la création : elle est commune au clair et au sépia, et au
      * sombre et à la nuit (`ReadingStyle.linkTheme`), et passer de l’un à l’autre groupe recrée l’activité.
      */
     fun EpubNavigatorFragment.Configuration.applyVerso(theme: AppTheme, selectionCallback: ActionMode.Callback? = null) {
@@ -91,8 +91,15 @@ object VersoReadingPreferences {
         selectionActionModeCallback = selectionCallback
         // Liens (visités ou non) à la couleur d’accent des jetons, contrastée à 7:1 : en sombre, le mode nuit de
         // ReadiumCSS mettrait les liens visités en #0099E5 (5,8:1). Variables en ligne : elles priment sur ce mode.
-        val link = CssColor.Int(ReadingStyle.colors(theme).link)
-        readiumCssRsProperties = readiumCssRsProperties.copy(linkColor = link, visitedColor = link)
+        val colors = ReadingStyle.colors(theme)
+        val link = CssColor.Int(colors.link)
+        // Sélection aux couleurs du thème plutôt que le bleu d’Android (illisible en sombre), fixée comme les liens.
+        readiumCssRsProperties = readiumCssRsProperties.copy(
+            linkColor = link,
+            visitedColor = link,
+            selectionBackgroundColor = CssColor.Int(colors.selection),
+            selectionTextColor = CssColor.Int(colors.onSelection),
+        )
         disablePageTurnsWhileScrolling = true
         shouldApplyInsetsPadding = false
         // Mot trouvé par la recherche : fond opaque fondu et soulignement, texte inchangé (7:1).

@@ -83,6 +83,12 @@ private fun RowScope.RowTexts(title: String, summary: String?) {
     }
 }
 
+/**
+ * Marge droite commune : interrupteur (boîte de 60 dp, 4 dp de vide), chevrons et icônes finissent tous au même bord,
+ * à environ 24 dp comme le texte.
+ */
+private val RowEnd = 20.dp
+
 private val rowModifier = Modifier
     .fillMaxWidth()
     .heightIn(min = 64.dp)
@@ -101,7 +107,7 @@ fun SwitchRow(
         modifier = modifier
             .then(rowModifier)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+            .padding(start = 24.dp, top = 8.dp, end = RowEnd, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -143,7 +149,7 @@ fun ActionRow(
         modifier = modifier
             .then(rowModifier)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+            .padding(start = 24.dp, top = 8.dp, end = RowEnd, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -152,7 +158,7 @@ fun ActionRow(
             imageVector = icon,
             contentDescription = null,
             tint = iconTint,
-            modifier = Modifier.padding(end = 12.dp).size(VersoDimens.iconSmall),
+            modifier = Modifier.size(VersoDimens.iconSmall),
         )
     }
 }
@@ -199,7 +205,7 @@ fun ChoiceRow(title: String, value: String, onClick: () -> Unit, modifier: Modif
             .then(rowModifier)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {}
-            .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+            .padding(start = 24.dp, top = 8.dp, end = RowEnd, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -219,7 +225,7 @@ fun AppInfoRow(title: String, summary: String, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .heightIn(min = 72.dp)
             .semantics(mergeDescendants = true) {}
-            .padding(start = 24.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+            .padding(start = 24.dp, top = 8.dp, end = RowEnd, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

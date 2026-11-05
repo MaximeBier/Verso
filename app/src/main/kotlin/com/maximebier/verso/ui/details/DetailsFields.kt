@@ -108,6 +108,9 @@ fun DetailsTextField(
 
 private val MetadataGap = 16.dp
 
+/** Marge latérale de la fiche, que le filet traverse pour aller d’un bord à l’autre. */
+private val MetadataDividerBleed = 24.dp
+
 /**
  * Ligne de métadonnée (§3.14) : libellé à gauche, valeur 600 alignée à droite, filet bas divider. Si la valeur
  * ne tient plus sur une ligne à côté du libellé (texte système agrandi, nom de fichier long), elle passe sous le
@@ -125,7 +128,9 @@ fun MetadataRow(label: String, value: String, modifier: Modifier = Modifier) {
             .drawBehind {
                 val stroke = 1.dp.toPx()
                 val y = size.height - stroke / 2f
-                drawLine(color = colors.divider, start = Offset(0f, y), end = Offset(size.width, y), strokeWidth = stroke)
+                // Filet pleine largeur, comme les autres listes de l’app : il déborde de la marge de 24 dp de la fiche.
+                val bleed = MetadataDividerBleed.toPx()
+                drawLine(color = colors.divider, start = Offset(-bleed, y), end = Offset(size.width + bleed, y), strokeWidth = stroke)
             }
             .padding(vertical = 12.dp),
     ) {

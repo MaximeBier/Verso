@@ -55,6 +55,7 @@ import com.maximebier.verso.R
 import com.maximebier.verso.core.translation.Translation
 import com.maximebier.verso.core.translation.TranslationResult
 import com.maximebier.verso.ui.a11y.rememberReducedMotion
+import com.maximebier.verso.ui.common.literataArrows
 import com.maximebier.verso.ui.components.OutlinedPillButton
 import com.maximebier.verso.ui.components.VersoIconButton
 import com.maximebier.verso.ui.components.VersoIcons
@@ -184,7 +185,7 @@ fun TranslationSheet(
             // Dans la zone qui défile : en paysage à 200 %, la légende n’est jamais écrasée.
             if (state.result == null || state.result is TranslationResult.Word || state.result is TranslationResult.Passage) {
                 Text(
-                    text = stringResource(R.string.translation_languages),
+                    text = literataArrows(stringResource(R.string.translation_languages)),
                     style = typography.caption,
                     color = colors.textSecondary,
                 )

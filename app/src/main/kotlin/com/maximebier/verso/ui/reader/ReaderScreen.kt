@@ -122,7 +122,8 @@ fun ReaderScreen(viewModel: ReaderViewModel, onBackToLibrary: () -> Unit, onOpen
         viewModel.onDisplayMetrics(fontScale = readingFontScale.toFloat(), density = density.density)
     }
     KeepScreenOn()
-    ImmersiveSystemBars(showSystemBars = state.barsVisible)
+    // Notes et Recherche sont des écrans pleins : la barre d’état revient, sinon leur en-tête colle au bord (ou à l’encoche).
+    ImmersiveSystemBars(showSystemBars = state.barsVisible || state.notesVisible || state.searchVisible)
     BackHandler(enabled = state.tocVisible) { viewModel.hideToc() }
     BackHandler(enabled = state.settingsVisible) { viewModel.hideReadingSettings() }
     BackHandler(enabled = state.searchVisible) { viewModel.hideSearch() }

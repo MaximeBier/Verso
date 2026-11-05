@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.maximebier.verso.ui.common.literataArrows
 import com.maximebier.verso.ui.common.percentOf
 import com.maximebier.verso.R
 import com.maximebier.verso.core.journal.DayGroup
@@ -270,7 +271,7 @@ private fun SessionCard(item: JournalSessionItem, onResume: (BookPosition) -> Un
             Text(durationLabel(item.durationMinutes), style = journalStrong(), color = colors.text)
         }
         item.passage?.let { passage ->
-            Text(passage, style = journalBody(), color = colors.text)
+            Text(literataArrows(passage), style = journalBody(), color = colors.text)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -278,7 +279,7 @@ private fun SessionCard(item: JournalSessionItem, onResume: (BookPosition) -> Un
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.journal_percent_range, item.startPercent, item.endPercent),
+                text = literataArrows(stringResource(R.string.journal_percent_range, item.startPercent, item.endPercent)),
                 modifier = Modifier.weight(1f),
                 style = VersoTheme.typography.caption,
                 color = colors.textSecondary,

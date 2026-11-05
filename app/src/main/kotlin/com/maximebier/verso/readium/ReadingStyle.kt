@@ -14,6 +14,9 @@ data class ReadingColors(
     @ColorInt val background: Int,
     @ColorInt val text: Int,
     @ColorInt val link: Int,
+    /** Fond et texte d’un passage sélectionné (jetons `selection` et `onSelection`, groupe clair ou foncé comme les liens). */
+    @ColorInt val selection: Int,
+    @ColorInt val onSelection: Int,
 )
 
 /** Traduction des réglages de lecture de Verso en valeurs Readium (spec, « Lecture » et « Réglages de la V2 »). */
@@ -124,6 +127,8 @@ object ReadingStyle {
             background = palette.background.toArgb(),
             text = palette.text.toArgb(),
             link = palette(linkTheme(theme)).accent.toArgb(),
+            selection = palette(linkTheme(theme)).selection.toArgb(),
+            onSelection = palette(linkTheme(theme)).onSelection.toArgb(),
         )
     }
 }

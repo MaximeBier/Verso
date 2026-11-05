@@ -10,7 +10,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.maximebier.verso.core.settings.ReadingFont
 
-private val CenteredLineHeight = LineHeightStyle(
+/** Interligne centré sans rognage : la hauteur de ligne ne dépend plus des métriques de chaque police. */
+internal val CenteredLineHeight = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.None,
 )

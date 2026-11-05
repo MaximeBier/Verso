@@ -185,13 +185,15 @@ fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, 
     }
 }
 
-/** Menu ⋮ d'un livre (§3.9) : 232 dp, fond surface, rayon 12, ombre sans teinte, aucun voile. */
+/** Menu ⋮ d'un livre (§3.9) : 232 dp au moins, fond surface, rayon 12, ombre sans teinte, aucun voile. */
 @Composable
 fun BookOptionsMenu(expanded: Boolean, onDismissRequest: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
-        modifier = Modifier.width(232.dp),
+        // Largeur minimale de la maquette ; le menu s’élargit (jusqu’à 280 dp) pour que « Ajouter à une collection »
+        // tienne sur une ligne à la taille de texte normale.
+        modifier = Modifier.widthIn(min = 232.dp),
         shape = VersoShapes.small,
         containerColor = VersoTheme.colors.surface,
         tonalElevation = 0.dp,

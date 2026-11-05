@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Thème de fenêtre minimal : tout le rendu est en Compose (VersoTheme). -->
-    <style name="Theme.Verso" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Verso" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Poignées de sélection du texte de lecture (WebView) : accent du thème clair (tokens.json, light.accent)
+             plutôt que le turquoise d’Android. -->
+        <item name="android:colorAccent">#7A3021</item>
+    </style>
 </resources>
