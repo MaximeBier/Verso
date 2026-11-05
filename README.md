@@ -49,7 +49,7 @@ Kotlin 2.4 · Jetpack Compose (Material 3) · Navigation Compose · Readium Kotl
 - Readium ouvre et affiche les EPUB derrière l’interface `ReaderController`, qui isole le moteur du reste de l’app.
 - La position est un *locator* Readium (chapitre, progression, extrait), jamais des pixels : elle survit à un changement de taille de texte.
 - Room garde livres, positions, sessions, surlignages et collections ; DataStore les préférences ; la sauvegarde est un zip avec les données en JSON, pas une copie de la base ; tous les seuils sont des constantes nommées.
-- 1 314 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les notes, la traduction, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
+- 1 322 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les notes, la traduction, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
 
 La spécification complète, avec les décisions et les critères d’acceptation, est dans [`docs/SPEC.md`](docs/SPEC.md).
 
@@ -66,11 +66,10 @@ echo "sdk.dir=/chemin/vers/Android/Sdk" > local.properties
 ./gradlew :app:installDebug                   # installation sur un téléphone branché
 ```
 
-Traduction (facultative) : ajouter à `local.properties` la clé et la région d’une ressource Azure AI Translator (offre gratuite F0). Sans elles, « Traduire » n’apparaît pas et le reste fonctionne.
+Traduction (facultative) : ajouter à `local.properties` une clé DeepL API (l’offre Free suffit, sa clé finit par `:fx`). Sans elle, « Traduire » n’apparaît pas et le reste fonctionne.
 
 ```properties
-translator.key=…
-translator.region=francecentral
+deepl.key=…:fx
 ```
 
 ## Licence

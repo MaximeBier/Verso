@@ -40,9 +40,15 @@ data class HighlightUiState(
 
 /**
  * Feuille de traduction (3.08 à 3.10) : [source] est le passage sélectionné (espaces normalisées) ; [short] = mot ou
- * expression de 3 mots au plus, montré en tête de feuille ; [result] null pendant le chargement.
+ * expression de 3 mots au plus, montré en tête de feuille ; [context] la phrase autour, envoyée avec lui (« Réessayer »
+ * compris) ; [result] null pendant le chargement.
  */
-data class TranslationSheetState(val source: String, val short: Boolean, val result: TranslationResult?)
+data class TranslationSheetState(
+    val source: String,
+    val short: Boolean,
+    val result: TranslationResult?,
+    val context: String = "",
+)
 
 /** Feuille de note (3.05) : passage, texte du champ ; [editing] = note existante. */
 data class NoteSheetState(val passage: String, val note: String, val editing: Boolean)
@@ -130,17 +136,19 @@ class HighlightCoordinator(
         val reader = controller ?: return
         if (translator == null) return
         scope.launch {
-            val text = reader.currentSelection()?.text?.takeIf(String::isNotEmpty) ?: return@launch
+            val selection = reader.currentSelection() ?: return@launch
+            val text = selection.text.takeIf(String::isNotEmpty) ?: return@launch
             // Sélection effacée pendant la lecture JavaScript (tap, retour) : pas de feuille orpheline.
             if (reader.selection.value == null) return@launch
-            request(Translation.clean(text))
+            val around = selection.locator.text
+            request(Translation.clean(text), Translation.context(around.before, text, around.after))
         }
     }
 
-    /** « Réessayer » : même passage, nouvelle requête. */
+    /** « Réessayer » : même passage et même contexte, nouvelle requête. */
     fun retryTranslation() {
-        val source = _state.value.translation?.source ?: return
-        request(source)
+        val shown = _state.value.translation ?: return
+        request(shown.source, shown.context)
     }
 
     /** Croix, glissé vers le bas ou retour : feuille fermée, sélection effacée. */
@@ -150,12 +158,12 @@ class HighlightCoordinator(
         controller?.clearSelection()
     }
 
-    private fun request(source: String) {
+    private fun request(source: String, context: String) {
         val service = translator ?: return
         cancelTranslation()
-        _state.update { it.copy(translation = TranslationSheetState(source, Translation.isShort(source), result = null)) }
+        _state.update { it.copy(translation = TranslationSheetState(source, Translation.isShort(source), result = null, context = context)) }
         translationJob = scope.launch {
-            val result = Translation.translateSelection(source, service)
+            val result = Translation.translateSelection(source, context, service)
             _state.update { state ->
                 state.copy(translation = state.translation?.takeIf { it.source == source }?.copy(result = result))
             }

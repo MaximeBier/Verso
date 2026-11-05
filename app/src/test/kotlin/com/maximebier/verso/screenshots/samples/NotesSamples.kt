@@ -67,10 +67,10 @@ internal fun NotesSample() = NotesScreen(notesSampleState, noActions)
 @Composable
 internal fun NotesEmptySample() = NotesScreen(notesSampleState.copy(items = emptyList()), noActions)
 
-/** 3.08 : « acknowledged » traduit, trois autres sens. */
+/** 3.08 : « acknowledged » traduit, une seule traduction. */
 @Composable
 internal fun TranslationWordSample() = TranslationSample(
-    TranslationSheetState("acknowledged", short = true, TranslationResult.Word("reconnu", listOf("admis", "avoué", "accepté"))),
+    TranslationSheetState("acknowledged", short = true, TranslationResult.Word("reconnu")),
 )
 
 /** 3.09 : la première phrase de Pride and Prejudice traduite. */

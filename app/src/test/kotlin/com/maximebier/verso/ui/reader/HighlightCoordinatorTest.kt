@@ -237,20 +237,14 @@ class HighlightCoordinatorTest {
 
     /** Traducteur piloté : chaque appel attend [answer], ou lève [failure]. */
     private class GatedTranslator : Translator {
-        val answer = CompletableDeferred<List<String>>()
+        val answer = CompletableDeferred<String>()
         var failure: TranslationFailure? = null
-        val calls = mutableListOf<String>()
+        val calls = mutableListOf<Pair<String, String>>()
 
-        override suspend fun lookup(word: String): List<String> {
-            calls += word
+        override suspend fun translate(text: String, context: String): String {
+            calls += text to context
             failure?.let { throw it }
             return answer.await()
-        }
-
-        override suspend fun translate(text: String): String {
-            calls += text
-            failure?.let { throw it }
-            return answer.await().joinToString(" ")
         }
     }
 
@@ -264,40 +258,53 @@ class HighlightCoordinatorTest {
         assertThat(coordinator.state.value.translation).isNull()
     }
 
-    @Test fun translateOpensAtOnceThenShowsTheSensesAndKeepsTheSelection() = runTest(UnconfinedTestDispatcher()) {
+    @Test fun translateOpensAtOnceThenShowsTheTranslationInItsSentenceAndKeepsTheSelection() = runTest(UnconfinedTestDispatcher()) {
         val translator = GatedTranslator()
         val (coordinator, fake) = setUp(translator = translator)
         assertThat(coordinator.state.value.canTranslate).isTrue()
-        fake.select("acknowledged,")
+        fake.select("bank,", before = "a wife.\n\nThey sat on the ", after = " by the river. However little")
         runCurrent()
         coordinator.translateSelection()
         runCurrent()
-        assertThat(coordinator.state.value.translation).isEqualTo(TranslationSheetState("acknowledged,", short = true, result = null))
-        translator.answer.complete(listOf("reconnu", "admis", "avoué", "accepté"))
+        val sentence = "They sat on the bank, by the river."
+        assertThat(coordinator.state.value.translation)
+            .isEqualTo(TranslationSheetState("bank,", short = true, result = null, context = sentence))
+        translator.answer.complete("berge")
         runCurrent()
-        assertThat(coordinator.state.value.translation?.result)
-            .isEqualTo(TranslationResult.Word("reconnu", listOf("admis", "avoué", "accepté")))
-        assertThat(translator.calls).containsExactly("acknowledged")
+        assertThat(coordinator.state.value.translation?.result).isEqualTo(TranslationResult.Word("berge"))
+        assertThat(translator.calls).containsExactly("bank" to sentence)
         assertThat(fake.selectionCleared).isEqualTo(0)
         assertThat(coordinator.state.value.selectionText).isNotNull()
     }
 
-    @Test fun offlineThenRetrySendsTheSamePassageAgain() = runTest(UnconfinedTestDispatcher()) {
+    @Test fun offlineThenRetrySendsTheSamePassageAndContextAgain() = runTest(UnconfinedTestDispatcher()) {
         val translator = GatedTranslator().apply { failure = TranslationFailure.Offline() }
         val (coordinator, fake) = setUp(translator = translator)
-        fake.select("It is a truth universally acknowledged.")
+        fake.select("truth universally acknowledged,", before = "It is a ", after = " that a single man. Next")
         runCurrent()
         coordinator.translateSelection()
         runCurrent()
         assertThat(coordinator.state.value.translation?.result).isEqualTo(TranslationResult.Offline)
         translator.failure = null
-        translator.answer.complete(listOf("C’est une vérité universellement reconnue."))
+        translator.answer.complete("vérité universellement reconnue,")
         coordinator.retryTranslation()
         runCurrent()
         assertThat(coordinator.state.value.translation?.result)
+            .isEqualTo(TranslationResult.Word("vérité universellement reconnue,"))
+        val sent = "truth universally acknowledged" to "It is a truth universally acknowledged, that a single man."
+        assertThat(translator.calls).containsExactly(sent, sent)
+    }
+
+    @Test fun longPassageIsShownAsAPassage() = runTest(UnconfinedTestDispatcher()) {
+        val translator = GatedTranslator()
+        val (coordinator, fake) = setUp(translator = translator)
+        fake.select("It is a truth universally acknowledged.")
+        runCurrent()
+        coordinator.translateSelection()
+        translator.answer.complete("C’est une vérité universellement reconnue.")
+        runCurrent()
+        assertThat(coordinator.state.value.translation?.result)
             .isEqualTo(TranslationResult.Passage("C’est une vérité universellement reconnue."))
-        assertThat(translator.calls)
-            .containsExactly("It is a truth universally acknowledged.", "It is a truth universally acknowledged.")
     }
 
     @Test fun tapOnTheTextClearsTheSelectionAndClosesTheSheet() = runTest(UnconfinedTestDispatcher()) {

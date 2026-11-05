@@ -159,7 +159,7 @@ fun TranslationSheet(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = if (state.short) english(Translation.lookupForm(state.source)) else AnnotatedString(sheetLabel),
+                text = if (state.short) english(Translation.shortForm(state.source)) else AnnotatedString(sheetLabel),
                 // 16 sp, interligne 1,4 (3.08).
                 style = typography.body.copy(lineHeight = 22.4.sp),
                 color = colors.textSecondary,
@@ -210,21 +210,12 @@ private fun TranslationBody(result: TranslationResult?, onRetry: () -> Unit) {
                     .semantics { contentDescription = loading },
             )
         }
-        is TranslationResult.Word -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            // 26 sp semi-gras, interligne 1,25 ; autres sens 18 sp, interligne 1,45 (3.08).
-            Text(
-                text = result.primary,
-                style = typography.body.copy(fontSize = 26.sp, lineHeight = 32.5.sp, fontWeight = FontWeight.SemiBold),
-                color = colors.text,
-            )
-            if (result.alternatives.isNotEmpty()) {
-                Text(
-                    text = result.alternatives.joinToString(stringResource(R.string.translation_separator)),
-                    style = typography.body.copy(fontSize = 18.sp, lineHeight = 26.1.sp),
-                    color = colors.text,
-                )
-            }
-        }
+        // 26 sp semi-gras, interligne 1,25 (3.08).
+        is TranslationResult.Word -> Text(
+            text = result.text,
+            style = typography.body.copy(fontSize = 26.sp, lineHeight = 32.5.sp, fontWeight = FontWeight.SemiBold),
+            color = colors.text,
+        )
         // 20 sp, interligne 1,55 (3.09).
         is TranslationResult.Passage -> Text(
             text = result.text,

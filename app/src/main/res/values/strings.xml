@@ -220,7 +220,7 @@
     <string name="settings_show_statistics">Afficher les statistiques</string>
     <string name="settings_show_statistics_summary">Temps et vitesse de lecture, calculés à partir du journal. Tout reste sur ce téléphone.</string>
     <string name="settings_section_privacy">Confidentialité</string>
-    <string name="settings_privacy_body">Verso n’utilise Internet que pour traduire le passage que vous sélectionnez. Seul ce passage est envoyé au service de traduction. Vos livres, vos positions, votre journal, vos notes et vos réglages restent sur ce téléphone.</string>
+    <string name="settings_privacy_body">Verso n’utilise Internet que pour traduire le passage que vous sélectionnez. Seuls ce passage et la phrase qui l’entoure sont envoyés au service de traduction. Vos livres, vos positions, votre journal, vos notes et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>
     <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
     <!-- ===================== Paramètres : ligne Sauvegarde (3.07) ===================== -->
@@ -383,8 +383,6 @@
     <!-- ===================== Traduction (3.08 à 3.10) ===================== -->
     <string name="translation_sheet">Traduction</string>
     <string name="translation_languages">Anglais → Français</string>
-    <!-- Autres sens : « admis · avoué · accepté » -->
-    <string name="translation_separator">" · "</string>
     <!-- PROPOSÉ (2026-10-04) : lu par TalkBack pendant le chargement (pas de maquette) -->
     <string name="translation_loading">Traduction en cours</string>
     <string name="translation_offline_title">Pas de connexion</string>

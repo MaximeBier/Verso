@@ -30,11 +30,11 @@ class TranslationSheetTest {
         }
     }
 
-    @Test fun wordShowsTheMainTranslationAndTheOtherSenses() {
-        show(TranslationSheetState("acknowledged,", short = true, TranslationResult.Word("reconnu", listOf("admis", "avoué", "accepté"))))
+    @Test fun wordShowsItsSingleTranslation() {
+        show(TranslationSheetState("acknowledged,", short = true, TranslationResult.Word("reconnu")))
         rule.onNodeWithText("acknowledged").assertExists()
         rule.onNodeWithText("reconnu").assertExists()
-        rule.onNodeWithText("admis · avoué · accepté").assertExists()
+        rule.onNodeWithText("·", substring = true).assertDoesNotExist()
         rule.onNodeWithText("Anglais → Français").assertExists()
         rule.onNodeWithContentDescription("Fermer").assertHeightIsAtLeast(48.dp).performClick()
         assertThat(dismissals).isEqualTo(1)
@@ -74,7 +74,7 @@ class TranslationSheetTest {
     }
 
     @Test fun swipeDownCloses() {
-        show(TranslationSheetState("acknowledged", short = true, TranslationResult.Word("reconnu", emptyList())))
+        show(TranslationSheetState("acknowledged", short = true, TranslationResult.Word("reconnu")))
         rule.onNodeWithText("reconnu").performTouchInput { swipeDown(startY = centerY, endY = centerY + 600f) }
         rule.waitForIdle()
         assertThat(dismissals).isEqualTo(1)

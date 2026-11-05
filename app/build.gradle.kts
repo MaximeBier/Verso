@@ -30,9 +30,8 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Traduction (V3) : clé et région Azure lues dans local.properties (jamais versionné). Sans clé, « Traduire » est masqué.
-        buildConfigField("String", "TRANSLATOR_KEY", localProperty("translator.key"))
-        buildConfigField("String", "TRANSLATOR_REGION", localProperty("translator.region"))
+        // Traduction (V3) : clé DeepL lue dans local.properties (jamais versionné). Sans clé, « Traduire » est masqué.
+        buildConfigField("String", "DEEPL_KEY", localProperty("deepl.key"))
     }
 
     buildTypes {
