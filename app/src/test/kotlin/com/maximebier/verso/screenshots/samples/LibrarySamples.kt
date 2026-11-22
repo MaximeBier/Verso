@@ -12,13 +12,7 @@ internal fun LibraryEmptySample() {
     EmptyLibraryScreen(onOpenSettings = {}, onImport = {})
 }
 
-/** Liste avec la carte Reprendre. */
-@Composable
-internal fun LibraryListSample() {
-    LibraryContent(state = LibrarySamples.list, actions = LibraryActions())
-}
-
-/** Même écran que la liste ; le menu ⋮ s'ouvre par un clic (état interne du bouton), voir V1ScreenCatalog. */
+/** Liste avec la carte Reprendre ; le menu ⋮ s'ouvre par un clic (état interne du bouton), voir V1ScreenCatalog. */
 @Composable
 internal fun LibraryBookMenuSample() {
     LibraryContent(state = LibrarySamples.list, actions = LibraryActions())

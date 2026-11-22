@@ -8,11 +8,11 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import com.maximebier.verso.R
 import com.maximebier.verso.screenshots.samples.DeleteBookDialogSample
-import com.maximebier.verso.screenshots.samples.DetailsSample
 import com.maximebier.verso.screenshots.samples.ImportDuplicateSample
 import com.maximebier.verso.screenshots.samples.ImportRejectedSample
 import com.maximebier.verso.screenshots.samples.ImportSuccessSample
@@ -21,12 +21,9 @@ import com.maximebier.verso.screenshots.samples.JournalSample
 import com.maximebier.verso.screenshots.samples.LibraryBookMenuSample
 import com.maximebier.verso.screenshots.samples.LibraryEmptySample
 import com.maximebier.verso.screenshots.samples.LibraryGridSample
-import com.maximebier.verso.screenshots.samples.LibraryListSample
 import com.maximebier.verso.screenshots.samples.LicensesSample
-import com.maximebier.verso.screenshots.samples.ReaderBarsSample
 import com.maximebier.verso.screenshots.samples.ReturnCardSample
 import com.maximebier.verso.screenshots.samples.SettingsClearJournalDialogSample
-import com.maximebier.verso.screenshots.samples.SettingsSample
 import com.maximebier.verso.screenshots.samples.TocSheetSample
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -37,7 +34,7 @@ import org.robolectric.RuntimeEnvironment
 enum class ScreenVariant(val suffix: String) {
     LIGHT("clair"),
     DARK("sombre"),
-    FONT_200("texte-200"),
+    FONT_200("clair-texte-200"),
 }
 
 /**
@@ -88,29 +85,33 @@ private val openBookMenu: ComposeContentTestRule.() -> Unit = {
     onNodeWithContentDescription(label).performClick()
 }
 
+/** Fait défiler la liste jusqu'à une ligne « en cours », pour juger aussi son pourcentage. */
+internal val scrollListToProgress: ComposeContentTestRule.() -> Unit = {
+    onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToIndex(4)
+}
+
 /** La snackbar reste affichée : horloge manuelle, avancée le temps de son apparition. */
 private val freezeClock: ComposeContentTestRule.() -> Unit = { mainClock.autoAdvance = false }
 private val showSnackbar: ComposeContentTestRule.() -> Unit = { mainClock.advanceTimeBy(1_000) }
 
-/** Tous les écrans V1 dessinables par Compose (le texte de lecture est rendu par Readium). */
+/**
+ * Écrans V1 dessinables par Compose (le texte de lecture est rendu par Readium). Identifiant = nom de la planche du
+ * canevas, plus l'état ; les écrans repris dans un autre catalogue avec toutes les palettes n'y sont pas répétés.
+ */
 object V1ScreenCatalog {
     val fixtures: List<ScreenFixture> = listOf(
-        ScreenFixture("1.01-premier-lancement") { LibraryEmptySample() },
-        ScreenFixture("1.02-bibliotheque-liste") { LibraryListSample() },
-        ScreenFixture("1.02b-menu-dun-livre", afterContent = openBookMenu) { LibraryBookMenuSample() },
-        ScreenFixture("1.03-bibliotheque-grille") { LibraryGridSample() },
-        ScreenFixture("1.04-import-reussi", beforeContent = freezeClock, afterContent = showSnackbar) { ImportSuccessSample() },
-        ScreenFixture("1.05-livre-deja-importe") { ImportDuplicateSample() },
-        ScreenFixture("1.06-fichier-refuse") { ImportRejectedSample() },
-        ScreenFixture("1.07-details-du-livre") { DetailsSample() },
-        ScreenFixture("1.08-supprimer-un-livre") { DeleteBookDialogSample() },
-        ScreenFixture("1.09-parametres") { SettingsSample() },
-        ScreenFixture("1.09-effacer-le-journal") { SettingsClearJournalDialogSample() },
-        ScreenFixture("1.09-licences") { LicensesSample() },
-        ScreenFixture("1.11-lecture-barre-affichee") { ReaderBarsSample() },
-        ScreenFixture("1.12-sommaire") { TocSheetSample() },
-        ScreenFixture("1.13-journal-de-lecture") { JournalSample() },
-        ScreenFixture("1.13-journal-vide") { JournalEmptySample() },
-        ScreenFixture("1.14-retour-a-votre-lecture") { ReturnCardSample() },
+        ScreenFixture("Bibliotheque-Vide") { LibraryEmptySample() },
+        ScreenFixture("Bibliotheque-MenuLivre", afterContent = openBookMenu) { LibraryBookMenuSample() },
+        ScreenFixture("Bibliotheque-Grille") { LibraryGridSample() },
+        ScreenFixture("Import-Reussi", beforeContent = freezeClock, afterContent = showSnackbar) { ImportSuccessSample() },
+        ScreenFixture("Import-Doublon") { ImportDuplicateSample() },
+        ScreenFixture("Import-Refuse") { ImportRejectedSample() },
+        ScreenFixture("Livre-Supprimer") { DeleteBookDialogSample() },
+        ScreenFixture("Parametres-EffacerJournal") { SettingsClearJournalDialogSample() },
+        ScreenFixture("Parametres-Licences") { LicensesSample() },
+        ScreenFixture("Lecture-Sommaire") { TocSheetSample() },
+        ScreenFixture("Lecture-Journal") { JournalSample() },
+        ScreenFixture("Lecture-Journal-Vide") { JournalEmptySample() },
+        ScreenFixture("Lecture-Revenir") { ReturnCardSample() },
     )
 }

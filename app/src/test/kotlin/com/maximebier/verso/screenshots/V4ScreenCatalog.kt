@@ -30,17 +30,17 @@ data class V4ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
 /** Écrans V4 (collections). */
 object V4ScreenCatalog {
     val fixtures: List<V4ScreenFixture> = listOf(
-        V4ScreenFixture(ScreenFixture("4.01-collections") { CollectionsTabSample() }),
-        V4ScreenFixture(ScreenFixture("4.01-collections-vide") { CollectionsEmptySample() }),
-        V4ScreenFixture(ScreenFixture("4.02-une-collection") { CollectionSample() }),
-        V4ScreenFixture(ScreenFixture("4.02-reordonner") { CollectionReorderSample() }),
-        V4ScreenFixture(ScreenFixture("4.02-reordonner-lignes", afterContent = scrollToLastBook) { CollectionReorderSample() }),
-        V4ScreenFixture(ScreenFixture("4.02-vide") { CollectionEmptySample() }),
-        V4ScreenFixture(ScreenFixture("4.02-tout-termine") { CollectionFinishedSample() }),
-        V4ScreenFixture(ScreenFixture("4.03-nouvelle-collection") { NewCollectionSample() }),
-        V4ScreenFixture(ScreenFixture("4.04-ajouter-a-une-collection", afterContent = openCollectionsSheet) { AddToCollectionSample() }),
-        V4ScreenFixture(ScreenFixture("4.04-sans-collection", afterContent = openCollectionsSheet) { AddToCollectionNoCollectionSample() }),
-        V4ScreenFixture(ScreenFixture("1.07-fiche-collections") { DetailsWithCollectionsSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Liste") { CollectionsTabSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Liste-Vide") { CollectionsEmptySample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail") { CollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail-Reordonner") { CollectionReorderSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail-Reordonner-Fin", afterContent = scrollToLastBook) { CollectionReorderSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail-Vide") { CollectionEmptySample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail-Termine") { CollectionFinishedSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Nouvelle") { NewCollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Ajouter", afterContent = openCollectionsSheet) { AddToCollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Ajouter-SansCollection", afterContent = openCollectionsSheet) { AddToCollectionNoCollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Livre-Details-Collections") { DetailsWithCollectionsSample() }),
     )
 }
 

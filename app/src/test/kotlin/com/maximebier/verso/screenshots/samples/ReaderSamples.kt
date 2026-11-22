@@ -52,15 +52,6 @@ internal val tocSample = listOf(
     TocNode("Troisième partie", "p3.xhtml", (1..11).map { TocNode("Chapitre ${roman(it)}", "p3c$it.xhtml") }),
 )
 
-/** Texte (imité) et barre de lecture affichée. */
-@Composable
-internal fun ReaderBarsSample() {
-    Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
-        SampleReadingText()
-        ReaderBars(visible = true, state = readerBarsSampleState, onBack = {}, onTocClick = {}, onSearchClick = {}, onSettingsClick = {})
-    }
-}
-
 /** Feuille Sommaire ouverte au-dessus du texte, chapitre courant « Deuxième partie, chapitre I ». */
 @Composable
 internal fun TocSheetSample() {
@@ -78,7 +69,7 @@ internal fun TocSheetSample() {
     )
 }
 
-/** Barre V2 (Sommaire, Journal, Rechercher, Réglages). */
+/** Texte (imité) et barre de lecture affichée (Sommaire, Rechercher, Notes, Réglages). */
 @Composable
 internal fun ReaderToolsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {

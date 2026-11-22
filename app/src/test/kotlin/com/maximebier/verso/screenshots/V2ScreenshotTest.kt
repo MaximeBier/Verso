@@ -20,7 +20,7 @@ import org.robolectric.annotation.GraphicsMode
 @OptIn(ExperimentalRoborazziApi::class)
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w390dp-h844dp-xxhdpi")
+@Config(qualifiers = "fr-w390dp-h844dp-xxhdpi")
 class V2ScreenshotTest(
     private val fixture: V2ScreenFixture,
     private val theme: AppTheme,
@@ -34,7 +34,7 @@ class V2ScreenshotTest(
     fun capture() {
         fixture.screen.show(composeRule) { content -> VersoTheme(theme = theme) { content() } }
         val suffix = if (variant == ScreenVariant.FONT_200) "${theme.fileSuffix}-texte-200" else theme.fileSuffix
-        captureScreenRoboImage("build/outputs/roborazzi/v2/${fixture.screen.id}-$suffix.png")
+        captureScreenRoboImage("build/outputs/roborazzi/${fixture.screen.id}-$suffix.png")
     }
 
     /** Suffixe des fichiers : clair, sepia, sombre, nuit. */

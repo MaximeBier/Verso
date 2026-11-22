@@ -13,13 +13,14 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Convention 2.2 (390 × 844 dp, xxhdpi, sortie dans build/outputs/roborazzi) ; captureScreenRoboImage plutôt que
- * captureRoboImage parce que menus, dialogues et feuilles modales sont dans leur propre fenêtre.
+ * 390 × 844 dp, xxhdpi, en français ; sortie dans build/outputs/roborazzi, nommée `<Planche>[-État]-<thème>`.
+ * captureScreenRoboImage plutôt que captureRoboImage parce que menus, dialogues et feuilles modales sont dans leur
+ * propre fenêtre.
  */
 @OptIn(ExperimentalRoborazziApi::class)
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w390dp-h844dp-xxhdpi")
+@Config(qualifiers = "fr-w390dp-h844dp-xxhdpi")
 class V1ScreenshotTest(private val fixture: ScreenFixture, private val variant: ScreenVariant) {
 
     private val composeRule = createComposeRule()
@@ -29,7 +30,7 @@ class V1ScreenshotTest(private val fixture: ScreenFixture, private val variant: 
     @Test
     fun capture() {
         fixture.show(composeRule) { content -> VersoTheme { content() } }
-        captureScreenRoboImage("build/outputs/roborazzi/v1/${fixture.id}-${variant.suffix}.png")
+        captureScreenRoboImage("build/outputs/roborazzi/${fixture.id}-${variant.suffix}.png")
     }
 
     companion object {

@@ -11,19 +11,15 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.maximebier.verso.R
 import com.maximebier.verso.data.AppTheme
-import com.maximebier.verso.screenshots.samples.DetailsSample
 import com.maximebier.verso.screenshots.samples.DetailsV2Sample
 import com.maximebier.verso.screenshots.samples.JournalSample
-import com.maximebier.verso.screenshots.samples.LibraryListSample
 import com.maximebier.verso.screenshots.samples.LibraryStatesSample
 import com.maximebier.verso.screenshots.samples.PagesModeSample
-import com.maximebier.verso.screenshots.samples.ReaderBarsSample
 import com.maximebier.verso.screenshots.samples.ReaderToolsSample
 import com.maximebier.verso.screenshots.samples.ReadingSettingsSheetSample
 import com.maximebier.verso.screenshots.samples.ReturnCardSample
 import com.maximebier.verso.screenshots.samples.SampleReadingText
 import com.maximebier.verso.screenshots.samples.SearchSample
-import com.maximebier.verso.screenshots.samples.SettingsSample
 import com.maximebier.verso.screenshots.samples.SettingsV2Sample
 import com.maximebier.verso.screenshots.samples.TocSheetSample
 import com.maximebier.verso.ui.theme.VersoTheme
@@ -35,7 +31,7 @@ data class V2ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
 
 /**
  * Écrans V2 dessinables par Compose. Thèmes sépia et nuit : texte de lecture (rendu Compose ; le vrai rendu Readium est
- * vérifié sur le téléphone) et écrans V1 dans les palettes sépia et nuit, pour « sans zone d'une autre couleur ».
+ * vérifié sur le téléphone) et écrans V1 sans autre capture dans ces palettes, pour « sans zone d'une autre couleur ».
  */
 object V2ScreenCatalog {
     private val paperThemes = listOf(AppTheme.SEPIA, AppTheme.NIGHT)
@@ -53,25 +49,22 @@ object V2ScreenCatalog {
 
     val fixtures: List<V2ScreenFixture> = listOf(
         V2ScreenFixture(
-            ScreenFixture("2.03-2.04-lecture") {
+            ScreenFixture("Lecture") {
                 Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) { SampleReadingText() }
             },
             paperThemes,
         ),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-barre-affichee") { ReaderBarsSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-bibliotheque") { LibraryListSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-details") { DetailsSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-parametres") { SettingsSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-sommaire") { TocSheetSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-journal") { JournalSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.03-2.04-revenir") { ReturnCardSample() }, paperThemes),
-        V2ScreenFixture(ScreenFixture("2.01-barre-de-lecture") { ReaderToolsSample() }),
-        V2ScreenFixture(ScreenFixture("2.02-reglages-de-lecture") { ReadingSettingsSheetSample() }),
-        V2ScreenFixture(ScreenFixture("2.05-mode-pages") { PagesModeSample() }),
-        V2ScreenFixture(ScreenFixture("2.07-bibliotheque-avec-etats") { LibraryStatesSample() }),
-        V2ScreenFixture(ScreenFixture("2.07b-trier-et-afficher", afterContent = openSortSheet) { LibraryStatesSample() }),
-        V2ScreenFixture(ScreenFixture("2.08-details-du-livre") { DetailsV2Sample() }),
-        V2ScreenFixture(ScreenFixture("2.09-parametres") { SettingsV2Sample() }),
-        V2ScreenFixture(ScreenFixture("2.06-recherche-dans-le-livre") { SearchSample() }),
+        V2ScreenFixture(ScreenFixture("Lecture-Sommaire") { TocSheetSample() }, paperThemes),
+        V2ScreenFixture(ScreenFixture("Lecture-Journal") { JournalSample() }, paperThemes),
+        V2ScreenFixture(ScreenFixture("Lecture-Revenir") { ReturnCardSample() }, paperThemes),
+        V2ScreenFixture(ScreenFixture("Lecture-Barre") { ReaderToolsSample() }),
+        V2ScreenFixture(ScreenFixture("Lecture-Reglages") { ReadingSettingsSheetSample() }),
+        V2ScreenFixture(ScreenFixture("Lecture-Pages") { PagesModeSample() }),
+        V2ScreenFixture(ScreenFixture("Bibliotheque-Liste") { LibraryStatesSample() }),
+        V2ScreenFixture(ScreenFixture("Bibliotheque-Liste-Defile", afterContent = scrollListToProgress) { LibraryStatesSample() }),
+        V2ScreenFixture(ScreenFixture("Bibliotheque-TrierAfficher", afterContent = openSortSheet) { LibraryStatesSample() }),
+        V2ScreenFixture(ScreenFixture("Livre-Details") { DetailsV2Sample() }),
+        V2ScreenFixture(ScreenFixture("Parametres") { SettingsV2Sample() }),
+        V2ScreenFixture(ScreenFixture("Lecture-Recherche") { SearchSample() }),
     )
 }

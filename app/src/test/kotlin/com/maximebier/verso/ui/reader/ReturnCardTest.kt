@@ -9,12 +9,10 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
 import com.maximebier.verso.screenshots.samples.ReturnCardSample
@@ -67,18 +65,4 @@ class ReturnCardTest {
         show()
 
         compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)).assertExists()
-    }
-
-    @Test
-    fun screenshotLight() {
-        show()
-        compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.14-retour-a-votre-lecture-clair.png")
-    }
-
-    @Test
-    @Config(qualifiers = "+night")
-    fun screenshotDark() {
-        show(dark = true)
-        compose.onRoot().captureRoboImage("build/outputs/roborazzi/1.14-retour-a-votre-lecture-sombre.png")
-    }
-}
+    }}
