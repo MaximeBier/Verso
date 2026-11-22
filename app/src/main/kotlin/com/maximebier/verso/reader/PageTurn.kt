@@ -128,6 +128,8 @@ class PageTurnDriver(
     private val captureWeb: (pages: Int, screen: Bitmap?) -> Bitmap?,
     private val turn: (forward: Boolean) -> Unit,
     private val displayed: StateFlow<Locator?>,
+    /** Un chapitre suit (ou précède) le chapitre affiché ; faux au bout du livre. */
+    private val canLeaveChapter: (forward: Boolean) -> Boolean = { true },
 ) {
     private var animState = mutableStateOf<PageTurnAnim?>(null)
     var anim: PageTurnAnim?
@@ -145,12 +147,16 @@ class PageTurnDriver(
     private var endJob: Job? = null
     var width = 0f
 
+    /** Change à chaque [invalidate] : une photo demandée avant (rendue plus tard) n’est pas gardée. */
+    private var generation = 0
+
     /** Photos d’avance : l’écran, puis la page suivante et la précédente (au repos, après chaque page). */
     fun prefetch() {
         if (anim != null) return
         val key = displayed.value ?: return
+        val asked = generation
         captureScreen { shot ->
-            if (anim != null || displayed.value != key) return@captureScreen
+            if (anim != null || displayed.value != key || generation != asked) return@captureScreen
             if (shot != null) {
                 screenShot = shot
                 screenShotKey = key
@@ -163,7 +169,8 @@ class PageTurnDriver(
 
     /**
      * Doigt posé : un tour lâché en cours d’animation se termine aussitôt (la page a déjà tourné dessous), pour
-     * enchaîner les pages ; sinon, photo fraîche de l’écran (surlignages).
+     * enchaîner les pages ; sinon, photo de l’écran (chapitre du pied de page) si la page affichée n’en a pas encore.
+     * Pas juste après un tour interrompu : l’écran montre encore l’animation, sans le vrai pied de page.
      */
     fun onPointerDown() {
         val a = anim
@@ -173,10 +180,11 @@ class PageTurnDriver(
         }
         // Tour jamais lâché (geste interrompu sans lâcher) : la page revient à plat.
         if (a != null && !a.releasing) release(Offset.Zero)
-        if (anim == null) {
-            val key = displayed.value
+        val key = displayed.value
+        if (a == null && (screenShot == null || screenShotKey != key)) {
+            val asked = generation
             captureScreen { shot ->
-                if (shot != null && anim == null && displayed.value == key) {
+                if (shot != null && anim == null && displayed.value == key && generation == asked) {
                     screenShot = shot
                     screenShotKey = key
                 }
@@ -189,10 +197,14 @@ class PageTurnDriver(
         invalidate()
     }
 
-    /** Photos d’avance périmées (page tournée, mise en page ou thème changés). */
+    /** Photos d’avance périmées (page tournée, mise en page ou thème changés) ; leurs images sont lâchées. */
     fun invalidate() {
+        generation++
         cacheKey = null
+        cachedNext = null
+        cachedPrev = null
         screenShot = null
+        screenShotKey = null
     }
 
     /** Lecteur quitté (sortie, rotation) : plus d’animation ni de pied de page caché. */
@@ -210,9 +222,13 @@ class PageTurnDriver(
         val shot = screenShot?.takeIf { screenShotKey == key }
         // Page affichée dessinée depuis la WebView (fraîche : surlignages) ; la photo de l’écran ne sert qu’au chapitre
         // du pied de page (elle contient aussi le voile qu’Android pose sous la barre d’état).
-        val current = captureWeb(0, shot) ?: shot ?: return 0
+        val web = captureWeb(0, shot)
+        val current = web ?: shot ?: return 0
         val neighbor = if (cacheKey == key) (if (forward) cachedNext else cachedPrev) else captureWeb(if (forward) 1 else -1, shot)
         val early = neighbor == null
+        // Bout du livre (page voisine hors du fichier, et pas de chapitre voisin) : rien ne tournera, la page revient
+        // au lâcher sans attendre. Photos impossibles (web null) : on ne sait pas, la page tourne dessous comme ailleurs.
+        val turnsEarly = early && (web == null || canLeaveChapter(forward))
         val grab = Offset(width, touch.y)
         val a = if (forward) {
             PageTurnAnim(true, curled = current, under = neighbor, grab = grab, touch = touch, turnedEarly = early)
@@ -220,11 +236,11 @@ class PageTurnDriver(
             PageTurnAnim(false, curled = neighbor, under = current, grab = grab, touch = touch, turnedEarly = early)
         }
         anim = a
-        if (early) {
+        if (turnsEarly) {
             a.job = scope.launch {
                 val before = displayed.value
                 turn(forward)
-                withTimeoutOrNull(1500) { displayed.first { it != before } } ?: return@launch
+                withTimeoutOrNull(EARLY_TURN_TIMEOUT_MS) { displayed.first { it != before } } ?: return@launch
                 a.earlyTurnDone = true
                 delay(RENDER_DELAY_MS)
                 val page = captureWeb(0, null)
@@ -271,6 +287,8 @@ class PageTurnDriver(
 
     companion object {
         const val RENDER_DELAY_MS = 50L
+        /** Attente maximale de la page tournée dès le début du geste (bord de chapitre : chapitre voisin chargé). */
+        const val EARLY_TURN_TIMEOUT_MS = 1_500L
         /** Part du chemin à parcourir pour valider le tour sans élan. */
         const val COMMIT_FRACTION = 0.12f
         const val FLING_PX_S = 600f
@@ -331,13 +349,11 @@ fun PageTurnOverlay(anim: PageTurnAnim?, background: Int, modifier: Modifier = M
     // Gardé entre deux tours : le shader n’est compilé qu’une fois.
     val renderer = remember { PageCurlRenderer() }
     if (anim == null) return
-    val edge = anim.edge
-    val curled = anim.curled
-    val under = anim.under
+    // Bord et photos lus au dessin : le pli suit chaque image sans recomposition.
     Canvas(modifier) {
         drawIntoCanvas { c ->
-            val g = curlGeometry(anim.grab, edge, size.width, size.height)
-            renderer.draw(c.nativeCanvas, size.width, size.height, curled, under, g, background, density)
+            val g = curlGeometry(anim.grab, anim.edge, size.width, size.height)
+            renderer.draw(c.nativeCanvas, size.width, size.height, anim.curled, anim.under, g, background, density)
         }
     }
 }

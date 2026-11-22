@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import com.maximebier.verso.core.settings.ScrollMode
 import kotlin.math.abs
 import androidx.activity.compose.LocalActivity
@@ -90,6 +91,15 @@ private const val PAGE_TURN_PREFETCH_DELAY_MS = 350L
 
 /** Durée pendant laquelle un défilement signalé est attribué à la photo d’une page voisine (deux images et plus). */
 private const val CAPTURE_SCROLL_IGNORE_NANOS = 50_000_000L
+
+/**
+ * Part du seuil de glissé d’Android au-delà de laquelle un glissé horizontal devient un tour de page animé : avant
+ * que la WebView ne commence son propre glissé.
+ */
+private const val PAGE_TURN_SLOP_FRACTION = 0.6f
+
+/** Part minimale de sa largeur qu’une WebView doit montrer pour être la page affichée (photos des pages). */
+private const val VISIBLE_WEB_VIEW_MIN_FRACTION = 0.9f
 
 /** Bords du document affiché, lus dans la WebView (marge de 4 px pour l’arrondi du défilement). */
 private const val EDGES_SCRIPT =
@@ -244,17 +254,23 @@ fun ReaderSurface(
             },
             turn = controller::turn,
             displayed = controller.displayed,
+            canLeaveChapter = { forward -> controller.displayed.value?.let { adjacentChapter(publication, it, forward) } != null },
         )
     }
     // Lecteur quitté en plein tour (sortie, rotation) : ni animation ni pied de page caché ne restent.
     DisposableEffect(pageTurn) {
         onDispose { pageTurn.reset() }
     }
-    // Photos d’avance des pages voisines, une fois la page posée ; refaites quand la mise en page ou le thème changent.
+    // Photos d’avance des pages voisines, une fois la page posée. Mise en page ou thème changés : la page se remet en
+    // page sans changer de locator, une photo prise maintenant montrerait l’ancienne mise en page ; rien avant la page
+    // suivante (le prochain tour photographie ses pages sur le moment).
+    val prefetchedStyle = remember { mutableStateOf<ReaderStyle?>(null) }
     LaunchedEffect(navigator, pageTurn, style) {
         pageTurn.invalidate()
         if (navigator == null) return@LaunchedEffect
-        controller.displayed.collectLatest {
+        val skipped = displayedToSkipBeforePrefetch(prefetchedStyle.value, style)
+        prefetchedStyle.value = style
+        controller.displayed.drop(skipped).collectLatest {
             delay(PAGE_TURN_PREFETCH_DELAY_MS)
             if (controller.scrollMode == ScrollMode.PAGES && pageCurlAvailable(reducedMotion)) pageTurn.prefetch()
         }
@@ -470,7 +486,7 @@ private fun Modifier.observeGestures(
             if (turnEnabled) pageTurn.onPointerDown()
             // 1 : tour de page animé ; -1 : geste avalé ; null : pas décidé ou laissé au lecteur.
             var turning: Int? = null
-            val turnSlop = viewConfiguration.touchSlop * 0.6f
+            val turnSlop = viewConfiguration.touchSlop * PAGE_TURN_SLOP_FRACTION
             val origin = fragmentOffset.value
             // Geste interrompu sans lâcher (pointeur perdu, saisie annulée) : le tour en cours revient à plat
             // (sans effet si le lâcher a déjà été traité).
@@ -526,18 +542,39 @@ internal suspend fun readChapterHtml(publication: Publication, href: Url): Strin
         }
     }
 
+/**
+ * Pages affichées à laisser passer avant la prochaine photo d’avance : une après un changement de mise en page ou de
+ * thème (la page se remet en page sans changer de locator, la photo montrerait l’ancienne mise en page), aucune sinon.
+ */
+internal fun displayedToSkipBeforePrefetch(prefetched: ReaderStyle?, style: ReaderStyle): Int =
+    if (prefetched != null && prefetched != style) 1 else 0
+
+/** Demande de photo d’une fenêtre : [PixelCopy.request], remplaçable dans les tests. */
+internal typealias PixelCopyRequest =
+    (android.view.Window, android.graphics.Rect, Bitmap, PixelCopy.OnPixelCopyFinishedListener, Handler) -> Unit
+
 /** Photo de la surface de lecture telle qu’affichée (pied de page compris), asynchrone. */
-private fun capturePageScreen(activity: android.app.Activity?, box: android.graphics.Rect, onResult: (Bitmap?) -> Unit) {
+internal fun capturePageScreen(
+    activity: android.app.Activity?,
+    box: android.graphics.Rect,
+    onResult: (Bitmap?) -> Unit,
+    request: PixelCopyRequest = { window, rect, bitmap, listener, handler -> PixelCopy.request(window, rect, bitmap, listener, handler) },
+) {
     val window = activity?.window
     if (window == null || box.width() <= 0 || box.height() <= 0) return onResult(null)
     val bitmap = createBitmap(box.width(), box.height())
-    PixelCopy.request(
-        window,
-        android.graphics.Rect(box),
-        bitmap,
-        { result -> onResult(if (result == PixelCopy.SUCCESS) bitmap else null) },
-        Handler(Looper.getMainLooper()),
-    )
+    try {
+        request(
+            window,
+            android.graphics.Rect(box),
+            bitmap,
+            { result -> onResult(if (result == PixelCopy.SUCCESS) bitmap else null) },
+            Handler(Looper.getMainLooper()),
+        )
+    } catch (_: IllegalArgumentException) {
+        // Fenêtre sans surface (application passée en arrière-plan, écran éteint avant la photo d’avance) : pas de photo.
+        onResult(null)
+    }
 }
 
 /**
@@ -579,7 +616,7 @@ private fun captureWebPage(root: View, box: android.graphics.Rect, pages: Int, b
 private fun findVisibleWebView(view: View): WebView? {
     if (view is WebView) {
         val rect = android.graphics.Rect()
-        return view.takeIf { it.isShown && it.getGlobalVisibleRect(rect) && rect.width() >= it.width * 0.9f }
+        return view.takeIf { it.isShown && it.getGlobalVisibleRect(rect) && rect.width() >= it.width * VISIBLE_WEB_VIEW_MIN_FRACTION }
     }
     if (view is android.view.ViewGroup) {
         for (i in 0 until view.childCount) findVisibleWebView(view.getChildAt(i))?.let { return it }
