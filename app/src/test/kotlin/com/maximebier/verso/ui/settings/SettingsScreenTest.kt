@@ -111,7 +111,7 @@ class SettingsScreenTest {
         hasText(ctx.getString(label)) and hasAnyAncestor(hasContentDescription(ctx.getString(R.string.reader_settings_theme))),
     )
 
-    /** Thème au premier niveau : les cinq vignettes de la feuille « Aa », sans dialogue (étape 34). */
+    /** Thème au premier niveau : les cinq vignettes de la feuille « Aa », sans dialogue. */
     @Test
     fun themeSwatchesApplyTheChoiceDirectly() {
         show()
@@ -168,7 +168,7 @@ class SettingsScreenTest {
         assertThat(events).containsExactly("stats=false")
     }
 
-    /** 1.09 : « Thème sombre », Sombre coché par défaut, Nuit au choix ; le libellé est celui du groupe pour TalkBack. */
+    /** « Thème sombre », Sombre coché par défaut, Nuit au choix ; le libellé est celui du groupe pour TalkBack. */
     @Test
     fun darkThemeVariantIsASegmentedChoice() {
         show()

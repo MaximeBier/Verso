@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** État de l'écran Paramètres (1.09 / 2.09). */
+/** État de l'écran Paramètres. */
 data class SettingsUiState(
     val reopenLastBook: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.AUTO,

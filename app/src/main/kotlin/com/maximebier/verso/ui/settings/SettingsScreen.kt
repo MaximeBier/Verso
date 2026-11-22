@@ -39,7 +39,7 @@ import com.maximebier.verso.ui.components.VersoTextButton
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Point d'entrée de SettingsRoute (signature figée par 2.2, appelé par VersoNavHost) :
+ * Point d'entrée de SettingsRoute (appelé par VersoNavHost) :
  * relie le ViewModel, la version de BuildConfig et l'ouverture du lien.
  */
 @Composable
@@ -81,7 +81,7 @@ internal fun openUrl(context: Context, url: String) {
     }
 }
 
-/** Écran Paramètres (1.09), sans état propre. */
+/** Écran Paramètres, sans état propre. */
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,

@@ -10,7 +10,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Passage surligné (3.05, 3.06) : fond `highlight` et soulignement, jamais la couleur seule. */
+/** Passage surligné : fond `highlight` et soulignement, jamais la couleur seule. */
 @Composable
 fun MarkedText(text: String, style: TextStyle, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors

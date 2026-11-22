@@ -73,7 +73,7 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // Fabriques de TestBooks.kt (tâche 2.3).
+    // Fabriques de TestBooks.kt.
     private fun sampleBook() = testBook(sha256 = "abc", title = "Madame Bovary", author = "Gustave Flaubert", lastOpenedAt = 0L)
 
     private fun sampleSession(bookId: Long) = testSession(bookId = bookId, startedAt = 0L)

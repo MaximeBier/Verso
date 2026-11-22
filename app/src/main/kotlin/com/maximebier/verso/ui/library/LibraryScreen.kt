@@ -77,7 +77,7 @@ private fun authorStyle() = VersoTheme.typography.body.copy(lineHeight = 21.6.sp
 private fun countStyle() = VersoTheme.typography.body.copy(lineHeight = 22.sp)
 
 /**
- * Point d'entrée de LibraryRoute (signature figée par la tâche 2.2, appelé par VersoNavHost) :
+ * Point d'entrée de LibraryRoute (appelé par VersoNavHost) :
  * la bibliothèque complète, reliée à son ViewModel.
  */
 @Composable
@@ -160,14 +160,14 @@ data class LibraryActions(
     val onSnackbarAction: (Long) -> Unit = {},
     val onSnackbarShown: (ImportSnackbar) -> Unit = {},
     val onOpenFailedShown: () -> Unit = {},
-    /** Ouvre la feuille « Ajouter à une collection » (4.04) ; câblé par LibraryContent. */
+    /** Ouvre la feuille « Ajouter à une collection » ; câblé par LibraryContent. */
     val onAddToCollection: (Long) -> Unit = {},
 )
 
-/** Onglet de la bibliothèque (4.01). */
+/** Onglet de la bibliothèque. */
 enum class LibraryTab { BOOKS, COLLECTIONS }
 
-/** Écrans 1.01 à 1.06 (et 1.08 depuis le menu ⋮), onglet « Collections » (4.01), sans ViewModel. */
+/** Bibliothèque et dialogues d'import (et suppression depuis le menu ⋮), onglet « Collections », sans ViewModel. */
 @Composable
 fun LibraryContent(
     state: LibraryUiState,
@@ -179,7 +179,7 @@ fun LibraryContent(
     addToCollectionSheet: @Composable (bookId: Long, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val colors = VersoTheme.colors
-    // Feuille 4.04 : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
+    // Feuille « Ajouter à une collection » : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
     var addingBookId by rememberSaveable { mutableStateOf<Long?>(null) }
     @Suppress("NAME_SHADOWING")
     val actions = actions.copy(onAddToCollection = { addingBookId = it })
@@ -233,7 +233,7 @@ fun LibraryContent(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.loading -> Unit
-                // Corps de l'écran 1.01 (tâche 2.2) : la barre du haut, déjà affichée, n'a pas de bouton « Importer ».
+                // Corps de la bibliothèque vide : la barre du haut, déjà affichée, n'a pas de bouton « Importer ».
                 state.books.isEmpty() -> EmptyLibraryContent(onImport = actions.onImport, modifier = Modifier.fillMaxSize())
                 else -> Column(Modifier.fillMaxSize()) {
                     VersoSegmentedButton(
@@ -311,7 +311,7 @@ private fun LibraryList(state: LibraryUiState, actions: LibraryActions, onOpenSo
     }
 }
 
-/** Marge extérieure des cellules de la grille (maquette 1.03). */
+/** Marge extérieure des cellules de la grille. */
 private val GRID_EDGE = 20.dp
 
 @Composable
@@ -343,7 +343,7 @@ private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions, onOpenSo
             }
         }
         itemsIndexed(state.listedBooks, key = { _, book -> book.id }) { index, book ->
-            // Marge extérieure de 20 dp comme la maquette, 16 dp entre les deux colonnes.
+            // Marge extérieure de 20 dp, 16 dp entre les deux colonnes.
             val edge = if (index % 2 == 0) Modifier.padding(start = GRID_EDGE) else Modifier.padding(end = GRID_EDGE)
             BookGridCell(book, actions, edge)
         }
@@ -509,7 +509,7 @@ private fun FilterEmptyText(modifier: Modifier = Modifier) {
     )
 }
 
-/** Bouton ⋮ « Options pour « Titre » » et son menu (1.02b). */
+/** Bouton ⋮ « Options pour « Titre » » et son menu. */
 @Composable
 private fun BookOptions(book: LibraryBook, actions: LibraryActions) {
     var expanded by rememberSaveable { mutableStateOf(false) }

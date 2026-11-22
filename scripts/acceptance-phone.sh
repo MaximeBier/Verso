@@ -152,7 +152,7 @@ else
     tap_on "Revenir" || true
     shot "24-apres-revenir"
   else
-    echo "  (aucun résultat lisible dans la hiérarchie : étape 23 ignorée)"
+    echo "  (aucun résultat lisible dans la hiérarchie : capture 23 ignorée)"
     back
   fi
 

@@ -14,7 +14,7 @@ import com.maximebier.verso.ui.components.VersoDialog
 import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.components.VersoTextButton
 
-/** 1.05 — Livre déjà importé. Toucher à l'extérieur équivaut à « Ignorer » (choix sûr). */
+/** Livre déjà importé. Toucher à l'extérieur équivaut à « Ignorer » (choix sûr). */
 @Composable
 fun DuplicateImportDialog(
     fileName: String,
@@ -24,7 +24,7 @@ fun DuplicateImportDialog(
     onIgnore: () -> Unit,
 ) {
     val date = formatDate(importedAt, stringResource(R.string.common_date_pattern_full))
-    // Chaîne en CDATA avec <b> : on encode les valeurs puis on interprète le HTML (référence §1).
+    // Chaîne en CDATA avec <b> : on encode les valeurs puis on interprète le HTML.
     val body = stringResource(
         R.string.import_duplicate_body,
         fileName.htmlEncode(),
@@ -44,7 +44,7 @@ fun DuplicateImportDialog(
     }
 }
 
-/** 1.06 — Fichier refusé : pas un EPUB, DRM Adobe ou LCP, ou EPUB illisible. */
+/** Fichier refusé : pas un EPUB, DRM Adobe ou LCP, ou EPUB illisible. */
 @Composable
 fun RejectedImportDialog(reason: RejectReason, fileName: String, onDismiss: () -> Unit) {
     val message = when (reason) {

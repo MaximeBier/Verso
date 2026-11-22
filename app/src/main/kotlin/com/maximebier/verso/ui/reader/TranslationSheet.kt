@@ -74,7 +74,7 @@ private val DismissVelocity = 1_000.dp
 private const val MAX_HEIGHT_FRACTION = 0.45f
 
 /**
- * Feuille de traduction (3.08 à 3.10) : petite, sans voile, posée en bas pour laisser voir le passage sélectionné.
+ * Feuille de traduction : petite, sans voile, posée en bas pour laisser voir le passage sélectionné.
  * Mot ou expression courte en tête (en anglais pour TalkBack), sinon « Traduction » ; puis la traduction, un état
  * d’attente ou d’échec, et « Anglais → Français ». La croix, un glissé vers le bas ou un tap sur le texte la ferment.
  */
@@ -161,7 +161,7 @@ fun TranslationSheet(
         ) {
             Text(
                 text = if (state.short) english(Translation.shortForm(state.source)) else AnnotatedString(sheetLabel),
-                // 16 sp, interligne 1,4 (3.08).
+                // 16 sp, interligne 1,4.
                 style = typography.body.copy(lineHeight = 22.4.sp),
                 color = colors.textSecondary,
                 modifier = Modifier.weight(1f),
@@ -170,7 +170,7 @@ fun TranslationSheet(
                 icon = VersoIcons.Close,
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onDismiss,
-                // La croix déborde de 12 dp dans la marge, comme dans la maquette.
+                // La croix déborde de 12 dp dans la marge.
                 modifier = Modifier.offset(x = 12.dp),
             )
         }
@@ -211,13 +211,13 @@ private fun TranslationBody(result: TranslationResult?, onRetry: () -> Unit) {
                     .semantics { contentDescription = loading },
             )
         }
-        // 26 sp semi-gras, interligne 1,25 (3.08).
+        // 26 sp semi-gras, interligne 1,25.
         is TranslationResult.Word -> Text(
             text = result.text,
             style = typography.body.copy(fontSize = 26.sp, lineHeight = 32.5.sp, fontWeight = FontWeight.SemiBold),
             color = colors.text,
         )
-        // 20 sp, interligne 1,55 (3.09).
+        // 20 sp, interligne 1,55.
         is TranslationResult.Passage -> Text(
             text = result.text,
             style = typography.body.copy(fontSize = 20.sp, lineHeight = 31.sp),
@@ -233,7 +233,7 @@ private fun TranslationBody(result: TranslationResult?, onRetry: () -> Unit) {
     }
 }
 
-/** « Pas de connexion » (3.10) et les autres échecs : titre éventuel, message, « Réessayer ». */
+/** « Pas de connexion » et les autres échecs : titre éventuel, message, « Réessayer ». */
 @Composable
 private fun Failure(title: String?, message: String, onRetry: (() -> Unit)?) {
     val colors = VersoTheme.colors

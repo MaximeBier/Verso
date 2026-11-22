@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Résultats consécutifs d'un même chapitre (maquette 2.06 : un intitulé, puis ses extraits). */
+/** Résultats consécutifs d'un même chapitre (un intitulé, puis ses extraits). */
 data class SearchGroup(val title: String?, val hits: List<SearchHit>)
 
 data class SearchUiState(

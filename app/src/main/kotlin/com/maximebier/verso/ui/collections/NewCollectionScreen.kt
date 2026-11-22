@@ -44,7 +44,7 @@ import com.maximebier.verso.ui.components.VersoSearchField
 import com.maximebier.verso.ui.details.DetailsTextField
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Intentions de l’écran 4.03 ; toutes facultatives pour les tests. */
+/** Intentions de l’écran « Nouvelle collection » ; toutes facultatives pour les tests. */
 data class NewCollectionActions(
     val onClose: () -> Unit = {},
     val onNameChange: (String) -> Unit = {},
@@ -71,7 +71,7 @@ fun NewCollectionDestination(preselectedBookId: Long?, onClose: () -> Unit, onCr
     )
 }
 
-/** Écran « Nouvelle collection » (4.03), sans ViewModel. */
+/** Écran « Nouvelle collection », sans ViewModel. */
 @Composable
 fun NewCollectionContent(state: NewCollectionUiState, actions: NewCollectionActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
@@ -138,7 +138,7 @@ fun NewCollectionContent(state: NewCollectionUiState, actions: NewCollectionActi
     }
 }
 
-/** Ligne à cocher (4.03) : case, couverture 36 × 54 dp, titre et auteur ; toute la ligne bascule la case. */
+/** Ligne à cocher : case, couverture 36 × 54 dp, titre et auteur ; toute la ligne bascule la case. */
 @Composable
 private fun SelectableBookRow(item: SelectableBook, onToggle: () -> Unit) {
     val colors = VersoTheme.colors

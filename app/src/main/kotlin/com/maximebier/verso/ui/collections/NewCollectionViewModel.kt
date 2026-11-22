@@ -38,7 +38,7 @@ data class NewCollectionUiState(
     val canCreate: Boolean get() = name.isNotBlank() && created == null
 }
 
-/** Écran 4.03 : nom, filtre, cases ; les livres cochés entrent dans l’ordre de la bibliothèque, pas dans l’ordre des clics. */
+/** Écran « Nouvelle collection » : nom, filtre, cases ; les livres cochés entrent dans l’ordre de la bibliothèque, pas dans l’ordre des clics. */
 class NewCollectionViewModel(
     preselectedBookId: Long?,
     books: BookRepository,

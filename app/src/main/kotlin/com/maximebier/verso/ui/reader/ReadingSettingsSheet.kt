@@ -81,7 +81,7 @@ data class ReadingSettingsSheetState(
 )
 
 /**
- * Feuille « Réglages de lecture » (2.02) : ouverte à mi-hauteur **sans voile**, le texte reste visible au-dessus et
+ * Feuille « Réglages de lecture » : ouverte à mi-hauteur **sans voile**, le texte reste visible au-dessus et
  * change en direct. Dans l’ordre : Thème, Défilement, puis Police, Taille, Interligne et Marges.
  *
  * La feuille vit dans sa propre fenêtre (Dialog) : aucun toucher, sur elle ou au-dessus, n’atteint la surface de
@@ -109,7 +109,7 @@ fun ReadingSettingsSheet(
         containerColor = colors.surface,
         contentColor = colors.text,
         tonalElevation = 0.dp,
-        // Sans voile (spec) : l’effet se voit sur le texte.
+        // Sans voile : l’effet se voit sur le texte.
         scrimColor = Color.Transparent,
         // Poignée dessinée dans le contenu, sans sémantique (voir VersoBottomSheet).
         dragHandle = null,
@@ -175,7 +175,7 @@ internal fun ReadingSettingsContent(
         }
         Column(Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Ordre choisi par Maxime (2026-10-07) : Thème, Défilement, puis le texte (Police, Taille, Interligne,
-            // Marges). Espacements de la maquette : 16 dp entre deux rangées de segments (12 + 4), filet entre les deux
+            // Marges). Espacements : 16 dp entre deux rangées de segments (12 + 4), filet entre les deux
             // groupes.
             SectionLabel(stringResource(R.string.reader_settings_theme))
             ThemeSwatches(selected = state.themeMode, onSelect = onThemeSelected)
@@ -212,7 +212,7 @@ internal fun ReadingSettingsContent(
     }
 }
 
-/** Intitulé de section (2.02) : 14 sp 700, couleur secondaire. */
+/** Intitulé de section : 14 sp 700, couleur secondaire. */
 @Composable
 internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -223,7 +223,7 @@ internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** Segments avec intitulé au-dessus, et un complément à droite (« Pour ce livre », tâche 12.4). */
+/** Segments avec intitulé au-dessus, et un complément à droite (« Pour ce livre »). */
 @Composable
 internal fun LabeledSegments(
     label: String,
@@ -243,7 +243,7 @@ internal fun LabeledSegments(
     }
 }
 
-/** Rangée Défilement (2.02) : Continu / Pages, « Pour ce livre » à droite ; réglage propre au livre ouvert. */
+/** Rangée Défilement : Continu / Pages, « Pour ce livre » à droite ; réglage propre au livre ouvert. */
 @Composable
 internal fun ScrollModeRow(selected: ScrollMode, onSelect: (ScrollMode) -> Unit) {
     LabeledSegments(
@@ -264,7 +264,7 @@ private val CardPadding = 8.dp
 /** Hauteur de la case du « Aa » des cartes de police. */
 private val GlyphSlot = 40.sp
 
-/** Quatre cartes « Aa » dans leur police (2.02) ; sélection = bordure accent 2 dp, gras, coche. */
+/** Quatre cartes « Aa » dans leur police ; sélection = bordure accent 2 dp, gras, coche. */
 @Composable
 private fun FontCards(selected: ReadingFont, onSelect: (ReadingFont) -> Unit) {
     val labels = ReadingFont.entries.map { fontLabel(it) }
@@ -386,7 +386,7 @@ internal fun RoundOutlinedIconButton(icon: ImageVector, description: String, ena
 
 private val SwatchGap = 4.dp
 
-/** Cinq pastilles (2.02) dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Nuit ; aussi dans les Paramètres. */
+/** Cinq pastilles dans l’ordre de ThemeMode : Auto, Clair, Sépia, Sombre, Nuit ; aussi dans les Paramètres. */
 @Composable
 internal fun ThemeSwatches(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     val labels = ThemeMode.entries.map { themeLabel(it) }

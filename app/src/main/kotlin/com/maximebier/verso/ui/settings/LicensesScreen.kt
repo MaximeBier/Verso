@@ -66,7 +66,7 @@ object OpenSourceLicenses {
     )
 }
 
-/** Point d'entrée de LicensesRoute (signature figée par 2.2, appelé par VersoNavHost). */
+/** Point d'entrée de LicensesRoute (appelé par VersoNavHost). */
 @Composable
 fun LicensesDestination(onBack: () -> Unit) {
     LicensesScreen(onBack = onBack)

@@ -41,7 +41,7 @@ class LibraryRulesTest {
     }
 
     @Test
-    fun constantsMatchSpec() {
+    fun finishedAt99PercentAndReopenWindowIs24Hours() {
         assertThat(LibraryRules.FINISHED_PROGRESSION).isEqualTo(0.99)
         assertThat(LibraryRules.REOPEN_WINDOW_MS).isEqualTo(24 * hour)
     }

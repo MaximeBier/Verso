@@ -39,7 +39,7 @@ fun sortLabel(sort: LibrarySort): String = stringResource(
     },
 )
 
-/** « Trier et afficher, actuellement : récents, en liste » (intitulé TalkBack, maquette 2.07). */
+/** « Trier et afficher, actuellement : récents, en liste » (intitulé TalkBack). */
 @Composable
 fun sortButtonDescription(sort: LibrarySort, viewMode: LibraryViewMode): String = stringResource(
     R.string.library_sort_button_description,
@@ -53,7 +53,7 @@ fun sortButtonDescription(sort: LibrarySort, viewMode: LibraryViewMode): String 
     stringResource(if (viewMode == LibraryViewMode.LIST) R.string.library_view_state_list else R.string.library_view_state_grid),
 )
 
-/** Bouton « ⇅ Récents ▾ » (2.07) : 48 dp, texte 16 sp gras à l'encre ; TalkBack lit l'intitulé complet. */
+/** Bouton « ⇅ Récents ▾ » : 48 dp, texte 16 sp gras à l'encre ; TalkBack lit l'intitulé complet. */
 @Composable
 fun SortButton(label: String, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
@@ -78,7 +78,7 @@ fun SortButton(label: String, description: String, onClick: () -> Unit, modifier
     }
 }
 
-/** Feuille « Trier et afficher » (2.07b) : chaque choix s'applique aussitôt, « Fermer » ou le voile la ferment. */
+/** Feuille « Trier et afficher » : chaque choix s'applique aussitôt, « Fermer » ou le voile la ferment. */
 @Composable
 fun SortAndDisplaySheet(
     sort: LibrarySort,

@@ -56,7 +56,7 @@ object ReaderGestures {
     const val MODE_SWITCH_SETTLE_MS = 300L
 
     /**
-     * Pendant une sélection, intervalle de relecture du passage sélectionné (barre 3.04) : les poignées d’Android sont
+     * Pendant une sélection, intervalle de relecture du passage sélectionné : les poignées d’Android sont
      * des fenêtres à part, que la surface ne voit pas bouger.
      */
     const val SELECTION_POLL_MS = 300L

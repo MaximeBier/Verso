@@ -40,7 +40,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Champ de la fiche (§3.12) : libellé au-dessus (pas de libellé flottant), 56 dp, bordure outline 1 dp,
+ * Champ de la fiche : libellé au-dessus (pas de libellé flottant), 56 dp, bordure outline 1 dp,
  * accent 2 dp au focus, fond background, une ligne ; aide facultative dessous.
  */
 @Composable
@@ -112,7 +112,7 @@ private val MetadataGap = 16.dp
 private val MetadataDividerBleed = 24.dp
 
 /**
- * Ligne de métadonnée (§3.14) : libellé à gauche, valeur 600 alignée à droite, filet bas divider. Si la valeur
+ * Ligne de métadonnée : libellé à gauche, valeur 600 alignée à droite, filet bas divider. Si la valeur
  * ne tient plus sur une ligne à côté du libellé (texte système agrandi, nom de fichier long), elle passe sous le
  * libellé sur toute la largeur, pour ne pas couper « madame-bovary.epub » au milieu d'un mot.
  */

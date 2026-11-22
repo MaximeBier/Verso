@@ -49,7 +49,7 @@ data class DetailsUiState(
     val originalFileName: String = "",
     val showDeleteDialog: Boolean = false,
     val deleted: Boolean = false,
-    /** Section « Statistiques » (2.08) ; null = section masquée (interrupteur désactivé). */
+    /** Section « Statistiques » ; null = section masquée (interrupteur désactivé). */
     val stats: ReadingStats? = null,
     /** Notes du livre ; la ligne « Notes » n’apparaît qu’à partir de 1. */
     val highlightCount: Int = 0,
@@ -58,7 +58,7 @@ data class DetailsUiState(
 )
 
 /**
- * Fiche d'un livre (1.07) : titre et auteur enregistrés automatiquement, suppression (1.08).
+ * Fiche d'un livre : titre et auteur enregistrés automatiquement, suppression.
  * `saveScope` survit au ViewModel pour l'enregistrement final dans [onCleared].
  */
 class DetailsViewModel(
@@ -210,7 +210,7 @@ class DetailsViewModel(
     }
 
     companion object {
-        /** Délai d'enregistrement automatique après la dernière frappe (référence §2, 1.07). */
+        /** Délai d'enregistrement automatique après la dernière frappe. */
         const val AUTOSAVE_DEBOUNCE_MS = 500L
 
         fun factory(bookId: Long): ViewModelProvider.Factory = viewModelFactory {

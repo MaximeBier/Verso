@@ -26,7 +26,7 @@ enum class BackupMessage { CREATED, CREATE_FAILED, RESTORE_INVALID, RESTORE_NEWE
 
 data class RestoreConfirmation(val currentBooks: Int, val backupBooks: Int)
 
-/** État de l’écran « Sauvegarde » (3.07). [restored] : aller à la bibliothèque restaurée. */
+/** État de l’écran « Sauvegarde ». [restored] : aller à la bibliothèque restaurée. */
 data class BackupUiState(
     val lastBackup: LastBackup? = null,
     val busy: BackupBusy? = null,

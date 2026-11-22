@@ -46,7 +46,7 @@ class SessionTrackerTest {
     }
 
     @Test
-    fun defaultThresholdsMatchSpec() {
+    fun defaultThresholdsAreFiveAndTwoMinutes() {
         assertThat(SessionThresholds().inactivityEndMs).isEqualTo(300_000L)
         assertThat(SessionThresholds().activeGapMs).isEqualTo(120_000L)
     }

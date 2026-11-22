@@ -2,7 +2,7 @@ package com.maximebier.verso.ui.theme
 
 import androidx.compose.ui.unit.dp
 
-/** Tailles de tokens.json (size) et de v1-ui-reference §3. */
+/** Tailles de tokens.json (size), puis tailles propres aux composants. */
 object VersoDimens {
     val controlMin = 48.dp
     val emptyStatePrimaryButton = 56.dp

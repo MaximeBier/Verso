@@ -121,7 +121,7 @@ class ReadingPositionCoordinatorTest {
 
     @Test
     fun noTickWhileStoppedAndTickingAgainOnStart() = runTest {
-        // Revue finale M5 : aucun battement d’une seconde tant que le lecteur est en arrière-plan. Chaque Tick lit l’horloge.
+        // Aucun battement d’une seconde tant que le lecteur est en arrière-plan. Chaque Tick lit l’horloge.
         var clockReads = 0
         val start = testLocator(total = 0.300)
         val coordinator = ReadingPositionCoordinator(

@@ -2,7 +2,7 @@ package com.maximebier.verso.ui.library
 
 import com.maximebier.verso.core.model.BookStatus
 
-/** Filtres « Tous / En cours / À lire / Terminés » (2.07), dans l'ordre des pastilles. Non enregistré. */
+/** Filtres « Tous / En cours / À lire / Terminés », dans l'ordre des pastilles. Non enregistré. */
 enum class LibraryFilter {
     ALL,
     IN_PROGRESS,

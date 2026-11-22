@@ -16,13 +16,13 @@ data class CharSpan(val start: Int, val end: Int) {
 
 /**
  * Passages retrouvés dans le texte brut d’un chapitre (espaces normalisés) : c’est sur ces plages que se décide le
- * chevauchement de deux surlignages (spec V3, « Chevauchement »).
+ * chevauchement de deux surlignages.
  */
 object TextQuotes {
     /** Caractères de contexte gardés avant et après un passage reconstruit. */
     const val CONTEXT_CHARS = 32
 
-    /** Longueur maximale du début de passage montré dans la barre de sélection (3.04). */
+    /** Longueur maximale du début de passage montré dans la barre de sélection. */
     const val PREVIEW_CHARS = 48
 
     // \s ne couvre ni U+00A0 ni U+202F : ajoutés explicitement.

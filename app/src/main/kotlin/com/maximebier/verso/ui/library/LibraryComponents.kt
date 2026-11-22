@@ -50,7 +50,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Carte « Reprendre », variante A complète (§3.3), utilisée en liste **et** en grille (la spec prime sur la maquette 1.03).
+ * Carte « Reprendre » complète, utilisée en liste **et** en grille.
  * Toute la carte est un seul bouton : le pseudo-bouton « Reprendre » n'est pas focalisable séparément.
  */
 @Composable
@@ -129,7 +129,7 @@ fun ResumeCard(
                 Text(percentText, style = cardFooterStrongStyle, color = colors.text)
                 Text(remainingText, style = cardFooterStyle, color = colors.textSecondary)
             }
-            // Pseudo-bouton : décor du bouton unique qu'est la carte (padding 18 / 22 de la maquette, flèche à droite).
+            // Pseudo-bouton : décor du bouton unique qu'est la carte (padding 18 / 22, flèche à droite).
             Row(
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
@@ -147,7 +147,7 @@ fun ResumeCard(
     }
 }
 
-/** Ligne d'état d'un livre (§3.4) : écrite, jamais seulement colorée. */
+/** Ligne d'état d'un livre : écrite, jamais seulement colorée. */
 @Composable
 fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
@@ -185,13 +185,13 @@ fun BookStatusLine(status: BookStatus, progression: Float, percentText: String, 
     }
 }
 
-/** Menu ⋮ d'un livre (§3.9) : 232 dp au moins, fond surface, rayon 12, ombre sans teinte, aucun voile. */
+/** Menu ⋮ d'un livre : 232 dp au moins, fond surface, rayon 12, ombre sans teinte, aucun voile. */
 @Composable
 fun BookOptionsMenu(expanded: Boolean, onDismissRequest: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
-        // Largeur minimale de la maquette ; le menu s’élargit (jusqu’à 280 dp) pour que « Ajouter à une collection »
+        // Largeur minimale de 232 dp ; le menu s’élargit (jusqu’à 280 dp) pour que « Ajouter à une collection »
         // tienne sur une ligne à la taille de texte normale.
         modifier = Modifier.widthIn(min = 232.dp),
         shape = VersoShapes.small,
@@ -216,7 +216,7 @@ fun BookOptionsMenuItem(text: String, icon: ImageVector, onClick: () -> Unit, de
 }
 
 /**
- * Pastilles de filtre (2.07) : 40 dp de haut dans une cible de 48 dp ; choisie = fond selection, gras et coche,
+ * Pastilles de filtre : 40 dp de haut dans une cible de 48 dp ; choisie = fond selection, gras et coche,
  * jamais la couleur seule ; les autres ont un contour. La rangée défile horizontalement (« Terminés » dépasse).
  */
 @Composable

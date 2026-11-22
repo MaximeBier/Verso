@@ -242,7 +242,7 @@ class SessionCoordinatorTest {
 
     @Test
     fun noTickWhileBackgroundedAndTickingAgainAfterStart() = runTest {
-        // Revue finale M5 : aucun battement d'une seconde en arrière-plan. Chaque Tick lit l'horloge.
+        // Aucun battement d'une seconde en arrière-plan. Chaque Tick lit l'horloge.
         var clockReads = 0
         val c = coordinator { clockReads++; testScheduler.currentTime }
         c.start()

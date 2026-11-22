@@ -17,8 +17,8 @@ internal val CenteredLineHeight = LineHeightStyle(
 )
 
 /**
- * Échelle de v1-ui-reference §3.19 (14 / 16 / 18 / 22 / 28 sp), dans la police choisie (spec, « Police V2 » : la
- * police s'applique à toute l'app). Interlignes en sp (suivent l'agrandissement du texte système).
+ * Échelle de texte (14 / 16 / 18 / 22 / 28 sp), dans la police choisie (la police s'applique à
+ * toute l'app). Interlignes en sp (suivent l'agrandissement du texte système).
  */
 class VersoTypography(private val family: FontFamily) {
 

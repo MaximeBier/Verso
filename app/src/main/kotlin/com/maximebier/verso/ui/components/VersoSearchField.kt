@@ -27,7 +27,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Champ de filtre en pilule (4.03) : loupe, texte d’une ligne, croix qui efface quand il y a du texte.
+ * Champ de filtre en pilule : loupe, texte d’une ligne, croix qui efface quand il y a du texte.
  * [hint] s’affiche quand le champ est vide ; [label] est l’intitulé TalkBack du champ.
  */
 @Composable

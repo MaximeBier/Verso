@@ -34,13 +34,13 @@ data class V2ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
 }
 
 /**
- * Écrans V2 dessinables par Compose. 2.03 et 2.04 : texte de lecture (rendu Compose ; le vrai rendu Readium est
+ * Écrans V2 dessinables par Compose. Thèmes sépia et nuit : texte de lecture (rendu Compose ; le vrai rendu Readium est
  * vérifié sur le téléphone) et écrans V1 dans les palettes sépia et nuit, pour « sans zone d'une autre couleur ».
  */
 object V2ScreenCatalog {
     private val paperThemes = listOf(AppTheme.SEPIA, AppTheme.NIGHT)
 
-    /** Ouvre la feuille « Trier et afficher » (2.07b) par son bouton. */
+    /** Ouvre la feuille « Trier et afficher » par son bouton. */
     private val openSortSheet: ComposeContentTestRule.() -> Unit = {
         val ctx = ApplicationProvider.getApplicationContext<Context>()
         val label = ctx.getString(

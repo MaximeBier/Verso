@@ -172,7 +172,7 @@ class LibraryScreenTest {
         // sont tous composés (la LazyColumn ne compose que les lignes visibles).
         show(LibrarySamples.list.copy(resume = null, books = LibrarySamples.books.drop(3)))
         compose.onAllNodesWithText(text(R.string.library_state_finished)).assertCountEquals(1)
-        // « À lire » est aussi le libellé de la pastille de filtre (2.07) : on ne compte que la ligne du livre
+        // « À lire » est aussi le libellé de la pastille de filtre : on ne compte que la ligne du livre
         // (le bouton de la rangée, Role.Button), pas la pastille (Role.RadioButton).
         compose.onAllNodes(hasText(text(R.string.library_state_to_read)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
             .assertCountEquals(1)
@@ -244,7 +244,7 @@ class LibraryScreenTest {
 
     @Test
     fun openFailureIsAnnouncedBySnackbar() {
-        // Revue finale I3 : livre refusé par le moteur (ou fichier illisible), retour à la bibliothèque avec un message.
+        // Livre refusé par le moteur (ou fichier illisible), retour à la bibliothèque avec un message.
         var shown = false
         compose.mainClock.autoAdvance = false
         show(LibrarySamples.list.copy(openFailed = "Album illustré"), LibraryActions(onOpenFailedShown = { shown = true }))

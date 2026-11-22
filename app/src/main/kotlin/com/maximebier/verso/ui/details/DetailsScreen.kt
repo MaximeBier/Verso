@@ -74,7 +74,7 @@ fun sizeParts(bytes: Long): SizeParts =
     }
 
 /**
- * Point d'entrée de DetailsRoute (signature figée par la tâche 2.2, appelé par VersoNavHost) :
+ * Point d'entrée de DetailsRoute (appelé par VersoNavHost) :
  * la fiche reliée à son ViewModel.
  */
 @Composable
@@ -166,7 +166,7 @@ data class DetailsActions(
     val onOpenNotes: (Long) -> Unit = {},
 )
 
-/** Écrans 1.07 (fiche) et 1.08 (confirmation de suppression), sans ViewModel. */
+/** Fiche du livre et confirmation de suppression, sans ViewModel. */
 @Composable
 fun DetailsContent(
     state: DetailsUiState,
@@ -175,7 +175,7 @@ fun DetailsContent(
     addToCollectionSheet: @Composable (bookId: Long, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val colors = VersoTheme.colors
-    // Feuille 4.04 : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
+    // Feuille « Ajouter à une collection » : gardée ouverte pendant « Nouvelle collection » (entrée de navigation sauvegardée).
     var collectionsSheet by rememberSaveable { mutableStateOf(false) }
     /** 16 sp, interligne 1,45 (pourcentage et temps restant sous la couverture). */
     val metaStyle = VersoTheme.typography.body.copy(lineHeight = 23.2.sp)
@@ -264,7 +264,7 @@ fun DetailsContent(
                         onOpenJournal = { actions.onOpenJournal(state.bookId) },
                     )
                 }
-                // Sous « Voir le journal de lecture » (spec V3) ; seulement si le livre a des notes.
+                // Sous « Voir le journal de lecture » ; seulement si le livre a des notes.
                 if (state.highlightCount > 0) {
                     OutlinedPillButton(
                         text = stringResource(R.string.details_open_notes, state.highlightCount),
@@ -311,7 +311,7 @@ private fun sizeText(bytes: Long): String {
 /** Arrondi à la minute, au moins 1 dès qu'il y a eu de la lecture. */
 private fun activeMinutes(activeMs: Long): Int = ((activeMs + 30_000) / 60_000).toInt().coerceAtLeast(1)
 
-/** Section « Statistiques » (2.08) : temps de lecture, vitesse moyenne, temps restant à votre rythme, journal. */
+/** Section « Statistiques » : temps de lecture, vitesse moyenne, temps restant à votre rythme, journal. */
 @Composable
 private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpenJournal: () -> Unit) {
     val colors = VersoTheme.colors
@@ -355,7 +355,7 @@ private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpen
 /** Marge intérieure du bouton « Modifier », compensée pour aligner son libellé sur le contenu. */
 private val EditButtonPadding = 14.dp
 
-/** Ligne « Collections » (4.04) : noms séparés par des virgules ou « Aucune », et « Modifier », qui ouvre la feuille. */
+/** Ligne « Collections » : noms séparés par des virgules ou « Aucune », et « Modifier », qui ouvre la feuille. */
 @Composable
 private fun CollectionsRow(names: List<String>, onEdit: () -> Unit) {
     val colors = VersoTheme.colors

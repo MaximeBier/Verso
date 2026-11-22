@@ -39,7 +39,7 @@ data class CollectionUiState(
     val dialog: CollectionDialog? = null,
 )
 
-/** Écran d’une collection (4.02) : ordre de lecture, « Réordonner », renommer, supprimer, retirer un livre. */
+/** Écran d’une collection : ordre de lecture, « Réordonner », renommer, supprimer, retirer un livre. */
 class CollectionViewModel(
     private val collectionId: Long,
     private val collections: CollectionRepository,

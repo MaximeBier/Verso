@@ -72,7 +72,7 @@ object AccessibilityChecks {
 
     /**
      * La V1 n'avait aucun défilement horizontal ; la V2 en introduit un seul, assumé : la rangée de pastilles de
-     * filtre (2.07, `selectableGroup`), dont chaque pastille reste atteignable individuellement au clavier/TalkBack.
+     * filtre (`selectableGroup`), dont chaque pastille reste atteignable individuellement au clavier/TalkBack.
      * Toute autre plage horizontale non nulle reste une violation.
      */
     fun horizontalScroll(rule: ComposeContentTestRule): List<String> =

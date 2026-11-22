@@ -83,7 +83,7 @@ data class LibraryUiState(
     val filteredBooks: List<LibraryBook>
         get() = books.filter { filter.accepts(it.status) }
 
-    /** Livres de la liste : ceux du filtre, sans celui de la carte « Reprendre », déjà affiché au-dessus (1.02). */
+    /** Livres de la liste : ceux du filtre, sans celui de la carte « Reprendre », déjà affiché au-dessus. */
     val listedBooks: List<LibraryBook>
         get() = resume?.let { r -> filteredBooks.filterNot { it.id == r.book.id } } ?: filteredBooks
 }

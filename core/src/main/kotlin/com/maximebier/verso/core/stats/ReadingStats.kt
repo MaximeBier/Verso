@@ -21,7 +21,7 @@ object StatsThresholds {
 }
 
 /**
- * Statistiques d'un livre, calculées à partir de son journal (fiche 2.08).
+ * Statistiques d'un livre, calculées à partir de son journal (fiche du livre).
  * [speedActiveMs] : temps actif des sessions retenues pour la vitesse ; [fallbackWordsPerMinute] : vitesse de tous
  * les livres, utilisée tant que ce livre n’a pas [StatsThresholds.MIN_BOOK_ACTIVE_MS] de lecture mesurée.
  */

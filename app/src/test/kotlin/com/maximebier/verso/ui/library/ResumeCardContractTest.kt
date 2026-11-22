@@ -22,7 +22,7 @@ import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 
 /**
- * Contrat de bout en bout de la carte « Reprendre » (revue finale, I1) : le locator enrichi par le vrai
+ * Contrat de bout en bout de la carte « Reprendre » : le locator enrichi par le vrai
  * moteur ([FragmentReaderController.excerptLocator]), écrit par [PositionSaver], doit donner à la
  * bibliothèque un chapitre et un extrait.
  */

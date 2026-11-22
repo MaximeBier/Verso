@@ -50,7 +50,7 @@ import com.maximebier.verso.ui.notes.rememberNotesExport
 import com.maximebier.verso.ui.reader.search.SearchScreen
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Point d’entrée de ReaderRoute (signature figée par la tâche 2.2). */
+/** Point d’entrée de ReaderRoute. */
 @Composable
 fun ReaderDestination(
     bookId: Long,

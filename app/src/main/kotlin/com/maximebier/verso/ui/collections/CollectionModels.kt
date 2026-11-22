@@ -12,10 +12,10 @@ import com.maximebier.verso.data.status
 import com.maximebier.verso.ui.library.LibraryBook
 import com.maximebier.verso.ui.library.toLibraryBook
 
-/** Couverture d’une pile (4.01) : mêmes données que `BookCover`. */
+/** Couverture d’une pile : mêmes données que `BookCover`. */
 data class CoverRef(val title: String, val coverPath: String?, val seed: String)
 
-/** Carte de l’onglet « Collections » (4.01). */
+/** Carte de l’onglet « Collections ». */
 data class CollectionCard(
     val id: Long,
     val name: String,
@@ -27,7 +27,7 @@ data class CollectionCard(
     val finished: Int,
 )
 
-/** Écran d’une collection (4.02). */
+/** Écran d’une collection. */
 data class CollectionDetail(val id: Long, val name: String, val books: List<LibraryBook>, val summary: CollectionSummary)
 
 /** Nombre de couvertures de la pile. */

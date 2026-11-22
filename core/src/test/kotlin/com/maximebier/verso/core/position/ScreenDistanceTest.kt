@@ -51,9 +51,9 @@ class ScreenDistanceTest {
     }
 
     @Test
-    fun defaultThresholdsMatchSpec() {
+    fun defaultReadingThresholdValues() {
         val t = ReadingThresholds()
-        // Calibré par le prototype (étape 1) : flicks d’un vrai doigt entre 1,0 et 7,4 écrans/s.
+        // Calibré par le prototype : flicks d’un vrai doigt entre 1,0 et 7,4 écrans/s.
         assertThat(t.flingScreensPerSecond).isEqualTo(1.0)
         // Vitesse entre deux positions affichées : bien plus haute qu’au relâchement.
         assertThat(t.displayedSpeedNavigationScreensPerSecond).isEqualTo(4.0)

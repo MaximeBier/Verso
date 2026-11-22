@@ -10,7 +10,7 @@ import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/** Données d'exemple des maquettes 1.02 à 1.06 (vignettes générées : aucune couverture sur disque). */
+/** Données d'exemple de la bibliothèque et de l'import (vignettes générées : aucune couverture sur disque). */
 object LibrarySamples {
 
     private fun book(id: Long, title: String, author: String, status: BookStatus, progression: Double) = LibraryBook(
@@ -37,7 +37,7 @@ object LibrarySamples {
         remainingMinutes = 330,
     )
 
-    /** Bibliothèque de la maquette 2.07 : Madame Bovary en carte, puis les états « À lire » et « Terminé ». */
+    /** Bibliothèque avec états : Madame Bovary en carte, puis les états « À lire » et « Terminé ». */
     val states = LibraryUiState(
         loading = false,
         books = listOf(

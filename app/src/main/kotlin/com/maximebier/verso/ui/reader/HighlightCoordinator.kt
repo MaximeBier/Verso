@@ -39,7 +39,7 @@ data class HighlightUiState(
 )
 
 /**
- * Feuille de traduction (3.08 à 3.10) : [source] est le passage sélectionné (espaces normalisées) ; [short] = mot ou
+ * Feuille de traduction : [source] est le passage sélectionné (espaces normalisées) ; [short] = mot ou
  * expression de 3 mots au plus, montré en tête de feuille ; [context] la phrase autour, envoyée avec lui (« Réessayer »
  * compris) ; [result] null pendant le chargement.
  */
@@ -50,7 +50,7 @@ data class TranslationSheetState(
     val context: String = "",
 )
 
-/** Feuille de note (3.05) : passage, texte du champ ; [editing] = note existante. */
+/** Feuille de note : passage, texte du champ ; [editing] = note existante. */
 data class NoteSheetState(val passage: String, val note: String, val editing: Boolean)
 
 /** Feuille d’une note touchée dans le texte : passage, note, « Deuxième partie, chap. I · 30 % ». */
@@ -62,11 +62,11 @@ sealed interface HighlightEvent {
 }
 
 /**
- * Sélection et notes du livre ouvert (V3) : barre de sélection (3.04), traduction (3.08 à 3.10), note créée et
+ * Sélection et notes du livre ouvert (V3) : barre de sélection, traduction, note créée et
  * fusionnée, toucher d’une note. Un passage n’est marqué que s’il porte une note : les surlignages sans note d’avant
  * le 2026-10-04 restent en base, masqués par [HighlightRepository]. Séparé de [ReaderViewModel] comme
  * `SessionCoordinator`. Rien ici ne touche la position de lecture : la machine à états voit la sélection par
- * `ReaderController.selecting` (17.3).
+ * `ReaderController.selecting`.
  */
 class HighlightCoordinator(
     private val bookId: Long,
@@ -204,7 +204,7 @@ class HighlightCoordinator(
 
     private var noteTarget: NoteTarget? = null
 
-    /** « Note » de la barre : feuille 3.05 avec le passage ; rien n’est créé avant « Enregistrer ». */
+    /** « Note » de la barre : feuille de note avec le passage ; rien n’est créé avant « Enregistrer ». */
     fun noteForSelection() {
         val reader = controller ?: return
         launchWrite {

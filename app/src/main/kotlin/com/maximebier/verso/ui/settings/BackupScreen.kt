@@ -104,7 +104,7 @@ fun BackupDestination(onBack: () -> Unit, onRestored: () -> Unit) {
     )
 }
 
-/** Écran « Sauvegarde » (3.07), sans état propre. */
+/** Écran « Sauvegarde », sans état propre. */
 @Composable
 fun BackupScreen(
     state: BackupUiState,
@@ -235,7 +235,7 @@ private const val BYTES_PER_MB = 1_000_000L
 /** Au-delà, la taille est un nombre entier de Mo. */
 private const val WHOLE_MEGABYTES_FROM = 10_000_000L
 
-/** « 48 Mo » à partir de 10 Mo (maquette 3.07) ; en dessous, comme la fiche (« 1,2 Mo », « 850 ko »). */
+/** « 48 Mo » à partir de 10 Mo ; en dessous, comme la fiche (« 1,2 Mo », « 850 ko »). */
 fun backupSizeParts(bytes: Long): SizeParts =
     if (bytes >= WHOLE_MEGABYTES_FROM) {
         SizeParts(megabytes = true, value = ((bytes + BYTES_PER_MB / 2) / BYTES_PER_MB).toString())

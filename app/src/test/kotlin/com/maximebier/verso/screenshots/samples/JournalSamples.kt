@@ -15,7 +15,7 @@ import com.maximebier.verso.ui.reader.JournalUiState
 import com.maximebier.verso.ui.theme.VersoTheme
 import java.time.LocalDate
 
-/** Contenu de la maquette 1.13 (les passages sont des données, produites par :core en production). */
+/** Contenu du journal de lecture d’exemple (les passages sont des données, produites par :core en production). */
 internal val journalSampleState = JournalUiState(
     days = listOf(
         JournalDay(DayGroup.Today, showYear = false, sessions = listOf(
@@ -49,7 +49,7 @@ internal fun sampleItem(
     resumeTarget = BookPosition("""{"href":"s$id.xhtml","type":"application/xhtml+xml","locations":{"totalProgression":${endPercent / 100.0}}}""", endPercent / 100.0),
 )
 
-/** Écran de lecture (fond seul, la WebView de Readium n'existe pas sous Robolectric) avec la feuille 1.13 ouverte. */
+/** Écran de lecture (fond seul, la WebView de Readium n'existe pas sous Robolectric) avec la feuille du journal ouverte. */
 @Composable
 internal fun JournalSample(
     state: JournalUiState = journalSampleState,

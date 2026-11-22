@@ -76,7 +76,7 @@ import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Intentions de l’écran 4.02 ; toutes facultatives pour les tests. */
+/** Intentions de l’écran d’une collection ; toutes facultatives pour les tests. */
 data class CollectionActions(
     val onBack: () -> Unit = {},
     val onOpenReader: (Long) -> Unit = {},
@@ -126,7 +126,7 @@ fun collectionRemainingText(minutes: Int): String = when {
     else -> stringResource(R.string.collection_remaining, durationText(minutes))
 }
 
-/** Écran d’une collection (4.02), sans ViewModel. */
+/** Écran d’une collection, sans ViewModel. */
 @Composable
 fun CollectionContent(state: CollectionUiState, actions: CollectionActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
@@ -306,7 +306,7 @@ private fun ProgressSection(summary: CollectionSummary, modifier: Modifier) {
     }
 }
 
-/** Carte « Reprendre » (4.02) : toute la carte, comme le bouton rond, ouvre le livre à sa position. */
+/** Carte « Reprendre » : toute la carte, comme le bouton rond, ouvre le livre à sa position. */
 @Composable
 private fun ResumeBookCard(book: LibraryBook, onOpen: (Long) -> Unit, modifier: Modifier) {
     val colors = VersoTheme.colors
@@ -343,8 +343,8 @@ private fun ResumeBookCard(book: LibraryBook, onOpen: (Long) -> Unit, modifier: 
 }
 
 /**
- * « Dans l’ordre de lecture » et « Réordonner » (ou « Terminé ») : côte à côte, le titre passant sur deux lignes comme
- * sur la maquette ; le bouton passe sous le titre quand le texte est très agrandi.
+ * « Dans l’ordre de lecture » et « Réordonner » (ou « Terminé ») : côte à côte, le titre passant sur deux lignes au
+ * besoin ; le bouton passe sous le titre quand le texte est très agrandi.
  */
 @Composable
 private fun OrderHeader(reordering: Boolean, canReorder: Boolean, actions: CollectionActions) {
@@ -407,7 +407,7 @@ private fun RankText(rank: Int) {
     )
 }
 
-/** Ligne de la liste (4.02) : rang, couverture, titre et état ; toucher ouvre le livre ; ⋮ Détails ou Retirer. */
+/** Ligne de la liste : rang, couverture, titre et état ; toucher ouvre le livre ; ⋮ Détails ou Retirer. */
 @Composable
 private fun CollectionBookRow(rank: Int, book: LibraryBook, actions: CollectionActions) {
     val colors = VersoTheme.colors

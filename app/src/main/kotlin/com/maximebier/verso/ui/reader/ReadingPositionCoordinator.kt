@@ -71,7 +71,7 @@ class ReadingPositionCoordinator(
         detach()
         controller = readerController
         jobs = listOf(
-            // Sélection de texte : ni lecture ni navigation pour le tracker (spec V3).
+            // Sélection de texte : ni lecture ni navigation pour le tracker.
             scope.launch {
                 readerController.selecting.collect { active ->
                     if (active && !selectionOpen) {
@@ -151,7 +151,7 @@ class ReadingPositionCoordinator(
     }
 
     /**
-     * Lien interne suivi par le moteur lui-même (spec : saut explicite) : annoncé au tracker, sans
+     * Lien interne suivi par le moteur lui-même (saut explicite) : annoncé au tracker, sans
      * `go()`. Appelé avant que le moteur ne se déplace, pour que l’affichage qui suit soit une navigation.
      */
     fun onLinkFollowed(target: Locator) {

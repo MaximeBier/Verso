@@ -2,7 +2,7 @@ package com.maximebier.verso.core.journal
 
 import com.maximebier.verso.core.stats.StatsThresholds
 
-/** Seuils du journal de lecture (spec, « Journal de lecture »). */
+/** Seuils du journal de lecture. */
 data class SessionThresholds(
     /** Fin après plus de 5 min sans interaction ; une reprise au-delà ouvre une nouvelle session. */
     val inactivityEndMs: Long = 5 * 60_000,

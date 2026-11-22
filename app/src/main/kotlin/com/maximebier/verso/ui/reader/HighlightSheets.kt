@@ -97,7 +97,7 @@ fun HighlightActionsSheet(
 }
 
 /**
- * « Ajouter une note » (3.05) : passage surligné sur fond de page, champ « Votre note » (bord accent 2 dp), puis
+ * « Ajouter une note » : passage surligné sur fond de page, champ « Votre note » (bord accent 2 dp), puis
  * Annuler et Enregistrer à droite. La croix et le voile annulent. Le champ prend le focus à l’ouverture.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -127,7 +127,7 @@ fun NoteSheet(
         ) {
             MarkedText(
                 text = state.passage,
-                // 16 sp, interligne 1,55 (3.05).
+                // 16 sp, interligne 1,55.
                 style = VersoTheme.typography.body.copy(lineHeight = 24.8.sp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -144,7 +144,7 @@ fun NoteSheet(
                         field = it
                         onNoteChange(it.text)
                     },
-                    // 16 sp, interligne 1,45 (3.05).
+                    // 16 sp, interligne 1,45.
                     textStyle = VersoTheme.typography.body.copy(lineHeight = 23.2.sp, color = colors.text),
                     cursorBrush = SolidColor(colors.accent),
                     minLines = 3,

@@ -5,7 +5,7 @@ import com.maximebier.verso.data.db.BookEntity
 
 /**
  * Choix de l’écran d’arrivée : rouvrir le dernier livre (moins de 24 h) sauf si un fichier reçu
- * (« Ouvrir avec », « Partager vers » : `IncomingImports.hasPending()`, tâche 3.2) attend son import.
+ * (« Ouvrir avec », « Partager vers » : `IncomingImports.hasPending()`) attend son import.
  */
 object StartDestination {
 

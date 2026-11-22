@@ -49,7 +49,7 @@ sealed interface SessionEvent {
 }
 
 /**
- * Découpe la lecture d'un livre en sessions (spec, « Journal de lecture »).
+ * Découpe la lecture d'un livre en sessions.
  *
  * - Début : à l'ouverture (`Opened`), ou à la première interaction après une fin (arrière-plan,
  *   plus de [SessionThresholds.inactivityEndMs] d'inactivité).

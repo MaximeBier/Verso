@@ -15,7 +15,7 @@ data class CollectionBook(
     val wordsPerMinute: Int,
 )
 
-/** Écrans 4.01 et 4.02 : progression pondérée par les mots, décompte par état, temps restant, livre à reprendre. */
+/** Onglet Collections et écran d’une collection : progression pondérée par les mots, décompte par état, temps restant, livre à reprendre. */
 data class CollectionSummary(
     val fraction: Double,
     val percent: Int,
@@ -83,7 +83,7 @@ object CollectionRules {
         return collapse(authors.first())
     }
 
-    /** Filtre de 4.03 : le texte saisi dans le titre ou l’auteur, sans casse ni accents ; vide = tout. */
+    /** Filtre de « Nouvelle collection » : le texte saisi dans le titre ou l’auteur, sans casse ni accents ; vide = tout. */
     fun matches(query: String, title: String, author: String): Boolean {
         val q = fold(query)
         if (q.isEmpty()) return true

@@ -20,9 +20,9 @@ sealed class TranslationFailure(message: String, cause: Throwable? = null) : Exc
 
 /** Ce que montre la feuille de traduction une fois la réponse arrivée. */
 sealed interface TranslationResult {
-    /** Mot ou expression courte (écran 3.08). */
+    /** Mot ou expression courte. */
     data class Word(val text: String) : TranslationResult
-    /** Passage plus long (écran 3.09). */
+    /** Passage plus long. */
     data class Passage(val text: String) : TranslationResult
     data object Offline : TranslationResult
     data object Unavailable : TranslationResult
@@ -31,7 +31,7 @@ sealed interface TranslationResult {
 
 /** Règles de la traduction de la sélection (V3). */
 object Translation {
-    /** Au plus ce nombre de mots : présentation d’un mot (3.08) ; au-delà, d’un passage (3.09). */
+    /** Au plus ce nombre de mots : présentation d’un mot ; au-delà, d’un passage. */
     const val MAX_SHORT_WORDS = 3
 
     /** Au-delà, rien n’est envoyé : « Sélectionnez un passage plus court pour le traduire. » */

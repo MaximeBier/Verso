@@ -129,9 +129,9 @@ data class ReaderUiState(
     val barsVisible: Boolean = false,
     val tocVisible: Boolean = false,
     val journalVisible: Boolean = false,
-    /** Feuille « Réglages de lecture » (2.02) ouverte. */
+    /** Feuille « Réglages de lecture » ouverte. */
     val settingsVisible: Boolean = false,
-    /** Écran « Recherche dans le livre » (2.06) affiché par-dessus le texte. */
+    /** Écran « Recherche dans le livre » affiché par-dessus le texte. */
     val searchVisible: Boolean = false,
     /** Défilement de ce livre (`books.scrollMode`), à défaut celui des Paramètres (`defaultScrollMode`). */
     val scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
@@ -141,7 +141,7 @@ data class ReaderUiState(
     val displayedChapterPath: List<String> = emptyList(),
     /** Carte « Revenir » ; jamais persistée. */
     val returnCard: ReturnCardState? = null,
-    /** Surcouche « Notes » (3.06) ouverte depuis la barre. */
+    /** Surcouche « Notes » ouverte depuis la barre. */
     val notesVisible: Boolean = false,
     /** Réglages de lecture courants (police, taille, interligne, marges). */
     val readingSettings: ReadingSettings = ReadingSettings(),
@@ -168,7 +168,7 @@ class ReaderViewModel(
     /** « Deuxième partie, chap. I · 30 % » d’une note, lu dans les ressources. */
     private val highlightLocationText: (location: String?, percent: Int) -> String =
         { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
-    /** Textes de la liste des notes et de l’export (3.06). */
+    /** Textes de la liste des notes et de l’export. */
     private val notesTexts: NotesTexts = plainNotesTexts(),
     /** Écriture du fichier choisi par le sélecteur d’Android (export Markdown). */
     private val writeDocument: suspend (Uri, String) -> Unit = { _, _ -> },
@@ -185,7 +185,7 @@ class ReaderViewModel(
 
     /**
      * Effets `SaveReading` et `ReadingMoved` de la machine à états, dans l’ordre où elle les produit
-     * (relais de `ReadingPositionCoordinator.readingEffects`), pour le journal des sessions (6.4).
+     * (relais de `ReadingPositionCoordinator.readingEffects`), pour le journal des sessions.
      * `SaveReading` seul : restauration, « Rester ici » ou confirmation ; jamais `ScrollTo`.
      */
     val readingEffects: SharedFlow<TrackerEffect> = readingEffectsFlow.asSharedFlow()
@@ -211,7 +211,7 @@ class ReaderViewModel(
     private var metrics: ReaderMetrics? = null
     private var appliedMetrics: ReaderMetrics? = null
 
-    /** Recherche plein texte du livre ouvert (2.06) ; créée avec la publication ([BookSearch]). */
+    /** Recherche plein texte du livre ouvert ; créée avec la publication ([BookSearch]). */
     private var bookSearch: ((String) -> Flow<List<SearchHit>>)? = null
 
     private val searchModel = BookSearchModel(
@@ -237,7 +237,7 @@ class ReaderViewModel(
     /** Palette affichée, reçue de ReaderScreen ; null tant qu’elle n’est pas connue (rien n’est envoyé au lecteur). */
     private var theme: AppTheme? = null
 
-    // --- Journal de lecture (tâche 6.4) ---------------------------------------------------------
+    // --- Journal de lecture ---------------------------------------------------------------------
     private var sessionCoordinator: SessionCoordinator? = null
     private val sessionCurrent = MutableStateFlow<SessionRecord?>(null)
     private var lastDisplayed: Locator? = null
@@ -425,7 +425,7 @@ class ReaderViewModel(
         return text
     }
 
-    /** « Traduire » de la barre de sélection : feuille 3.08 à 3.10. */
+    /** « Traduire » de la barre de sélection : feuille de traduction. */
     fun translateSelection() {
         sessionCoordinator?.onInteraction()
         highlightCoordinator?.translateSelection()
@@ -453,7 +453,7 @@ class ReaderViewModel(
         highlightCoordinator?.dismissActions()
     }
 
-    /** « Note » de la barre de sélection : feuille 3.05. */
+    /** « Note » de la barre de sélection : feuille de note. */
     fun noteForSelection() {
         sessionCoordinator?.onInteraction()
         highlightCoordinator?.noteForSelection()
@@ -486,7 +486,7 @@ class ReaderViewModel(
         highlightCoordinator?.undoDelete(row)
     }
 
-    // --- « Notes » (3.06) ------------------------------------------------------------------------
+    // --- « Notes » -------------------------------------------------------------------------------
     private val notesModel = NotesListModel(
         bookId = bookId,
         highlights = highlightRepository,
@@ -499,7 +499,7 @@ class ReaderViewModel(
     val notes: StateFlow<NotesUiState> = notesModel.state
     val notesEvents: SharedFlow<NotesEvent> = notesModel.events
 
-    /** « Notes » de la barre : surcouche 3.06, barre de lecture fermée. */
+    /** « Notes » de la barre : en surcouche, barre de lecture fermée. */
     fun showNotes() {
         sessionCoordinator?.onInteraction()
         _uiState.update { it.copy(notesVisible = true, barsVisible = false) }
@@ -593,7 +593,7 @@ class ReaderViewModel(
         // La prochaine surface n’a pas la décoration.
         searchMatchShown = false
         coordinator?.detach()
-        // Le premier locator de la prochaine surface est une arrivée, pas un scroll (journal, 6.4).
+        // Le premier locator de la prochaine surface est une arrivée, pas un scroll (journal).
         lastDisplayed = null
     }
 
@@ -705,7 +705,7 @@ class ReaderViewModel(
 
     fun hideJournal() = _uiState.update { it.copy(journalVisible = false) }
 
-    /** « Aa » : la feuille s’ouvre, la barre se referme (maquette 2.02 : texte seul derrière la feuille). */
+    /** « Aa » : la feuille s’ouvre, la barre se referme (texte seul derrière la feuille). */
     fun showReadingSettings() {
         sessionCoordinator?.onInteraction()
         _uiState.update { it.copy(settingsVisible = true, barsVisible = false) }
@@ -713,7 +713,7 @@ class ReaderViewModel(
 
     fun hideReadingSettings() = _uiState.update { it.copy(settingsVisible = false) }
 
-    /** Écran « Recherche » (2.06) : la barre et la feuille de réglages se referment. */
+    /** Écran « Recherche » : la barre et la feuille de réglages se referment. */
     fun showSearch() {
         sessionCoordinator?.onInteraction()
         _uiState.update { it.copy(searchVisible = true, barsVisible = false, tocVisible = false, settingsVisible = false) }
@@ -757,7 +757,7 @@ class ReaderViewModel(
         viewModelScope.launch { readerController.showSearchMatch(null) }
     }
 
-    /** Police, taille, interligne, marges : communs à tous les livres (spec) ; appliqués en direct par la collecte des réglages. */
+    /** Police, taille, interligne, marges : communs à tous les livres ; appliqués en direct par la collecte des réglages. */
     fun updateReadingSettings(transform: (ReadingSettings) -> ReadingSettings) {
         sessionCoordinator?.onInteraction()
         viewModelScope.launch { settings.updateReadingSettings(transform) }
@@ -825,7 +825,7 @@ class ReaderViewModel(
     private fun closeTocAndBars() = _uiState.update { it.copy(tocVisible = false, barsVisible = false) }
 
     /**
-     * Saut explicite (sommaire ; « Reprendre ici » du journal en 6.4) : `ReaderEvent.Jumped` puis
+     * Saut explicite (sommaire ; « Reprendre ici » du journal) : `ReaderEvent.Jumped` puis
      * `controller.go(locator)`, via le coordinateur. Navigation : ne touche pas la position de lecture.
      * La cible reçoit sa progression totale (un lien de sommaire n’en a pas), sinon un saut vers le
      * chapitre courant paraîtrait lointain.
@@ -881,7 +881,7 @@ class ReaderViewModel(
     }
 
     /**
-     * Lien interne touché dans le texte, avant que le moteur ne le suive lui-même (spec : saut
+     * Lien interne touché dans le texte, avant que le moteur ne le suive lui-même (saut
      * explicite). Annoncé à la machine à états seulement ; le déplacement reste celui du moteur.
      */
     fun onInternalLinkFollowed(url: Url) {
@@ -913,7 +913,7 @@ class ReaderViewModel(
      */
     fun onStop(changingConfigurations: Boolean = false) {
         // Repos forcé d’abord : le dernier glissé, pas encore validé, est enregistré par le flush qui suit.
-        // Aucun battement d’horloge en arrière-plan (revue finale M5) ; il reprend à onStart.
+        // Aucun battement d’horloge en arrière-plan ; il reprend à onStart.
         stopped = true
         coordinator?.onStopped()
         positionSaver.flush()

@@ -693,7 +693,7 @@ class ReadingPositionTrackerTest {
         assertThat(tracker.state).isEqualTo(following(reading = 10.0, displayed = 10.4))
     }
 
-    // ---------- Scénarios des critères d'acceptation ----------
+    // ---------- Scénarios d'acceptation ----------
 
     @Test
     fun violentThirtyPageScrollNeverMovesReadingAndGoBackReturnsInOneTap() {

@@ -25,7 +25,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Barre « Texte sélectionné » (3.04) : début du passage, puis Traduire, Note, Copier en colonnes égales de 64 dp.
+ * Barre « Texte sélectionné » : début du passage, puis Traduire, Note, Copier en colonnes égales de 64 dp.
  * Remplace le menu d’Android ; posée en bas de l’écran, par-dessus le texte. [onTranslate] (sans clé de traduction)
  * ou [onNote] null : bouton absent.
  */
@@ -65,7 +65,7 @@ fun SelectionBar(
             if (onNote != null) add(ReaderTool(stringResource(R.string.selection_note), ToolGlyph.Icon(VersoIcons.Note), onNote))
             add(ReaderTool(stringResource(R.string.selection_copy), ToolGlyph.Icon(VersoIcons.Copy), onCopy))
         }
-        // Même rangée adaptative que la barre de lecture (2.01) : colonnes égales, deux puis une à 200 %.
+        // Même rangée adaptative que la barre de lecture : colonnes égales, deux puis une à 200 %.
         ReaderToolbar(tools)
     }
 }

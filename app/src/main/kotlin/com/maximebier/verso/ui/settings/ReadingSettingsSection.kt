@@ -67,8 +67,8 @@ private fun scrollModeLabel(mode: ScrollMode): String =
     stringResource(if (mode == ScrollMode.CONTINUOUS) R.string.settings_scroll_continuous else R.string.settings_scroll_pages)
 
 /**
- * Section « Lecture » des Paramètres (2.09) : phrase d’aide, polices, thème, taille et défilement par défaut.
- * « Thème sombre » (1.09, maquettes du 2026-09-29) suit la ligne Thème : 2.09 date d’avant ce réglage.
+ * Section « Lecture » des Paramètres : phrase d’aide, polices, thème, taille et défilement par défaut.
+ * « Thème sombre » suit la ligne Thème.
  */
 @Composable
 fun ReadingSettingsSection(
@@ -180,7 +180,7 @@ private fun RadioDialog(title: String, options: List<String>, selectedIndex: Int
     ) {
         Column(Modifier.selectableGroup()) {
             options.forEachIndexed { index, label ->
-                // Ligne de la tâche 10.1 (bouton radio, libellé en gras quand choisi, 48 dp), sans sa marge : le dialogue a la sienne.
+                // Ligne `RadioRow` partagée (bouton radio, libellé en gras quand choisi, 48 dp), sans sa marge : le dialogue a la sienne.
                 RadioRow(title = label, selected = index == selectedIndex, onClick = { onSelect(index) }, horizontalPadding = 0.dp)
             }
         }
@@ -232,7 +232,7 @@ private fun ThemeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     }
 }
 
-/** « Thème sombre : Sombre / Nuit » (1.09) : le thème foncé de l'automatique quand le téléphone est en sombre. */
+/** « Thème sombre : Sombre / Nuit » : le thème foncé de l'automatique quand le téléphone est en sombre. */
 @Composable
 private fun DarkThemeVariantSelector(selected: DarkThemeVariant, onSelect: (DarkThemeVariant) -> Unit) {
     val variants = DarkThemeVariant.entries

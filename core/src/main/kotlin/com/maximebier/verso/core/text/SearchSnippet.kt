@@ -1,6 +1,6 @@
 package com.maximebier.verso.core.text
 
-/** Longueur maximale du contexte avant et après le mot trouvé, en caractères (maquette 2.06 : deux à trois lignes). */
+/** Longueur maximale du contexte avant et après le mot trouvé, en caractères (deux à trois lignes). */
 const val SEARCH_CONTEXT_CHARS = 90
 
 /** Extrait d'un résultat de recherche : contexte avant, mot trouvé, contexte après, prêts à afficher. */

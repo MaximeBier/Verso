@@ -26,7 +26,7 @@ data class AddToCollectionUiState(
     val choices: List<CollectionChoice> = emptyList(),
 )
 
-/** Feuille « Ajouter à une collection » (4.04) : chaque case ajoute le livre en dernier ou le retire, tout de suite. */
+/** Feuille « Ajouter à une collection » : chaque case ajoute le livre en dernier ou le retire, tout de suite. */
 class AddToCollectionViewModel(
     private val bookId: Long,
     private val collections: CollectionRepository,

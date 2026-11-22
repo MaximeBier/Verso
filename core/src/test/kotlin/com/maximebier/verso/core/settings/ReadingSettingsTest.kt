@@ -7,7 +7,7 @@ import org.junit.Test
 class ReadingSettingsTest {
 
     @Test
-    fun defaultsMatchTheSpec() {
+    fun defaultsAreLiterata20NormalAndContinuous() {
         val settings = ReadingSettings()
         assertThat(settings.font).isEqualTo(ReadingFont.LITERATA)
         assertThat(settings.fontSizeSp).isEqualTo(20)
@@ -17,7 +17,7 @@ class ReadingSettingsTest {
     }
 
     @Test
-    fun lineSpacingAndMarginsHaveTheSpecValues() {
+    fun lineSpacingIs14To18AndMarginsAre16To32() {
         assertThat(LineSpacing.entries.map { it.factor }).containsExactly(1.4, 1.6, 1.8).inOrder()
         assertThat(Margins.entries.map { it.dp }).containsExactly(16.0, 24.0, 32.0).inOrder()
     }

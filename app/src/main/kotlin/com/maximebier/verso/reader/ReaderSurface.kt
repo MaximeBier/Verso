@@ -208,7 +208,7 @@ fun ReaderSurface(
             override fun shouldFollowInternalLink(link: Link, context: HyperlinkNavigator.LinkContext?): Boolean {
                 controller.onLinkActivated()
                 val url = link.url()
-                // Saut explicite (spec) : annoncé avant que Readium ne lance le déplacement.
+                // Saut explicite : annoncé avant que Readium ne lance le déplacement.
                 if (publication.readingOrder.any { sameResource(it.url(), url) }) currentOnInternalLink(url)
                 return true
             }

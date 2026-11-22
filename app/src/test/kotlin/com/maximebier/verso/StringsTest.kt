@@ -48,7 +48,7 @@ class StringsTest {
     }
 
     @Test
-    fun emptyLibraryLabelsMatchTheMockup() {
+    fun emptyLibraryLabelsKeepTheirWording() {
         assertThat(context.getString(R.string.library_empty_title)).isEqualTo("Votre bibliothèque est vide")
         assertThat(context.getString(R.string.library_empty_import)).isEqualTo("Importer un EPUB")
     }

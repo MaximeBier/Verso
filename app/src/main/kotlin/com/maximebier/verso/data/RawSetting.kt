@@ -13,5 +13,5 @@ data class RawSetting(val key: String, val value: Any) {
     }
 }
 
-/** Carte « Dernière sauvegarde » (3.07) : propre à ce téléphone, jamais dans la sauvegarde. */
+/** Carte « Dernière sauvegarde » : propre à ce téléphone, jamais dans la sauvegarde. */
 data class LastBackup(val at: Long, val sizeBytes: Long, val fileName: String)

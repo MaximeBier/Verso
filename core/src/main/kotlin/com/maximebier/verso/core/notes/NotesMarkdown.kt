@@ -4,7 +4,7 @@ package com.maximebier.verso.core.notes
 data class NotesExportItem(val chapter: String?, val text: String, val note: String?)
 
 /**
- * Fichier « <Titre> – notes.md » (spec V3, « Export ») : `# Titre`, la ligne [meta] (auteur · nombre d’éléments · date,
+ * Fichier « <Titre> – notes.md » (export) : `# Titre`, la ligne [meta] (auteur · nombre d’éléments · date,
  * formée par l’app), puis un `## Chapitre` à chaque changement de chapitre, chaque passage en citation suivi de sa
  * note. [items] sont déjà dans l’ordre du livre. Lisible tel quel dans un éditeur de texte.
  */

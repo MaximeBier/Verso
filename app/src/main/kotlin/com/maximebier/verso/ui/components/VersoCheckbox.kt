@@ -15,7 +15,7 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Case à cocher des maquettes 4.03 et 4.04 (22 dp) : cochée = fond accent et coche, sinon contour 2 dp. Purement
+ * Case à cocher des écrans de collection (22 dp) : cochée = fond accent et coche, sinon contour 2 dp. Purement
  * visuelle : la ligne qui la porte est `toggleable` (Role.Checkbox) et dit son état à TalkBack.
  */
 @Composable

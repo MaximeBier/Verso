@@ -31,7 +31,7 @@ import com.maximebier.verso.ui.components.VersoIcons
 import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Feuille 4.04, reliée à son ViewModel ; [onNewCollection] reçoit le livre à présélectionner dans 4.03. */
+/** « Ajouter à une collection », reliée à son ViewModel ; [onNewCollection] reçoit le livre à présélectionner dans « Nouvelle collection ». */
 @Composable
 fun AddToCollectionSheet(bookId: Long, onNewCollection: (Long) -> Unit, onDismiss: () -> Unit) {
     val viewModel: AddToCollectionViewModel = viewModel(key = "ajout-$bookId", factory = AddToCollectionViewModel.factory(bookId))
@@ -45,7 +45,7 @@ fun AddToCollectionSheet(bookId: Long, onNewCollection: (Long) -> Unit, onDismis
     )
 }
 
-/** « Ajouter à une collection » (4.04) : une case par collection, « Nouvelle collection », « Terminé ». */
+/** « Ajouter à une collection » : une case par collection, « Nouvelle collection », « Terminé ». */
 @Composable
 fun AddToCollectionSheetContent(
     state: AddToCollectionUiState,

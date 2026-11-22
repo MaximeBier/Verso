@@ -55,7 +55,7 @@ import java.util.Locale
 /** Heure d'horloge locale, 24 h (« 7 h 42 », « 22 h 10 »). */
 data class ClockTime(val hour: Int, val minute: Int)
 
-/** Une session telle qu'affichée dans la feuille 1.13. */
+/** Une session telle qu'affichée dans la feuille du journal. */
 data class JournalSessionItem(
     val sessionId: Long, // 0 si la session en cours n'est pas encore écrite
     val start: ClockTime,
@@ -182,8 +182,8 @@ internal fun dayLabel(date: LocalDate, pattern: String): String =
 // ---------------------------------------------------------------------------
 
 /**
- * Feuille « Journal de lecture » (1.13), ouverte depuis la barre de lecture. L'en-tête (titre, sous-titre)
- * et le bouton « Fermer » sont ceux de VersoBottomSheet (2.2) ; « Fermer » et le toucher sur le voile appellent [onDismiss].
+ * Feuille « Journal de lecture », ouverte depuis la barre de lecture. L'en-tête (titre, sous-titre)
+ * et le bouton « Fermer » sont ceux de VersoBottomSheet ; « Fermer » et le toucher sur le voile appellent [onDismiss].
  */
 @Composable
 fun JournalSheet(state: JournalUiState, onResume: (BookPosition) -> Unit, onDismiss: () -> Unit) {
@@ -314,7 +314,7 @@ private fun durationLabel(minutes: Int): String {
     }
 }
 
-// Styles de v1-ui-reference 1.13 : 16 sp 700 lh 22 (heures, durée), 16 sp lh 1,4 (passage) ;
+// Styles du journal : 16 sp 700 lh 22 (heures, durée), 16 sp lh 1,4 (passage) ;
 // 14 sp (pourcentages, actions) = VersoTheme.typography.caption / captionBold tels quels.
 @Composable
 private fun journalStrong(): TextStyle = VersoTheme.typography.bodyStrong.copy(lineHeight = 22.sp)

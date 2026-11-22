@@ -3,15 +3,15 @@ package com.maximebier.verso.core.position
 import com.maximebier.verso.core.settings.ScrollMode
 
 /**
- * Seuils de la distinction lecture / navigation (spec, « Marque-page et progression »).
+ * Seuils de la distinction lecture / navigation.
  * Valeurs de départ, à ajuster à l'usage : tout seuil passe par ici, jamais en dur.
  */
 data class ReadingThresholds(
     /**
      * Vitesse du doigt **au relâchement** (écrans par seconde) au-delà de laquelle le geste est un fling
-     * (`GestureEnded.isFling`, décidé par la surface de lecture de l'app). Calibrée par le prototype
-     * (étape 1) : lecture ≤ 0,32, flicks d'un vrai doigt de 1,0 à 7,4
-     * (`docs/superpowers/plans/spike-readium-conclusions.md`). Le tracker ne la lit pas.
+     * (`GestureEnded.isFling`, décidé par la surface de lecture de l'app). Calibrée par les mesures
+     * du prototype Readium : lecture ≤ 0,32, flicks d'un vrai doigt de 1,0 à 7,4.
+     * Le tracker ne la lit pas.
      */
     val flingScreensPerSecond: Double = 1.0,
     /**

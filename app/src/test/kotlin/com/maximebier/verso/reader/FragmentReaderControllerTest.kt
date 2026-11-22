@@ -627,7 +627,7 @@ class FragmentReaderControllerTest {
         assertThat(excerpt.locations.progression).isEqualTo(0.0)
     }
 
-    /** Répartiteur qui compte ce qu’on lui confie (revue finale M8). */
+    /** Répartiteur qui compte ce qu’on lui confie. */
     private class CountingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
         var dispatches = 0
 
@@ -639,7 +639,7 @@ class FragmentReaderControllerTest {
 
     @Test
     fun chapterPlainTextIsComputedOnTheTextDispatcherNotTheCaller() = runTest {
-        // Revue finale M8 : 4 regex DOTALL sur tout un chapitre, jamais sur le fil principal.
+        // 4 regex DOTALL sur tout un chapitre, jamais sur le fil principal.
         val text = CountingDispatcher(StandardTestDispatcher(testScheduler))
         val controller = FragmentReaderController(
             scope = backgroundScope,

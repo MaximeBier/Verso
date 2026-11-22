@@ -51,7 +51,7 @@ data class CollectionsActions(
     val onNewCollection: () -> Unit = {},
 )
 
-/** Onglet « Collections » de la bibliothèque (4.01). */
+/** Onglet « Collections » de la bibliothèque. */
 @Composable
 fun CollectionsTab(state: CollectionsUiState, actions: CollectionsActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors

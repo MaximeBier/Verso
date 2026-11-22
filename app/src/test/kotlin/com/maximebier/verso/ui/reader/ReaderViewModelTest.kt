@@ -214,7 +214,7 @@ class ReaderViewModelTest {
 
     @Test
     fun savedReadingPositionCarriesTheLongChapterLabelOfTheReadingBar() = runTest {
-        // Revue finale I1 : la carte « Reprendre » lit le titre du locator écrit en base.
+        // La carte « Reprendre » lit le titre du locator écrit en base.
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()
         val (viewModel, fake, id) = openAnchoredBook(store, startProgression = 0.50)
@@ -349,7 +349,7 @@ class ReaderViewModelTest {
 
     @Test
     fun engineRefusingTheBookFailsAndReportsIt() = runTest {
-        // Revue finale I3 : EPUB à mise en page fixe, rendition impossible : retour à la bibliothèque avec un message.
+        // EPUB à mise en page fixe, rendition impossible : retour à la bibliothèque avec un message.
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val id = books.insert(testBook(readingLocatorJson = null, progression = 0.0))
         val store = ViewModelStore()
@@ -386,7 +386,7 @@ class ReaderViewModelTest {
         assertThat(viewModel.uiState.value.tocVisible).isFalse()
         assertThat(viewModel.uiState.value.barsVisible).isFalse()
 
-        // Saut explicite vers un locator précis (« Reprendre ici » du journal, tâche 6.4).
+        // Saut explicite vers un locator précis (« Reprendre ici » du journal).
         viewModel.jumpTo(testLocator(chapter = 1, progression = 0.25, total = 0.1))
         runCurrent()
 

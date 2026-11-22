@@ -12,17 +12,17 @@ import com.maximebier.verso.ui.collections.COVER_STACK_SIZE
 import com.maximebier.verso.ui.collections.CoverRef
 import com.maximebier.verso.ui.theme.VersoShapes
 
-/** Décalage d’une couverture à la suivante (4.01) : 14 dp vers la droite, 6 dp vers le haut. */
+/** Décalage d’une couverture à la suivante : 14 dp vers la droite, 6 dp vers le haut. */
 private const val STACK_STEP_X = 14
 private const val STACK_STEP_Y = 6
 
-/** Zone de la pile, la même pour toutes les collections (4.01). */
+/** Zone de la pile, la même pour toutes les collections. */
 private const val STACK_WIDTH = 84
 private const val STACK_HEIGHT = 92
 
 /**
  * Pile décorative (le nom est écrit à côté), 84 × 92 dp : 3 couvertures au plus, dans l’ordre de lecture, la
- * première derrière à gauche et la dernière devant (4.01). Collection vide : une vignette à l’initiale du nom.
+ * première derrière à gauche et la dernière devant. Collection vide : une vignette à l’initiale du nom.
  */
 @Composable
 fun CoverStack(covers: List<CoverRef>, fallbackTitle: String, modifier: Modifier = Modifier) {
@@ -40,7 +40,7 @@ fun CoverStack(covers: List<CoverRef>, fallbackTitle: String, modifier: Modifier
                 coverPath = cover.coverPath,
                 seed = cover.seed,
                 size = CoverSize.STACK,
-                // Bas des couvertures alignés comme sur la maquette : la dernière, devant, est la plus haute.
+                // Bas des couvertures en escalier : la dernière, devant, est la plus haute.
                 modifier = Modifier
                     .offset(x = (startX + STACK_STEP_X * index).dp, y = (startY + STACK_STEP_Y * (steps - index)).dp)
                     .shadow(2.dp, VersoShapes.cover),

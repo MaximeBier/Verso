@@ -48,7 +48,7 @@ class NotesTexts(
 )
 
 /**
- * « Notes » d’un livre (3.06) : notes dans l’ordre du livre, menu ⋮ (note, suppression avec
+ * « Notes » d’un livre : notes dans l’ordre du livre, menu ⋮ (note, suppression avec
  * « Annuler »), export Markdown. Partagé par la surcouche du lecteur et l’écran ouvert depuis la fiche ; « Aller au
  * passage » reste à l’appelant (saut dans le lecteur).
  */

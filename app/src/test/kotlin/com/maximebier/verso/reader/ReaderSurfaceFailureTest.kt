@@ -19,7 +19,7 @@ import org.readium.r2.shared.util.Url
 import org.readium.r2.shared.util.mediatype.MediaType
 
 /**
- * Revue finale I3 : la surface qui ne peut pas afficher un livre ne laisse pas un écran vide sans issue. Hébergée ici
+ * La surface qui ne peut pas afficher un livre ne laisse pas un écran vide sans issue. Hébergée ici
  * dans une `ComponentActivity` (pas de gestionnaire de fragments) : c’est ce cas qui est vérifié. Le refus d’un
  * livre à mise en page fixe se fait avant, au chargement
  * (`ReaderViewModelTest.fixedLayoutBookFailsWithoutBecomingTheLastOpenedBook`).

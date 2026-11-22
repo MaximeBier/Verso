@@ -26,7 +26,7 @@ import com.maximebier.verso.ui.library.LibraryContent
 import com.maximebier.verso.ui.library.LibrarySamples
 import com.maximebier.verso.ui.library.LibraryTab
 
-/** Données des maquettes 4.01 à 4.04. */
+/** Données d’exemple des écrans de collections. */
 internal object CollectionData {
     private fun cover(title: String) = CoverRef(title, null, title)
 
@@ -127,7 +127,7 @@ internal fun CollectionFinishedSample() {
     CollectionContent(CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", done, summary)), CollectionActions())
 }
 
-/** Fiche de Germinal (4.04), 12 % lu, dans « Les Rougon-Macquart » ; la feuille s’ouvre par « Modifier ». */
+/** Fiche de Germinal, 12 % lu, dans « Les Rougon-Macquart » ; la feuille s’ouvre par « Modifier ». */
 private val germinalDetails = DetailsSamples.bovary.copy(
     titleField = "Germinal",
     authorField = "Émile Zola",

@@ -52,7 +52,7 @@ class ThemeModeTest {
     }
 
     @Test
-    fun settingsOrderMatchesTheMockups() {
+    fun themesAreListedAutoLightSepiaDarkNight() {
         assertThat(ThemeMode.entries).containsExactly(
             ThemeMode.AUTO, ThemeMode.LIGHT, ThemeMode.SEPIA, ThemeMode.DARK, ThemeMode.NIGHT,
         ).inOrder()

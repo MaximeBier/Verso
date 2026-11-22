@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Verso — libellés V1. Source : maquettes docs/design/html/1.*.html + SPEC.md.
+  Verso — libellés de l’interface.
     = espace fine insécable (avant ; : ! ? % et ?)
     = espace insécable (dans « … », durées, heures, unités)
   Apostrophe typographique ’ : aucun échappement nécessaire.
@@ -49,7 +49,7 @@
     <!-- Motifs de date (java.time, Locale.FRENCH) -->
     <string name="common_date_pattern_full" translatable="false">d MMMM yyyy</string>
 
-    <!-- ===================== Bibliothèque (1.01 – 1.03) ===================== -->
+    <!-- ===================== Bibliothèque ===================== -->
     <string name="library_settings">Paramètres</string>
     <string name="library_import">Importer</string>
     <string name="library_title">Bibliothèque</string>
@@ -59,7 +59,7 @@
         <item quantity="other">%1$d livres</item>
     </plurals>
 
-    <!-- Bibliothèque vide (1.01) -->
+    <!-- Bibliothèque vide -->
     <string name="library_empty_title">Votre bibliothèque est vide</string>
     <string name="library_empty_body">Importez un livre au format EPUB depuis votre téléphone, Google Drive ou Nextcloud. Verso le garde et retient toujours votre page.</string>
     <string name="library_empty_import">Importer un EPUB</string>
@@ -80,7 +80,7 @@
     <string name="library_state_finished">Terminé</string>
     <string name="library_state_to_read">À lire</string>
 
-    <!-- V2 · écran 2.07 : filtres par état -->
+    <!-- V2 · filtres par état -->
     <string name="library_filter_group">Filtrer par état</string>
     <string name="library_filter_all">Tous</string>
     <string name="library_filter_in_progress">En cours</string>
@@ -88,7 +88,7 @@
     <string name="library_filter_finished">Terminés</string>
     <string name="library_filter_empty">Aucun livre pour ce filtre.</string>
 
-    <!-- V2 · écran 2.07b : bouton « Récents ▾ » et feuille « Trier et afficher » -->
+    <!-- V2 · bouton « Récents ▾ » et feuille « Trier et afficher » -->
     <string name="library_sort_sheet_title">Trier et afficher</string>
     <!-- Intitulé TalkBack du bouton : %1$s = library_sort_state_*, %2$s = library_view_state_* -->
     <string name="library_sort_button_description">Trier et afficher, actuellement : %1$s, %2$s</string>
@@ -98,7 +98,7 @@
     <string name="library_view_state_list">en liste</string>
     <string name="library_view_state_grid">en grille</string>
 
-    <!-- Bouton ⋮ et son menu (1.02b) -->
+    <!-- Bouton ⋮ et son menu -->
     <string name="library_book_options">Options pour « %1$s »</string>
     <string name="library_menu_details">Détails du livre</string>
     <string name="library_menu_delete">Supprimer</string>
@@ -109,34 +109,34 @@
     <!-- PROPOSÉ : intitulé TalkBack de la carte entière (un seul bouton) -->
     <string name="resume_card_content_description">Reprendre « %1$s », %2$d %% lu</string>
 
-    <!-- ===================== Import (1.04 – 1.06) ===================== -->
+    <!-- ===================== Import ===================== -->
     <!-- Snackbar -->
     <string name="import_success">« %1$s » a été ajouté.</string>
     <string name="import_success_action">Commencer</string>
 
-    <!-- Doublon (1.05) : %1$s = nom du fichier, %2$s = titre du livre existant (gras), %3$s = date d’import -->
+    <!-- Doublon : %1$s = nom du fichier, %2$s = titre du livre existant (gras), %3$s = date d’import -->
     <string name="import_duplicate_title">Ce livre est déjà dans votre bibliothèque</string>
     <string name="import_duplicate_body"><![CDATA[« %1$s » est identique à <b>%2$s</b>, importé le %3$s.]]></string>
     <string name="import_duplicate_position_kept">Votre position de lecture est conservée dans les deux cas.</string>
     <string name="import_duplicate_replace">Remplacer</string>
     <string name="import_duplicate_ignore">Ignorer</string>
 
-    <!-- Fichier refusé (1.06) -->
+    <!-- Fichier refusé -->
     <string name="import_error_title">Impossible d’importer ce fichier</string>
     <string name="import_error_not_epub">« %1$s » n’est pas un livre EPUB. Verso ne lit que les fichiers EPUB pour l’instant.</string>
-    <!-- PROPOSÉ : variante DRM décrite par la spec (« protégé par un DRM Adobe ou LCP ») -->
+    <!-- PROPOSÉ : variante DRM (« protégé par un DRM Adobe ou LCP ») -->
     <string name="import_error_drm">« %1$s » est protégé par un DRM (Adobe ou LCP). Verso ne lit que les livres sans DRM.</string>
-    <!-- PROPOSÉ : EPUB endommagé ou illisible (cas réel non couvert par la spec) -->
+    <!-- PROPOSÉ : EPUB endommagé ou illisible -->
     <string name="import_error_unreadable">« %1$s » est un EPUB endommagé ou illisible.</string>
     <string name="import_error_nothing_added">Rien n’a été ajouté à votre bibliothèque.</string>
     <string name="import_error_ok">Compris</string>
-    <!-- Revue finale I3 : livre que le moteur refuse (mise en page fixe) ou fichier devenu illisible. -->
+    <!-- Livre que le moteur refuse (mise en page fixe) ou fichier devenu illisible. -->
     <string name="library_open_failed">Impossible d’ouvrir « %1$s ».</string>
 
-    <!-- ===================== Détails du livre (1.07 – 1.08) ===================== -->
+    <!-- ===================== Détails du livre ===================== -->
     <string name="details_title">Détails du livre</string>
 
-    <!-- V2 · écran 2.08 : état du livre -->
+    <!-- V2 · état du livre -->
     <string name="details_state_label">État</string>
     <string name="details_state_group">État du livre</string>
     <string name="details_state_to_read">À lire</string>
@@ -156,7 +156,7 @@
     <string name="details_size_kb">%1$s ko</string>
     <string name="details_delete_book">Supprimer le livre</string>
 
-    <!-- V2 · écran 2.08 : statistiques -->
+    <!-- V2 · statistiques -->
     <string name="details_stats_title">Statistiques</string>
     <string name="details_stats_reading_time_label">Temps de lecture</string>
     <!-- « 2 h 28 en 5 sessions » ; %1$s = durée (common_duration_*), %2$d = nombre de sessions -->
@@ -176,18 +176,18 @@
     <string name="details_stats_remaining">Environ %1$s à votre rythme</string>
     <string name="details_open_journal">Voir le journal de lecture</string>
 
-    <!-- Confirmation de suppression (1.08) -->
+    <!-- Confirmation de suppression -->
     <string name="details_delete_dialog_title">Supprimer « %1$s » ?</string>
     <string name="details_delete_dialog_body">Le livre et votre position de lecture seront effacés de Verso. Le fichier d’origine, sur votre téléphone ou votre Drive, n’est pas touché.</string>
     <string name="details_delete_dialog_cancel">Annuler</string>
     <string name="details_delete_dialog_confirm">Supprimer</string>
 
-    <!-- ===================== Paramètres (1.09) ===================== -->
+    <!-- ===================== Paramètres ===================== -->
     <string name="settings_title">Paramètres</string>
     <string name="settings_section_startup">Au démarrage</string>
     <string name="settings_reopen_last_book">Rouvrir le dernier livre</string>
     <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
-    <!-- V2 · écran 2.09 : section Lecture -->
+    <!-- V2 · section Lecture -->
     <string name="settings_section_reading">Lecture</string>
     <string name="settings_reading_help">Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.</string>
     <string name="settings_font">Police</string>
@@ -215,7 +215,7 @@
     <string name="settings_scroll">Défilement</string>
     <string name="settings_scroll_continuous">Continu</string>
     <string name="settings_scroll_pages">Pages</string>
-    <!-- V2 · écran 2.09 : section Statistiques -->
+    <!-- V2 · section Statistiques -->
     <string name="settings_section_statistics">Statistiques</string>
     <string name="settings_show_statistics">Afficher les statistiques</string>
     <string name="settings_show_statistics_summary">Temps et vitesse de lecture, calculés à partir du journal. Tout reste sur ce téléphone.</string>
@@ -223,25 +223,24 @@
     <string name="settings_privacy_body">Verso n’utilise Internet que pour traduire le passage que vous sélectionnez. Seuls ce passage et la phrase qui l’entoure sont envoyés au service de traduction. Vos livres, vos positions, votre journal, vos notes et vos réglages restent sur ce téléphone.</string>
     <string name="settings_clear_journal">Effacer le journal de lecture</string>
     <string name="settings_clear_journal_summary">Vos positions de lecture sont conservées.</string>
-    <!-- ===================== Paramètres : ligne Sauvegarde (3.07) ===================== -->
+    <!-- ===================== Paramètres : ligne Sauvegarde ===================== -->
     <string name="settings_backup">Sauvegarde</string>
-    <!-- PROPOSÉ : résumé de la ligne (non dessiné) -->
+    <!-- PROPOSÉ : résumé de la ligne -->
     <string name="settings_backup_summary">Créer ou restaurer une sauvegarde de votre bibliothèque</string>
     <string name="settings_section_about">À propos</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_source_code">Code source</string>
-    <!-- À remplacer quand le dépôt existe (spec, Questions ouvertes) -->
     <string name="settings_source_code_url_label" translatable="false">github.com/MaximeBier/Verso</string>
     <string name="settings_source_code_url" translatable="false">https://github.com/MaximeBier/Verso</string>
     <string name="settings_licenses">Licences open source</string>
 
-    <!-- PROPOSÉ : confirmation « Effacer le journal de lecture » (spec : « avec confirmation », non dessinée) -->
+    <!-- PROPOSÉ : confirmation « Effacer le journal de lecture » -->
     <string name="settings_clear_journal_dialog_title">Effacer le journal de lecture ?</string>
     <string name="settings_clear_journal_dialog_body">Toutes vos sessions de lecture seront effacées. Vos positions de lecture sont conservées.</string>
     <string name="settings_clear_journal_dialog_cancel">Annuler</string>
     <string name="settings_clear_journal_dialog_confirm">Effacer</string>
 
-    <!-- ===================== Licences open source (non dessiné, v1-ui-reference §4.3) ===================== -->
+    <!-- ===================== Licences open source ===================== -->
     <!-- PROPOSÉ : phrase d'introduction et intitulés TalkBack de la liste des licences -->
     <string name="licenses_intro">Verso est construit avec ces logiciels et ces polices libres. Touchez une ligne pour lire sa licence.</string>
     <string name="licenses_show_text">Afficher la licence</string>
@@ -266,14 +265,14 @@
     <string name="license_component_okio" translatable="false">Okio</string>
     <string name="license_component_jspecify" translatable="false">JSpecify</string>
 
-    <!-- ===================== Lecture (1.10 – 1.11) ===================== -->
+    <!-- ===================== Lecture ===================== -->
     <string name="reader_back_to_library">Retour à la bibliothèque</string>
     <string name="reader_toc">Sommaire</string>
-    <!-- V2 · écran 2.01 -->
+    <!-- V2 · barre de lecture -->
     <string name="reader_settings">Réglages</string>
-    <!-- Glyphe de l’outil Réglages et des pastilles de thème (maquettes 2.01, 2.02) ; masqué à TalkBack. -->
+    <!-- Glyphe de l’outil Réglages et des pastilles de thème ; masqué à TalkBack. -->
     <string name="reader_settings_glyph" translatable="false">Aa</string>
-    <!-- V2 · écran 2.02 -->
+    <!-- V2 · réglages de lecture -->
     <string name="reader_settings_title">Réglages de lecture</string>
     <string name="reader_settings_font">Police</string>
     <string name="reader_settings_font_literata">Literata</string>
@@ -302,13 +301,13 @@
     <string name="reader_settings_scroll_for_this_book">Pour ce livre</string>
     <string name="reader_settings_scroll_continuous">Continu</string>
     <string name="reader_settings_scroll_pages">Pages</string>
-    <!-- V2 · écran 2.05 -->
+    <!-- V2 · mode pages -->
     <string name="reader_page_next">Page suivante</string>
     <string name="reader_page_previous">Page précédente</string>
     <!-- « Page 2 sur 9 » : page du chapitre affiché ; « Page 1 sur 1 » n’est pas un pluriel. -->
     <string name="reader_page_of" tools:ignore="PluralsCandidate">Page %1$d sur %2$d</string>
 
-    <!-- V2 · écran 2.06 : recherche dans le livre -->
+    <!-- V2 · recherche dans le livre -->
     <string name="reader_search">Rechercher</string>
     <string name="search_field">Rechercher dans le livre</string>
     <string name="search_close">Fermer la recherche</string>
@@ -320,7 +319,7 @@
         <item quantity="many">Recherche dans tout le livre… %d résultats pour l’instant</item>
         <item quantity="other">Recherche dans tout le livre… %d résultats pour l’instant</item>
     </plurals>
-    <!-- Absents des maquettes (formulés dans leur esprit, signalés à Maxime) ; 0 a sa chaîne : « one » couvre 0 en français. -->
+    <!-- PROPOSÉ (signalé à Maxime) ; 0 a sa chaîne : « one » couvre 0 en français. -->
     <string name="search_status_done_none">Aucun résultat dans le livre</string>
     <plurals name="search_status_done">
         <item quantity="one">%d résultat dans le livre</item>
@@ -328,7 +327,7 @@
         <item quantity="other">%d résultats dans le livre</item>
     </plurals>
 
-    <!-- ===================== Sommaire (1.12) ===================== -->
+    <!-- ===================== Sommaire ===================== -->
     <string name="toc_title">Sommaire</string>
     <string name="toc_chapters_group">Chapitres</string>
     <!-- « Madame Bovary · 3 parties, 35 chapitres » -->
@@ -348,7 +347,7 @@
     <!-- « En cours · 31 % » -->
     <string name="toc_chapter_current">En cours · %1$d %%</string>
 
-    <!-- ===================== Journal de lecture (1.13) ===================== -->
+    <!-- ===================== Journal de lecture ===================== -->
     <string name="journal_title">Journal de lecture</string>
     <string name="journal_subtitle">Touchez une session pour reprendre là où elle s’est arrêtée.</string>
     <string name="journal_today">Aujourd’hui</string>
@@ -370,7 +369,7 @@
     <!-- PROPOSÉ : journal vide -->
     <string name="journal_empty">Aucune session pour l’instant. Vos sessions apparaîtront ici dès que vous lirez.</string>
 
-    <!-- ===================== Texte sélectionné (3.04) ===================== -->
+    <!-- ===================== Texte sélectionné ===================== -->
     <string name="selection_toolbar">Texte sélectionné</string>
     <!-- « Sélection : « la campagne ainsi ressemble à un grand manteau… » » -->
     <string name="selection_label">Sélection : « %1$s »</string>
@@ -380,10 +379,10 @@
     <!-- Validé par Maxime (2026-10-01) : confirmation sous Android 12 et moins (Android 13 et plus affiche la sienne) -->
     <string name="selection_copied">Passage copié</string>
 
-    <!-- ===================== Traduction (3.08 à 3.10) ===================== -->
+    <!-- ===================== Traduction ===================== -->
     <string name="translation_sheet">Traduction</string>
     <string name="translation_languages">Anglais → Français</string>
-    <!-- PROPOSÉ (2026-10-04) : lu par TalkBack pendant le chargement (pas de maquette) -->
+    <!-- PROPOSÉ (2026-10-04) : lu par TalkBack pendant le chargement -->
     <string name="translation_loading">Traduction en cours</string>
     <string name="translation_offline_title">Pas de connexion</string>
     <string name="translation_offline_body">La traduction a besoin d’Internet. Le reste de Verso fonctionne sans.</string>
@@ -401,7 +400,7 @@
     <string name="highlight_deleted">Note supprimée</string>
     <string name="highlight_deleted_undo">Annuler</string>
 
-    <!-- ===================== Ajouter une note (3.05) ===================== -->
+    <!-- ===================== Ajouter une note ===================== -->
     <string name="note_sheet_title">Ajouter une note</string>
     <!-- Validé par Maxime (2026-10-01) : même feuille sur une note existante -->
     <string name="note_sheet_title_edit">Modifier la note</string>
@@ -409,7 +408,7 @@
     <string name="note_cancel">Annuler</string>
     <string name="note_save">Enregistrer</string>
 
-    <!-- ===================== Notes (3.06) ===================== -->
+    <!-- ===================== Notes ===================== -->
     <!-- « Deuxième partie, chap. I · 30 % » ; « 30 % » hors sommaire -->
     <string name="notes_item_location">%1$s · %2$d %%</string>
     <string name="notes_item_percent">%1$d %%</string>
@@ -442,14 +441,14 @@
     <!-- Fiche : « Notes · 2 » -->
     <string name="details_open_notes">Notes · %1$d</string>
 
-    <!-- ===================== Carte de retour (1.14) ===================== -->
+    <!-- ===================== Carte de retour ===================== -->
     <string name="return_card_title">Vous avez quitté votre lecture</string>
     <!-- « Votre lecture : Partie II, chap. I · 31 % » -->
     <string name="return_card_position">Votre lecture : %1$s · %2$d %%</string>
     <string name="return_card_stay">Rester ici</string>
     <string name="return_card_go_back">Revenir</string>
 
-    <!-- ===================== Sauvegarde (3.07) ===================== -->
+    <!-- ===================== Sauvegarde ===================== -->
     <string name="backup_title">Sauvegarde</string>
     <string name="backup_intro">Un seul fichier contient vos livres, vos positions, vos notes et vos réglages. Gardez-le sur votre Drive ou votre ordinateur.</string>
     <string name="backup_last_title">Dernière sauvegarde</string>
@@ -460,7 +459,7 @@
     <string name="backup_create">Créer une sauvegarde</string>
     <string name="backup_restore">Restaurer une sauvegarde</string>
     <string name="backup_restore_warning">La restauration remplace votre bibliothèque actuelle. Verso vous demandera de confirmer.</string>
-    <!-- Validé par Maxime (2026-10-01) : carte sans sauvegarde (texte de la spec, non dessiné) -->
+    <!-- Validé par Maxime (2026-10-01) : carte sans sauvegarde -->
     <string name="backup_none">Aucune sauvegarde pour l’instant</string>
     <!-- Validé par Maxime (2026-10-01) : progression, sous les boutons désactivés -->
     <string name="backup_creating">Création de la sauvegarde…</string>
@@ -472,19 +471,19 @@
     <string name="backup_restore_invalid">Ce fichier n’est pas une sauvegarde Verso, ou il est incomplet. Votre bibliothèque n’a pas changé.</string>
     <string name="backup_restore_newer">Cette sauvegarde vient d’une version plus récente de Verso. Mettez Verso à jour pour la restaurer.</string>
     <string name="backup_restore_failed">La restauration n’a pas abouti. Votre bibliothèque n’a pas changé.</string>
-    <!-- Validé par Maxime (2026-10-01) : confirmation de restauration (spec : « avec le nombre de livres », non dessinée) ; %1$s et %2$s = library_book_count -->
+    <!-- Validé par Maxime (2026-10-01) : confirmation de restauration, avec le nombre de livres ; %1$s et %2$s = library_book_count -->
     <string name="backup_restore_dialog_title">Remplacer votre bibliothèque ?</string>
     <string name="backup_restore_dialog_body">Votre bibliothèque actuelle (%1$s) sera remplacée par celle de la sauvegarde (%2$s), avec ses positions, son journal, ses notes et ses réglages.</string>
     <string name="backup_restore_dialog_cancel">Annuler</string>
     <string name="backup_restore_dialog_confirm">Remplacer</string>
 
-    <!-- ===================== Bibliothèque : onglets (4.01) ===================== -->
+    <!-- ===================== Bibliothèque : onglets ===================== -->
     <string name="library_tab_books">Livres</string>
     <string name="library_tab_collections">Collections</string>
     <!-- Validé par Maxime (2026-10-02) : intitulé TalkBack du groupe d’onglets -->
     <string name="library_tabs_group">Afficher les livres ou les collections</string>
 
-    <!-- ===================== Collections (4.01) ===================== -->
+    <!-- ===================== Collections ===================== -->
     <string name="collections_title">Collections</string>
     <plurals name="collections_count">
         <item quantity="one">%1$d collection</item>
@@ -507,7 +506,7 @@
     <!-- TalkBack de la carte : « Les Rougon-Macquart, Émile Zola, 20 livres, 6 % lus » -->
     <string name="collections_card_author_and_count" translatable="false">%1$s, %2$s</string>
 
-    <!-- ===================== Une collection (4.02) ===================== -->
+    <!-- ===================== Une collection ===================== -->
     <string name="collection_percent_label">de la collection lue</string>
     <plurals name="collection_finished">
         <item quantity="one">%1$d terminé</item>
@@ -546,7 +545,7 @@
     <string name="collection_delete_confirm">Supprimer</string>
     <string name="collection_empty">Aucun livre dans cette collection. Ajoutez-en depuis le menu ⋮ d’un livre, dans la bibliothèque.</string>
 
-    <!-- ===================== Nouvelle collection (4.03) ===================== -->
+    <!-- ===================== Nouvelle collection ===================== -->
     <string name="new_collection_title">Nouvelle collection</string>
     <string name="new_collection_create">Créer</string>
     <string name="new_collection_name">Nom de la collection</string>
@@ -559,10 +558,10 @@
     <!-- Validé par Maxime (2026-10-02) : indication du champ vide et TalkBack de la croix -->
     <string name="new_collection_filter">Titre ou auteur</string>
     <string name="new_collection_filter_clear">Effacer le filtre</string>
-    <!-- TalkBack du champ de filtre (4.03) -->
+    <!-- TalkBack du champ de filtre -->
     <string name="new_collection_filter_label">Filtrer les livres</string>
 
-    <!-- ===================== Ajouter à une collection (4.04) ===================== -->
+    <!-- ===================== Ajouter à une collection ===================== -->
     <string name="add_to_collection_title">Ajouter à une collection</string>
     <string name="add_to_collection_new">Nouvelle collection</string>
     <string name="add_to_collection_done">Terminé</string>

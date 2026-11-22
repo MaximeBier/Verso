@@ -5,7 +5,7 @@ import android.view.Menu
 import android.view.MenuItem
 
 /**
- * Menu de sélection d’Android remplacé par la barre de Verso (3.04) : le menu reste vide (aucune barre flottante),
+ * Menu de sélection d’Android remplacé par la barre de Verso : le menu reste vide (aucune barre flottante),
  * et le début et la fin de la sélection sont signalés. Readium garde la sélection et ses poignées.
  */
 internal class SelectionActionModeCallback(

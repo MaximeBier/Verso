@@ -53,7 +53,7 @@ class PaletteContrastTest {
      * (coche de `FontCard`/`ThemeSwatch`, `ReadingSettingsSheet` — icône, pas texte) ; les feuilles elles-mêmes
      * (`VersoBottomSheet`, `ReadingSettingsSheet`) ont pour fond `surface`, pas `surfaceHigh`. Si un écran peint un
      * jour du texte en accent sur `surfaceHigh`, déplacer la paire dans `textPairs` — attention : l'accent Clair
-     * (`#7A3021`) n'y tient qu'à 6,79:1, sous 7:1 (vérifié le 2026-09-28, revue du correctif sépia).
+     * (`#7A3021`) n'y tient qu'à 6,79:1, sous 7:1 (vérifié le 2026-09-28).
      */
     private val nonTextPairs = listOf(
         ColorPair("outline/background", { it.outline }, { it.background }),
@@ -107,7 +107,7 @@ class PaletteContrastTest {
         }
     }
 
-    /** Spec, « Confort de lecture » : en thème foncé, le texte vise 9 à 10:1, pas plus (halo, astigmatisme). */
+    /** Confort de lecture : en thème foncé, le texte vise 9 à 10:1, pas plus (halo, astigmatisme). */
     @Test
     fun darkThemeTextStaysBelowTheHalationLimit() {
         for (colors in listOf(VersoPalette.Dark, VersoPalette.Night)) {
@@ -137,7 +137,7 @@ class PaletteContrastTest {
         }
     }
 
-    /** Spec, « Vignettes générées » : texte clair sur couleur sourde, au moins 4,5:1. */
+    /** Vignettes générées : texte clair sur couleur sourde, au moins 4,5:1. */
     @Test
     fun generatedCoversReachFourAndAHalfToOne() {
         for (cover in VersoPalette.CoverLight) {

@@ -22,7 +22,7 @@ class ReadingStatsTest {
 
     @Test
     fun regularSessionsGiveTheirSpeed() {
-        // 2 h 28 en 5 sessions à 240 mots par minute (maquette 2.08).
+        // 2 h 28 en 5 sessions à 240 mots par minute.
         val sessions = List(5) { SessionStat(activeMs = 148 * minute / 5, wordsRead = 240L * 148 / 5) }
         val stats = readingStats(sessions)
         assertThat(stats.totalActiveMs).isEqualTo(148 * minute)

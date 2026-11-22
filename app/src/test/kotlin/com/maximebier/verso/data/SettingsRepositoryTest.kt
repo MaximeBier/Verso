@@ -33,7 +33,7 @@ class SettingsRepositoryTest {
     @get:Rule val tmp = TemporaryFolder()
 
     @Test
-    fun defaultsMatchTheSpec() = runTest {
+    fun freshStoreReadsTheDefaults() = runTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "defaults.preferences_pb") })
         val settings = SettingsRepository(store)
         assertThat(settings.reopenLastBook.first()).isTrue()
@@ -71,7 +71,7 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun readingSettingsDefaultToTheSpec() = runTest {
+    fun freshStoreReadsDefaultReadingSettings() = runTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "reading-defaults.preferences_pb") })
         assertThat(SettingsRepository(store).readingSettings.first()).isEqualTo(ReadingSettings())
     }
@@ -110,7 +110,7 @@ class SettingsRepositoryTest {
         assertThat(SettingsRepository(store).themeMode.first()).isEqualTo(ThemeMode.DARK)
     }
 
-    /** Le thème Noir (étape 10) a été remplacé par Nuit : un choix enregistré avant reste un thème de nuit. */
+    /** Le thème Noir a été remplacé par Nuit : un choix enregistré avant reste un thème de nuit. */
     @Test
     fun blackThemeIsReadAsNight() = runTest {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(tmp.root, "black.preferences_pb") })

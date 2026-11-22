@@ -36,7 +36,7 @@ import com.maximebier.verso.ui.reader.buildTocRows
 import com.maximebier.verso.ui.reader.tocSummary
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Barre de la maquette 1.11 (Madame Bovary, 31 %, 5 h 30 restantes). */
+/** Barre de lecture d’exemple (Madame Bovary, 31 %, 5 h 30 restantes). */
 internal val readerBarsSampleState = ReaderBarsState(
     bookTitle = "Madame Bovary",
     chapterPath = listOf("Deuxième partie", "Chapitre I"),
@@ -45,14 +45,14 @@ internal val readerBarsSampleState = ReaderBarsState(
     remainingMinutes = 330,
 )
 
-/** Sommaire de la maquette 1.12 : trois parties de 9, 15 et 11 chapitres. */
+/** Sommaire d’exemple : trois parties de 9, 15 et 11 chapitres. */
 internal val tocSample = listOf(
     TocNode("Première partie", "p1.xhtml", (1..9).map { TocNode("Chapitre ${roman(it)}", "p1c$it.xhtml") }),
     TocNode("Deuxième partie", "p2.xhtml", (1..15).map { TocNode("Chapitre ${roman(it)}", "p2c$it.xhtml") }),
     TocNode("Troisième partie", "p3.xhtml", (1..11).map { TocNode("Chapitre ${roman(it)}", "p3c$it.xhtml") }),
 )
 
-/** 1.11 : texte (imité) et barre de lecture affichée. */
+/** Texte (imité) et barre de lecture affichée. */
 @Composable
 internal fun ReaderBarsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -61,7 +61,7 @@ internal fun ReaderBarsSample() {
     }
 }
 
-/** 1.12 : feuille Sommaire ouverte au-dessus du texte, chapitre courant « Deuxième partie, chapitre I ». */
+/** Feuille Sommaire ouverte au-dessus du texte, chapitre courant « Deuxième partie, chapitre I ». */
 @Composable
 internal fun TocSheetSample() {
     val readingOrder = preorder(tocSample) { it.children }.map { it.href }
@@ -78,7 +78,7 @@ internal fun TocSheetSample() {
     )
 }
 
-/** 2.01 : barre V2 (Sommaire, Journal, Rechercher, Réglages). */
+/** Barre V2 (Sommaire, Journal, Rechercher, Réglages). */
 @Composable
 internal fun ReaderToolsSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -94,7 +94,7 @@ internal fun ReaderToolsSample() {
     }
 }
 
-/** 2.02 : feuille « Réglages de lecture » ouverte à mi-hauteur au-dessus du texte, réglages par défaut. */
+/** Feuille « Réglages de lecture » ouverte à mi-hauteur au-dessus du texte, réglages par défaut. */
 @Composable
 internal fun ReadingSettingsSheetSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -113,7 +113,7 @@ internal fun ReadingSettingsSheetSample() {
     )
 }
 
-/** 2.05 : page de texte (imitée, Literata 20 sp) et pied de page « Page 2 sur 9 ». */
+/** Mode pages : page de texte (imitée, Literata 20 sp) et pied de page « Page 2 sur 9 ». */
 @Composable
 internal fun PagesModeSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -127,7 +127,7 @@ internal fun PagesModeSample() {
     }
 }
 
-/** 1.14 : carte « Revenir » en bas de l'écran de lecture. */
+/** Carte « Revenir » en bas de l'écran de lecture. */
 @Composable
 internal fun ReturnCardSample(onStayHere: () -> Unit = {}, onGoBack: () -> Unit = {}) {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {

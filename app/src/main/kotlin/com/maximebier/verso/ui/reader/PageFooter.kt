@@ -25,12 +25,12 @@ import com.maximebier.verso.R
 import com.maximebier.verso.reader.PageInfo
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Mesures de la maquette 2.05 : 24 dp sur les côtés, 28 dp sous le texte du pied, 16 dp entre le texte et lui. */
+/** Mesures du pied de page : 24 dp sur les côtés, 28 dp sous le texte du pied, 16 dp entre le texte et lui. */
 object PageFooterMetrics {
     val side: Dp = 24.dp
     val bottom: Dp = 28.dp
     val gap: Dp = 16.dp
-    /** Écart entre le chapitre et « Page 2 sur 9 » (maquette : 12 px). */
+    /** Écart entre le chapitre et « Page 2 sur 9 » (12 dp). */
     val between: Dp = 12.dp
 
     /**
@@ -59,7 +59,7 @@ fun pageFooterReserve(): Dp {
 }
 
 /**
- * Pied de page discret du mode pages (2.05) : chapitre à gauche, « Page 2 sur 9 » à droite. Pour TalkBack, un seul
+ * Pied de page discret du mode pages : chapitre à gauche, « Page 2 sur 9 » à droite. Pour TalkBack, un seul
  * élément focalisable (« Deuxième partie, chapitre I, Page 2 sur 9 ») qui porte les actions « Page suivante » et
  * « Page précédente » ([onTurn], vrai = suivante) : le texte de la WebView ne peut pas les porter.
  */

@@ -78,7 +78,7 @@ sealed interface TrackerEffect {
 }
 
 /**
- * Machine à états « position de lecture / position affichée » (spec, « Marque-page et progression »).
+ * Machine à états « position de lecture / position affichée » (marque-page et progression).
  *
  * Règles :
  * - **FOLLOWING** : la lecture suit l'affiché tant que le mouvement ressemble à de la lecture. Elle

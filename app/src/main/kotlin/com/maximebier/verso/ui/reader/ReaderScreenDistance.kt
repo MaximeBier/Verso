@@ -3,7 +3,7 @@ package com.maximebier.verso.ui.reader
 import com.maximebier.verso.core.position.ProgressionScreenDistance
 import com.maximebier.verso.core.position.estimateBookScreens
 
-/** Ce qui détermine la taille d’un « écran » de texte. Valeurs par défaut : référence V1 (Atkinson 19 sp). */
+/** Ce qui détermine la taille d’un « écran » de texte. Valeurs par défaut : celles de la V1 (Atkinson 19 sp). */
 data class ReaderMetrics(
     val viewportHeightPx: Int,
     val fontScale: Float,
@@ -15,7 +15,7 @@ data class ReaderMetrics(
 
 /** Nombre d’écrans du livre, pour que la machine à états raisonne en écrans et non en pourcentage. */
 object ReaderScreenDistance {
-    /** Environ 35 caractères par ligne en 19 sp sur 390 dp avec 24 dp de marges (spec, « Lecture »). */
+    /** Environ 35 caractères par ligne en 19 sp sur 390 dp avec 24 dp de marges. */
     const val BASE_WORDS_PER_LINE = 6.0
     const val REFERENCE_FONT_SIZE_SP = 19.0
     const val REFERENCE_LINE_HEIGHT = 1.6

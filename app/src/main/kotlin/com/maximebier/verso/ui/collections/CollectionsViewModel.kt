@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 
 data class CollectionsUiState(val loading: Boolean = true, val cards: List<CollectionCard> = emptyList())
 
-/** Onglet « Collections » de la bibliothèque (4.01). */
+/** Onglet « Collections » de la bibliothèque. */
 class CollectionsViewModel(
     collections: CollectionRepository,
     books: BookRepository,

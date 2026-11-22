@@ -5,7 +5,7 @@ import com.maximebier.verso.core.stats.ReadingStats
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/** Fiche de la maquette 1.07 (Madame Bovary, 31 %, 5 h 30 restantes). */
+/** Fiche d’exemple (Madame Bovary, 31 %, 5 h 30 restantes). */
 object DetailsSamples {
 
     val importedAt: Long = LocalDateTime.of(2026, 9, 12, 12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()

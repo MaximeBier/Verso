@@ -27,7 +27,7 @@ data class V4ScreenFixture(val screen: ScreenFixture, val themes: List<AppTheme>
     override fun toString(): String = screen.id
 }
 
-/** Écrans V4 (collections, 4.01 à 4.04). */
+/** Écrans V4 (collections). */
 object V4ScreenCatalog {
     val fixtures: List<V4ScreenFixture> = listOf(
         V4ScreenFixture(ScreenFixture("4.01-collections") { CollectionsTabSample() }),
@@ -44,14 +44,14 @@ object V4ScreenCatalog {
     )
 }
 
-/** Ouvre la feuille 4.04 par « Modifier » de la ligne « Collections » de la fiche. */
+/** Ouvre la feuille « Ajouter à une collection » par « Modifier » de la ligne « Collections » de la fiche. */
 private val openCollectionsSheet: ComposeContentTestRule.() -> Unit = {
     val label = ApplicationProvider.getApplicationContext<Context>().getString(R.string.details_collections_edit_content_description)
     onNodeWithContentDescription(label).performScrollTo().performClick()
     waitForIdle()
 }
 
-/** Fait défiler l’écran 4.02 jusqu’à la dernière ligne (« La Bête humaine »), pour juger les lignes elles-mêmes. */
+/** Fait défiler l’écran d’une collection jusqu’à la dernière ligne (« La Bête humaine »), pour juger les lignes elles-mêmes. */
 private val scrollToLastBook: ComposeContentTestRule.() -> Unit = {
     onNode(hasScrollAction()).performScrollToNode(hasText("La Bête humaine"))
     waitForIdle()

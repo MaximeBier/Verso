@@ -18,7 +18,7 @@ import com.maximebier.verso.ui.reader.TranslationSheet
 import com.maximebier.verso.ui.reader.TranslationSheetState
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** 3.04 : texte de lecture, barre « Texte sélectionné » en bas. */
+/** Texte de lecture, barre « Texte sélectionné » en bas. */
 @Composable
 internal fun SelectionBarSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) {
@@ -33,7 +33,7 @@ internal fun SelectionBarSample() {
     }
 }
 
-/** 3.05 : feuille « Ajouter une note » au-dessus du texte. */
+/** Feuille « Ajouter une note » au-dessus du texte. */
 @Composable
 internal fun NoteSheetSample() {
     Box(Modifier.fillMaxSize().background(VersoTheme.colors.background)) { SampleReadingText() }
@@ -49,7 +49,7 @@ internal fun NoteSheetSample() {
     )
 }
 
-/** 3.06 : « Notes » de Madame Bovary, deux notes. */
+/** « Notes » de Madame Bovary, deux notes. */
 internal val notesSampleState = NotesUiState(
     bookTitle = "Madame Bovary",
     loaded = true,
@@ -67,13 +67,13 @@ internal fun NotesSample() = NotesScreen(notesSampleState, noActions)
 @Composable
 internal fun NotesEmptySample() = NotesScreen(notesSampleState.copy(items = emptyList()), noActions)
 
-/** 3.08 : « acknowledged » traduit, une seule traduction. */
+/** Traduction d’un mot : « acknowledged » traduit, une seule traduction. */
 @Composable
 internal fun TranslationWordSample() = TranslationSample(
     TranslationSheetState("acknowledged", short = true, TranslationResult.Word("reconnu")),
 )
 
-/** 3.09 : la première phrase de Pride and Prejudice traduite. */
+/** Traduction d’un passage : la première phrase de Pride and Prejudice traduite. */
 @Composable
 internal fun TranslationPassageSample() = TranslationSample(
     TranslationSheetState(
@@ -83,11 +83,11 @@ internal fun TranslationPassageSample() = TranslationSample(
     ),
 )
 
-/** 3.10 : « Pas de connexion » avec « Réessayer ». */
+/** Traduction hors ligne : « Pas de connexion » avec « Réessayer ». */
 @Composable
 internal fun TranslationOfflineSample() = TranslationSample(TranslationSheetState("acknowledged", short = true, TranslationResult.Offline))
 
-/** Chargement (pas de maquette) : le mot et un indicateur. */
+/** Chargement : le mot et un indicateur. */
 @Composable
 internal fun TranslationLoadingSample() = TranslationSample(TranslationSheetState("acknowledged", short = true, result = null))
 

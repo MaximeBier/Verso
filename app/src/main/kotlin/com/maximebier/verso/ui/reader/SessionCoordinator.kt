@@ -25,11 +25,11 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
- * Alimente le SessionTracker (:core, 6.1) depuis le lecteur et écrit chaque session via [upsert].
+ * Alimente le SessionTracker (:core) depuis le lecteur et écrit chaque session via [upsert].
  *
  * - Les événements sont horodatés à l'appel ([clock]) puis traités un par un par un seul consommateur :
  *   l'ordre des écritures est garanti et le tracker n'est jamais touché par deux fils à la fois.
- * - Effets de la machine à états (5.1) : `ReadingMoved(from, to)` devient `SessionEvent.ReadingMoved` avec les mots
+ * - Effets de la machine à états : `ReadingMoved(from, to)` devient `SessionEvent.ReadingMoved` avec les mots
  *   parcourus vers l'avant ; `SaveReading(p)` devient `SessionEvent.ReadingMoved(p, 0)` (la fin de session suit la
  *   lecture sans compter de mots) ; `ScrollTo` est ignoré. Pour le tracker, un `ReadingMoved` est une interaction.
  * - Entre `onBackgrounded` et `onStarted`, rien n'est transmis au tracker (aucune session ne s'ouvre écran éteint) ;
@@ -186,7 +186,7 @@ class SessionCoordinator(
 
     private suspend fun persist(record: SessionRecord) {
         // Session sans lecture, de moins de 30 s de temps actif ou de moins de 150 mots lus : pas encore (ou jamais)
-        // écrite (spec, « Journal de lecture »). Temps actif et mots lus ne font que croître : une session écrite reste
+        // écrite. Temps actif et mots lus ne font que croître : une session écrite reste
         // écrite ; une session qui finit en survol est retirée au prochain nettoyage (deleteDiscarded).
         // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.

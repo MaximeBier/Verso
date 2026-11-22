@@ -65,7 +65,7 @@ private const val LOGOTYPE_V = "v"
 private const val LOGOTYPE_ERSO = "erso"
 
 /**
- * Icône de l’app (1.01, 1.09), décorative : les calques de l’icône de lancement (fond `ic_launcher_background`,
+ * Icône de l’app (bibliothèque vide, Paramètres), décorative : les calques de l’icône de lancement (fond `ic_launcher_background`,
  * premier plan `ic_launcher_foreground`), dont on montre les 72 dp centraux sur 108, aux coins arrondis.
  */
 @Composable
@@ -89,5 +89,5 @@ fun AppIcon(size: Dp, modifier: Modifier = Modifier) {
 private const val ADAPTIVE_ICON_FULL = 108f
 private const val ADAPTIVE_ICON_VISIBLE = 72f
 
-/** Arrondi des maquettes : 22 sur 72. */
+/** Arrondi des coins de l’icône : 22 sur 72. */
 private const val ICON_CORNER_FRACTION = 22f / 72f

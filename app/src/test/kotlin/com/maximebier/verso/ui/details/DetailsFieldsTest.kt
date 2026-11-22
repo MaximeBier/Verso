@@ -10,7 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Revue REV-080 : TalkBack annonce le libellé du champ, même vide (« Auteur, zone d’édition »). */
+/** TalkBack annonce le libellé du champ, même vide (« Auteur, zone d’édition »). */
 @RunWith(AndroidJUnit4::class)
 class DetailsFieldsTest {
 

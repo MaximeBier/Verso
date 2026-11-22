@@ -1,9 +1,9 @@
 package com.maximebier.verso.core.settings
 
-/** Police de toute l'app et du texte de lecture (spec, « Police V2 »). */
+/** Police de toute l'app et du texte de lecture. */
 enum class ReadingFont { LITERATA, ATKINSON, LIBRON, SYSTEM }
 
-/** Interligne (spec, « Réglages de lecture ») : Serré 1,4, Normal 1,6, Aéré 1,8. */
+/** Interligne : Serré 1,4, Normal 1,6, Aéré 1,8. */
 enum class LineSpacing(val factor: Double) { TIGHT(1.4), NORMAL(1.6), AIRY(1.8) }
 
 /** Marges latérales du texte, en dp : Étroites, Normales (valeur V1), Larges. */

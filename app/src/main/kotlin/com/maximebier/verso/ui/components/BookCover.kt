@@ -29,7 +29,7 @@ import java.io.File
 import java.util.Locale
 import java.util.zip.CRC32
 
-/** Tailles de couverture de v1-ui-reference §3.13 : 1 initiale sous 56 dp de large, 2 au-delà. */
+/** Tailles de couverture : 1 initiale sous 56 dp de large, 2 au-delà. */
 enum class CoverSize(val widthDp: Int, val heightDp: Int, val letters: Int, val monogramSp: Int) {
     LIST(48, 72, 1, 22),
     COMPACT(56, 84, 2, 18),
@@ -106,7 +106,7 @@ fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, 
     }
 }
 
-/** Couverture de la grille (pleine largeur, 2:3) ; vignette générée : titre + filet + auteur (§3.4b). */
+/** Couverture de la grille (pleine largeur, 2:3) ; vignette générée : titre + filet + auteur. */
 @Composable
 fun GridBookCover(title: String, author: String, coverPath: String?, seed: String, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors

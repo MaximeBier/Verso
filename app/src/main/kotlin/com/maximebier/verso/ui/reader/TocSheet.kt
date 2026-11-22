@@ -47,7 +47,7 @@ sealed interface TocRow {
 
 data class TocSummary(val parts: Int, val chapters: Int)
 
-/** Lignes montrées avant le chapitre en cours à l’ouverture (maquette : 3). */
+/** Lignes montrées avant le chapitre en cours à l’ouverture. */
 private const val CURRENT_ROW_CONTEXT = 3
 
 private data class FlatNode(val index: Int, val depth: Int, val node: TocNode)
@@ -111,8 +111,8 @@ fun tocSummary(toc: List<TocNode>): TocSummary {
 }
 
 /**
- * Feuille « Sommaire » (1.12). Feuille, poignée, en-tête (titre, sous-titre, « Fermer ») et voile
- * viennent du composant partagé `VersoBottomSheet` (2.2) ; seule la liste est propre au sommaire.
+ * Feuille « Sommaire ». Feuille, poignée, en-tête (titre, sous-titre, « Fermer ») et voile
+ * viennent du composant partagé `VersoBottomSheet` ; seule la liste est propre au sommaire.
  */
 @Composable
 fun TocSheet(

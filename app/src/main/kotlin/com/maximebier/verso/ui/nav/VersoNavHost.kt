@@ -42,7 +42,7 @@ fun VersoNavHost(
     navController: NavHostController = rememberNavController(),
     reopenBookId: Long? = null,
 ) {
-    // Ouverture automatique du dernier livre (spec, « Ouverture au lancement ») : une seule fois par lancement,
+    // Ouverture automatique du dernier livre : une seule fois par lancement,
     // jamais si un fichier reçu attend son import. La bibliothèque reste dessous dans la pile arrière, mais n’est pas
     // dessinée avant : le lancement montre directement le livre.
     var autoReopenHandled by rememberSaveable { mutableStateOf(reopenBookId == null) }
@@ -66,7 +66,7 @@ fun VersoNavHost(
             NewCollectionDestination(
                 preselectedBookId = route.preselectedBookId,
                 onClose = { if (entry.resumed()) navController.popBackStack() },
-                // Depuis la feuille 4.04 (livre présélectionné) : retour à la feuille ; sinon, l’écran de la collection créée.
+                // Depuis la feuille « Ajouter à une collection » (livre présélectionné) : retour à la feuille ; sinon, l’écran de la collection créée.
                 onCreated = { id ->
                     if (route.preselectedBookId != null) {
                         navController.popBackStack()

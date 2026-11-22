@@ -3,13 +3,13 @@ package com.maximebier.verso.core.text
 import kotlin.math.roundToLong
 
 /**
- * Durée découpée pour l'affichage (`v1-ui-reference.md`, formatage des valeurs) :
+ * Durée découpée pour l'affichage :
  * `hours > 0 && minutes > 0` → `common_duration_hours_minutes` (« 5 h 30 », « 1 h 05 ») ;
  * `minutes == 0` → `common_duration_hours` (« 5 h ») ; `hours == 0` → `common_duration_minutes` (« 45 min »).
  */
 data class DurationParts(val hours: Int, val minutes: Int)
 
-/** Vitesse de lecture V1 (spec : 250 mots/min ; la vitesse mesurée arrive en V2). */
+/** Vitesse de lecture V1 (250 mots/min ; la vitesse mesurée arrive en V2). */
 const val DEFAULT_WORDS_PER_MINUTE = 250
 
 /**

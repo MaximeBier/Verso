@@ -55,7 +55,7 @@ import com.maximebier.verso.ui.theme.VersoDimens
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
-/** Actions de l’écran « Notes » (3.06). */
+/** Actions de l’écran « Notes ». */
 class NotesActions(
     val onBack: () -> Unit,
     /** Ouvre le sélecteur d’Android (voir [rememberNotesExport]). */
@@ -70,7 +70,7 @@ class NotesActions(
 )
 
 /**
- * « Notes » d’un livre (3.06) : barre de titre avec « Exporter », phrase d’aide, notes dans l’ordre
+ * « Notes » d’un livre : barre de titre avec « Exporter », phrase d’aide, notes dans l’ordre
  * du livre (passage marqué, note, emplacement, menu ⋮). Sans note : phrase d’état, pas d’« Exporter ».
  */
 @Composable
@@ -101,7 +101,7 @@ fun NotesScreen(state: NotesUiState, actions: NotesActions, modifier: Modifier =
                 item {
                     Text(
                         text = stringResource(R.string.notes_export_hint),
-                        // 14 sp, interligne 1,45 (3.06).
+                        // 14 sp, interligne 1,45.
                         style = VersoTheme.typography.caption.copy(lineHeight = 20.3.sp),
                         color = colors.textSecondary,
                         modifier = Modifier.padding(start = 24.dp, top = 4.dp, end = 24.dp, bottom = 12.dp),
@@ -171,7 +171,7 @@ private fun NotesTitleRow(state: NotesUiState, actions: NotesActions, showExport
                 val count = state.items.size
                 Text(
                     text = stringResource(R.string.notes_subtitle, state.bookTitle, pluralStringResource(R.plurals.notes_item_count, count, count)),
-                    // 14 sp, interligne 1,3 (3.06).
+                    // 14 sp, interligne 1,3.
                     style = VersoTheme.typography.caption.copy(lineHeight = 18.2.sp),
                     color = colors.textSecondary,
                 )
@@ -192,7 +192,7 @@ private fun NoteRow(item: NoteItem, actions: NotesActions) {
                 .padding(start = 24.dp, top = 16.dp, end = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // 18 sp, interligne 1,55 (3.06).
+            // 18 sp, interligne 1,55.
             MarkedText(item.text, style = VersoTheme.typography.body.copy(fontSize = 18.sp, lineHeight = 27.9.sp))
             item.note?.let { note ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -212,7 +212,7 @@ private fun NoteRow(item: NoteItem, actions: NotesActions) {
     HorizontalDivider(thickness = 1.dp, color = colors.divider)
 }
 
-/** Menu ⋮ d’une note (3.06) : « Aller au passage », « Modifier la note », « Supprimer ». */
+/** Menu ⋮ d’une note : « Aller au passage », « Modifier la note », « Supprimer ». */
 @Composable
 private fun NoteOptions(item: NoteItem, actions: NotesActions) {
     var expanded by rememberSaveable { mutableStateOf(false) }

@@ -30,7 +30,7 @@ class JournalMappingTest {
 
     private val zone: ZoneId = ZoneId.of("Europe/Paris")
 
-    // Mercredi 23 septembre 2026, 22 h 41 (comme la maquette 1.13).
+    // Mercredi 23 septembre 2026, 22 h 41.
     private val now = at(2026, 9, 23, 22, 41)
 
     private val toc = listOf(

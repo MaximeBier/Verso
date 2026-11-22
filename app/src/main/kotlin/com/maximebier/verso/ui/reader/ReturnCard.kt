@@ -36,9 +36,9 @@ import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
 
 /**
- * Carte de retour (1.14) : rayon 20 (`VersoShapes.card`), pas de minuterie ni de balayage pour la fermer. En clair et
- * en sépia, fond `inverse` (sombre) comme la maquette ; en sombre et en nuit, carte sombre surélevée (`surfaceHigh`,
- * filet `outline`, bouton accent) plutôt qu’un bloc clair éblouissant (étape 34). Annoncée poliment par TalkBack à
+ * Carte de retour : rayon 20 (`VersoShapes.card`), pas de minuterie ni de balayage pour la fermer. En clair et
+ * en sépia, fond `inverse` (sombre) ; en sombre et en nuit, carte sombre surélevée (`surfaceHigh`,
+ * filet `outline`, bouton accent) plutôt qu’un bloc clair éblouissant. Annoncée poliment par TalkBack à
  * son apparition.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -91,14 +91,14 @@ fun ReturnCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         ) {
-            // Bouton texte (§3.8) : composant partagé, couleur du texte de la carte, padding 16.
+            // Bouton texte : composant partagé, couleur du texte de la carte, padding 16.
             VersoTextButton(
                 text = stringResource(R.string.return_card_stay),
                 onClick = onStayHere,
                 color = palette.content,
                 horizontalPadding = 16.dp,
             )
-            // « Revenir », plein à l’accent de la carte (§3.8) : aucun composant partagé ne porte ces couleurs.
+            // « Revenir », plein à l’accent de la carte : aucun composant partagé ne porte ces couleurs.
             Button(
                 onClick = onGoBack,
                 modifier = Modifier.heightIn(min = VersoDimens.controlMin),

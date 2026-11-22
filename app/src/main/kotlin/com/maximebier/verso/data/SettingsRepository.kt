@@ -33,7 +33,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         if (error is IOException) emit(emptyPreferences()) else throw error
     }
 
-    /** Défaut : true (spec, « Ouverture au lancement »). */
+    /** Défaut : true. */
     val reopenLastBook: Flow<Boolean> = preferences.map { it[REOPEN_LAST_BOOK] ?: true }
 
     /** Défaut : RECENT. */
@@ -77,7 +77,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         save { it[DARK_THEME_VARIANT] = value.name }
     }
 
-    /** Réglages de lecture V2 (spec, « Réglages de la V2 ») ; valeur inconnue → défaut, taille bornée. */
+    /** Réglages de lecture V2 ; valeur inconnue → défaut, taille bornée. */
     val readingSettings: Flow<ReadingSettings> = preferences.map(::readingSettingsOf).distinctUntilChanged()
 
     /** Lit, transforme et réécrit les réglages dans la même transaction DataStore. */
@@ -180,7 +180,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DARK_THEME_VARIANT = stringPreferencesKey("dark_theme_variant")
 
-        /** Valeur écrite par le thème Noir (étape 10), remplacé par Nuit le 2026-09-29. */
+        /** Valeur écrite par le thème Noir, remplacé par Nuit le 2026-09-29. */
         const val LEGACY_BLACK_THEME = "BLACK"
         val READING_FONT = stringPreferencesKey("reading_font")
         val READING_FONT_SIZE = intPreferencesKey("reading_font_size")

@@ -196,7 +196,7 @@ fun RadioRow(
     }
 }
 
-/** Ligne de choix (2.09) : titre à gauche, valeur et chevron à droite ; TalkBack lit « Thème, Automatique ». */
+/** Ligne de choix : titre à gauche, valeur et chevron à droite ; TalkBack lit « Thème, Automatique ». */
 @Composable
 fun ChoiceRow(title: String, value: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors

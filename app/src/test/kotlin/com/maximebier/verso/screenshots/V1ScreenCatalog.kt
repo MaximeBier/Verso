@@ -33,7 +33,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 
-/** Variantes imposées par les critères : clair, sombre système, texte Android à 200 %. */
+/** Variantes vérifiées : clair, sombre système, texte Android à 200 %. */
 enum class ScreenVariant(val suffix: String) {
     LIGHT("clair"),
     DARK("sombre"),
@@ -52,7 +52,7 @@ data class ScreenFixture(
 ) {
     override fun toString(): String = id
 
-    /** Compose l'écran dans [wrap] (le thème) et l'amène dans l'état de la maquette. */
+    /** Compose l'écran dans [wrap] (le thème) et l'amène dans l'état voulu. */
     fun show(rule: ComposeContentTestRule, wrap: @Composable (@Composable () -> Unit) -> Unit) {
         rule.beforeContent()
         rule.setContent { wrap(content) }
@@ -80,7 +80,7 @@ class VariantRule(private val variant: ScreenVariant) : TestRule {
     }
 }
 
-/** Ouvre le menu ⋮ de « Vingt mille lieues sous les mers » (1.02b), en faisant défiler la liste jusqu'au bouton. */
+/** Ouvre le menu ⋮ de « Vingt mille lieues sous les mers », en faisant défiler la liste jusqu'au bouton. */
 private val openBookMenu: ComposeContentTestRule.() -> Unit = {
     val label = ApplicationProvider.getApplicationContext<Context>()
         .getString(R.string.library_book_options, "Vingt mille lieues sous les mers")
@@ -92,7 +92,7 @@ private val openBookMenu: ComposeContentTestRule.() -> Unit = {
 private val freezeClock: ComposeContentTestRule.() -> Unit = { mainClock.autoAdvance = false }
 private val showSnackbar: ComposeContentTestRule.() -> Unit = { mainClock.advanceTimeBy(1_000) }
 
-/** Tous les écrans V1 dessinables par Compose (1.10 est rendu par Readium, voir 7.3). */
+/** Tous les écrans V1 dessinables par Compose (le texte de lecture est rendu par Readium). */
 object V1ScreenCatalog {
     val fixtures: List<ScreenFixture> = listOf(
         ScreenFixture("1.01-premier-lancement") { LibraryEmptySample() },

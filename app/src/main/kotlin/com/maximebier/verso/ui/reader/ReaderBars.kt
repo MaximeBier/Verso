@@ -77,7 +77,7 @@ data class ReaderBarsState(
 
 private const val BAR_ANIMATION_MS = 200
 
-/** Barre de lecture (1.11) : en haut, retour, titre, chapitre ; en bas, progression, temps restant, boutons. */
+/** Barre de lecture : en haut, retour, titre, chapitre ; en bas, progression, temps restant, boutons. */
 @Composable
 fun ReaderBars(
     visible: Boolean,
@@ -141,7 +141,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     text = title,
-                    // 18 sp 700, interligne 1,25 (référence 1.11).
+                    // 18 sp 700, interligne 1,25.
                     style = VersoTheme.typography.bookTitleStrong.copy(lineHeight = 22.5.sp),
                     color = colors.text,
                     maxLines = 1,
@@ -150,7 +150,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
                 if (chapter != null) {
                     Text(
                         text = chapter,
-                        // 14 sp, interligne 1,3 (référence 1.11).
+                        // 14 sp, interligne 1,3.
                         style = VersoTheme.typography.caption.copy(lineHeight = 18.2.sp),
                         color = colors.textSecondary,
                         maxLines = 1,
@@ -163,7 +163,7 @@ private fun ReaderTopBar(title: String, chapter: String?, onBack: () -> Unit) {
     }
 }
 
-/** Outil de la barre du bas (2.01) : icône, ou glyphe « Aa », au-dessus du libellé. */
+/** Outil de la barre du bas : icône, ou glyphe « Aa », au-dessus du libellé. */
 data class ReaderTool(val label: String, val glyph: ToolGlyph, val onClick: () -> Unit)
 
 sealed interface ToolGlyph {
@@ -171,7 +171,7 @@ sealed interface ToolGlyph {
     data class Text(val text: String) : ToolGlyph
 }
 
-/** Ordre de la maquette 2.01, « Notes » (V3) à la place de « Journal », ouvert depuis la fiche : Sommaire, Rechercher, Notes, Réglages. */
+/** Ordre des outils, « Notes » (V3) à la place de « Journal », ouvert depuis la fiche : Sommaire, Rechercher, Notes, Réglages. */
 @Composable
 private fun readerTools(
     onTocClick: () -> Unit,
@@ -194,7 +194,7 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
         Column(
             modifier = Modifier
                 .windowInsetsPadding(readerSideInsets())
-                // 2.01 : 16 dp en haut et en bas, 20 dp sur les côtés.
+                // 16 dp en haut et en bas, 20 dp sur les côtés.
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -213,7 +213,7 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
                     modifier = Modifier.weight(1f).alignByBaseline(),
                 )
             }
-            // Barre du livre en cours (§3.7) : 6 dp, accent ; elle occupe toute la largeur.
+            // Barre du livre en cours : 6 dp, accent ; elle occupe toute la largeur.
             VersoProgressBar(fraction = state.progression, current = true)
             ReaderToolbar(tools)
         }
@@ -227,7 +227,7 @@ private val ToolMinHeight = 64.dp
 private val ToolIconSize = 22.dp
 
 /**
- * Outils en une rangée de colonnes égales (2.01 : 64 dp de haut, icône 22 dp, texte 14 sp 600). Quand un libellé ne
+ * Outils en une rangée de colonnes égales (64 dp de haut, icône 22 dp, texte 14 sp 600). Quand un libellé ne
  * tient plus (texte système agrandi), deux colonnes, puis une, plutôt que de couper « Rechercher ».
  */
 @Composable
@@ -262,7 +262,7 @@ private fun ToolButton(tool: ReaderTool, modifier: Modifier) {
     ) {
         when (val glyph = tool.glyph) {
             is ToolGlyph.Icon -> Icon(glyph.vector, contentDescription = null, tint = colors.text, modifier = Modifier.size(ToolIconSize))
-            // 2.01 : « Aa » 20 sp 700, décoratif ; le bouton se lit par son libellé.
+            // « Aa » 20 sp 700, décoratif ; le bouton se lit par son libellé.
             is ToolGlyph.Text -> Text(
                 text = glyph.text,
                 style = VersoTheme.typography.bodyStrong.copy(fontSize = 20.sp, lineHeight = 22.sp),

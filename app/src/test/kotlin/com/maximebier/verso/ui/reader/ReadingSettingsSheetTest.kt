@@ -62,7 +62,7 @@ class ReadingSettingsSheetTest {
     }
 
     @Test
-    fun defaultsAreSelectedAsInTheMockup() {
+    fun defaultsAreSelectedWhenTheSheetOpens() {
         show()
         compose.onNodeWithText(s(R.string.reader_settings_font_literata)).assertIsSelected()
         compose.onNodeWithText(s(R.string.reader_settings_theme_auto)).assertIsSelected()

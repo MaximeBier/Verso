@@ -80,7 +80,7 @@ fun searchStatusText(state: SearchUiState): String? = when {
     else -> null
 }
 
-/** Écran 2.06, en surcouche plein écran du lecteur. */
+/** Écran « Recherche dans le livre », en surcouche plein écran du lecteur. */
 @Composable
 fun SearchScreen(
     state: SearchUiState,
@@ -105,7 +105,7 @@ fun SearchScreen(
             .pointerInput(Unit) {}
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)),
     ) {
-        // Le fond de l’en-tête passe sous la barre d’état, comme sur la maquette 2.06 : pas de bande vide au-dessus.
+        // Le fond de l’en-tête passe sous la barre d’état : pas de bande vide au-dessus.
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -18,7 +18,7 @@ private fun sampleHit(before: String, after: String, progression: Double) = Sear
     progression = progression,
 )
 
-/** Maquette 2.06 : « rivière », trois résultats de la Deuxième partie, chapitre I, recherche en cours. */
+/** Recherche dans le livre : « rivière », trois résultats de la Deuxième partie, chapitre I, recherche en cours. */
 @Composable
 fun SearchSample() {
     val hits = listOf(

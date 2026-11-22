@@ -19,7 +19,7 @@ data class ReadingColors(
     @ColorInt val onSelection: Int,
 )
 
-/** Traduction des réglages de lecture de Verso en valeurs Readium (spec, « Lecture » et « Réglages de la V2 »). */
+/** Traduction des réglages de lecture de Verso en valeurs Readium. */
 object ReadingStyle {
     const val ATKINSON_FAMILY_NAME = "Atkinson Hyperlegible Next"
     const val ATKINSON_ASSET_REGULAR = "fonts/atkinson_hyperlegible_next.ttf"

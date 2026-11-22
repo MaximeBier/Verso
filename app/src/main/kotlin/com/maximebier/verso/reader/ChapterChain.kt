@@ -6,7 +6,7 @@ data class ChapterEdges(val atTop: Boolean, val atBottom: Boolean)
 enum class ChapterChain { NEXT, PREVIOUS, NONE }
 
 /**
- * Changement de chapitre (spec) : un glissé **commencé** au bord bas vers le haut ouvre le chapitre suivant, un
+ * Changement de chapitre : un glissé **commencé** au bord bas vers le haut ouvre le chapitre suivant, un
  * glissé commencé au bord haut vers le bas ouvre le précédent. L’élan d’un fling qui atteint le bord ne compte
  * jamais : les bords sont ceux de l’appui. `dragDyPx` = lever − appui (négatif quand le doigt monte).
  */

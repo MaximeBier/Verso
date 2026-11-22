@@ -53,7 +53,7 @@ fun VersoSegmentedButton(
     onSelect: (Int) -> Unit,
     groupLabel: String,
     modifier: Modifier = Modifier,
-    /** true = onglets (4.01) : rôle Tab et pas de coche, comme la maquette. */
+    /** true = onglets : rôle Tab et pas de coche. */
     tabs: Boolean = false,
 ) {
     val colors = VersoTheme.colors

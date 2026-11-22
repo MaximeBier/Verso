@@ -1,4 +1,4 @@
-Corpus d'EPUB réels pour RealCorpusTest (tâche 7.2), téléchargé le 2026-09-26.
+Corpus d'EPUB réels pour RealCorpusTest, téléchargé le 2026-09-26.
 Fichiers gardés tels quels : ils servent précisément parce qu'ils sont imparfaits.
 
 Sources :

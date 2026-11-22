@@ -87,7 +87,7 @@ object VersoReadingPreferences {
      */
     fun EpubNavigatorFragment.Configuration.applyVerso(theme: AppTheme, selectionCallback: ActionMode.Callback? = null) {
         servedAssets = listOf(ReadingStyle.SERVED_ASSETS_PATTERN)
-        // Menu de sélection d’Android remplacé par la barre de Verso (3.04).
+        // Menu de sélection d’Android remplacé par la barre de Verso.
         selectionActionModeCallback = selectionCallback
         // Liens (visités ou non) à la couleur d’accent des jetons, contrastée à 7:1 : en sombre, le mode nuit de
         // ReadiumCSS mettrait les liens visités en #0099E5 (5,8:1). Variables en ligne : elles priment sur ce mode.

@@ -40,7 +40,7 @@ class EmptyLibraryScreenTest {
         compose.onAllNodesWithText("Importer").assertCountEquals(0)
     }
 
-    /** En-tête : le logotype est une image lue « Verso », titre de l'écran ; l'icône de l'app (1.01) est décorative. */
+    /** En-tête : le logotype est une image lue « Verso », titre de l'écran ; l'icône de l'app est décorative. */
     @Test
     fun logotypeIsReadAsVersoAndTheAppIconIsDecorative() {
         compose.setContent {
