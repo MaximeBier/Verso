@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/design/logo/svg/verso-logotype-sombre.svg">
-    <img src="docs/design/logo/svg/verso-logotype-clair.svg" alt="Verso" width="240">
+    <source media="(prefers-color-scheme: dark)" srcset="readme/verso-logotype-sombre.svg">
+    <img src="readme/verso-logotype-clair.svg" alt="Verso" width="240">
   </picture>
 </p>
 
@@ -10,17 +10,16 @@
 Verso est un lecteur d’EPUB pour Android, minimaliste et entièrement hors ligne. Il distingue la position que vous **lisez** de celle que vous **regardez** : un scroll accidentel ne fait jamais perdre votre page.
 
 <p align="center">
-  <img src="docs/readme/bibliotheque.png" alt="Bibliothèque avec états et carte Reprendre" width="200">
-  <img src="docs/readme/lecture.png" alt="Lecture avec la barre affichée" width="200">
-  <img src="docs/readme/reglages-de-lecture.png" alt="Réglages de lecture en direct" width="200">
-  <img src="docs/readme/mode-pages.png" alt="Mode pages" width="200">
-  <img src="docs/readme/recherche.png" alt="Recherche dans le livre" width="200">
-  <img src="docs/readme/carte-revenir.png" alt="Carte Revenir après un scroll accidentel" width="200">
-  <img src="docs/readme/surligner.png" alt="Barre de sélection : Surligner, Note, Copier" width="200">
-  <img src="docs/readme/notes.png" alt="Notes et surlignages d’un livre" width="200">
-  <img src="docs/readme/sauvegarde.png" alt="Sauvegarde et restauration" width="200">
-  <img src="docs/readme/collections.png" alt="Onglet Collections : progression de chaque série" width="200">
-  <img src="docs/readme/une-collection.png" alt="Une collection dans l’ordre de lecture, avec Reprendre" width="200">
+  <img src="readme/bibliotheque.png" alt="Bibliothèque avec états et carte Reprendre" width="200">
+  <img src="readme/lecture.png" alt="Lecture avec la barre affichée" width="200">
+  <img src="readme/reglages-de-lecture.png" alt="Réglages de lecture en direct" width="200">
+  <img src="readme/mode-pages.png" alt="Mode pages" width="200">
+  <img src="readme/recherche.png" alt="Recherche dans le livre" width="200">
+  <img src="readme/carte-revenir.png" alt="Carte Revenir après un scroll accidentel" width="200">
+  <img src="readme/notes.png" alt="Notes et surlignages d’un livre" width="200">
+  <img src="readme/sauvegarde.png" alt="Sauvegarde et restauration" width="200">
+  <img src="readme/collections.png" alt="Onglet Collections : progression de chaque série" width="200">
+  <img src="readme/une-collection.png" alt="Une collection dans l’ordre de lecture, avec Reprendre" width="200">
 </p>
 
 ## Ce que fait Verso
@@ -30,7 +29,7 @@ Verso est un lecteur d’EPUB pour Android, minimaliste et entièrement hors lig
 - **Lecture confortable**, réglée d’après la recherche : Literata par défaut (Atkinson Hyperlegible Next, Libron ou la police du téléphone au choix, dans toute l’app), taille, interligne et marges réglables en direct, aligné à gauche sans césure, thèmes Clair, Sépia, Sombre et Nuit, en scroll continu ou en pages, mémorisé par livre.
 - **Une progression qui ne se perd pas** : un fling, un grand saut ou un passage par le sommaire ne déplacent pas la position de lecture ; une carte « Revenir » vous y ramène en un tap.
 - **Journal de lecture** : chaque session avec ses heures, sa durée, le passage lu et « Reprendre ici ».
-- **Notes et traduction** : un appui long ouvre une barre « Traduire, Note, Copier ». « Traduire » montre, sans quitter le livre, la traduction française d’un mot anglais et ses autres sens, ou celle d’un passage (Microsoft Translator, connexion nécessaire). Les notes qui se recoupent fusionnent ; « Notes » les liste dans l’ordre du livre et les exporte en Markdown, groupées par chapitre. Sélectionner ne déplace jamais la position de lecture.
+- **Notes et traduction** : un appui long ouvre une barre « Traduire, Note, Copier ». « Traduire » montre, sans quitter le livre, la traduction française d’un mot anglais et ses autres sens, ou celle d’un passage (DeepL, connexion nécessaire). Les notes qui se recoupent fusionnent ; « Notes » les liste dans l’ordre du livre et les exporte en Markdown, groupées par chapitre. Sélectionner ne déplace jamais la position de lecture.
 - **Sauvegarde** : un seul fichier zip (livres, positions, journal, notes, réglages) enregistré où vous voulez, et une restauration qui vérifie tout avant de remplacer quoi que ce soit, tout ou rien.
 - **Collections** : regroupez une série dans l’ordre de lecture, suivez sa progression pondérée par la longueur des livres et le temps restant, reprenez au premier livre non terminé ; un livre peut appartenir à plusieurs collections.
 - **États et statistiques** : livres à lire, en cours ou terminés, filtres et tri ; temps de lecture, vitesse moyenne et temps restant à votre rythme.
@@ -50,8 +49,6 @@ Kotlin 2.4 · Jetpack Compose (Material 3) · Navigation Compose · Readium Kotl
 - La position est un *locator* Readium (chapitre, progression, extrait), jamais des pixels : elle survit à un changement de taille de texte.
 - Room garde livres, positions, sessions, surlignages et collections ; DataStore les préférences ; la sauvegarde est un zip avec les données en JSON, pas une copie de la base ; tous les seuils sont des constantes nommées.
 - 1 343 tests (JUnit, Robolectric, Roborazzi) couvrent la machine à états, le tour de page animé, le suivi des sessions, la recherche, les notes, la traduction, les collections, la sauvegarde et la restauration (fichiers abîmés, échec en plein remplacement) et les écrans clés, dans les cinq thèmes et à 200 %.
-
-La spécification complète, avec les décisions et les critères d’acceptation, est dans [`docs/SPEC.md`](docs/SPEC.md).
 
 ## Compiler
 
