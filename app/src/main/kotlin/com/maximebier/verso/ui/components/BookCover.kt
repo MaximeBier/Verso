@@ -106,9 +106,6 @@ fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, 
     }
 }
 
-private const val GRID_COVER_AUTHOR_DP = 14f
-private const val GRID_COVER_AUTHOR_LINE_DP = 19.6f
-
 /** Couverture de la grille (pleine largeur, 2:3) ; vignette générée : titre + filet + auteur. */
 @Composable
 fun GridBookCover(title: String, author: String, coverPath: String?, seed: String, modifier: Modifier = Modifier) {
@@ -156,11 +153,13 @@ fun GridBookCover(title: String, author: String, coverPath: String?, seed: Strin
                     Text(
                         text = author,
                         color = colors.onCover,
-                        style = VersoTheme.typography.caption.copy(
-                            fontSize = with(density) { GRID_COVER_AUTHOR_DP.dp.toSp() },
-                            lineHeight = with(density) { GRID_COVER_AUTHOR_LINE_DP.dp.toSp() },
-                            fontWeight = FontWeight(500),
-                        ),
+                        style = VersoTheme.typography.caption.let { caption ->
+                            caption.copy(
+                                fontSize = with(density) { caption.fontSize.value.dp.toSp() },
+                                lineHeight = with(density) { caption.lineHeight.value.dp.toSp() },
+                                fontWeight = FontWeight(500),
+                            )
+                        },
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

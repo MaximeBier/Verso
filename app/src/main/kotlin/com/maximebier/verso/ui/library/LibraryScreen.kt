@@ -501,7 +501,8 @@ private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: M
                 seed = book.colorSeed,
                 modifier = if (coverWidth != null) Modifier.width(coverWidth) else Modifier,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // Un livre par rangée (couverture de largeur fixe) : 4 dp entre titre et auteur, 2 dp en deux colonnes.
+            Column(verticalArrangement = Arrangement.spacedBy(if (coverWidth != null) 4.dp else 2.dp)) {
                 Text(book.title, style = VersoTheme.typography.bookTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (book.author.isNotEmpty()) {
                     Text(book.author, style = authorStyle(), color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
