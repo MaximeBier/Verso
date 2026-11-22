@@ -16,3 +16,9 @@ internal fun DeleteBookDialogSample() {
 internal fun DetailsV2Sample() {
     DetailsContent(DetailsSamples.bovary, DetailsActions())
 }
+
+/** Fiche d’un livre déjà ouvert, statistiques masquées : le journal à la place de la section, puis les notes. */
+@Composable
+internal fun DetailsWithoutStatisticsSample() {
+    DetailsContent(DetailsSamples.bovary.copy(stats = null, highlightCount = 3), DetailsActions())
+}

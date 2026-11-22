@@ -84,6 +84,20 @@ class DetailsScreenTest {
     }
 
     @Test
+    fun journalStaysReachableWhenStatisticsAreHidden() {
+        var journal: Long? = null
+        show(DetailsSamples.bovary.copy(stats = null), DetailsActions(onOpenJournal = { journal = it }))
+        compose.onNodeWithText(text(R.string.details_open_journal)).performScrollTo().performClick()
+        assertThat(journal).isEqualTo(1L)
+    }
+
+    @Test
+    fun neverOpenedBookHasNoJournalButton() {
+        show(DetailsSamples.neverOpened.copy(stats = ReadingStats(0, 0, null)))
+        compose.onNodeWithText(text(R.string.details_open_journal)).assertDoesNotExist()
+    }
+
+    @Test
     fun withoutMeasuredSpeedOnlyTheReadingTimeIsShown() {
         show(DetailsSamples.bovary.copy(stats = stats.copy(sessionCount = 1, wordsPerMinute = null)))
         compose.onNodeWithText(text(R.string.details_stats_title)).performScrollTo().assertIsDisplayed()
@@ -92,10 +106,10 @@ class DetailsScreenTest {
     }
 
     @Test
-    fun sessionlessStatsShowNothing() {
+    fun sessionlessStatsShowOnlyTheJournalButton() {
         show(DetailsSamples.bovary.copy(stats = ReadingStats(0, 0, null)))
         compose.onNodeWithText(text(R.string.details_stats_title)).assertDoesNotExist()
-        compose.onNodeWithText(text(R.string.details_open_journal)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.details_open_journal)).performScrollTo().assertIsDisplayed()
     }
 
     @Test

@@ -12,6 +12,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.maximebier.verso.R
 import com.maximebier.verso.data.AppTheme
 import com.maximebier.verso.screenshots.samples.DetailsV2Sample
+import com.maximebier.verso.screenshots.samples.DetailsWithoutStatisticsSample
 import com.maximebier.verso.screenshots.samples.JournalSample
 import com.maximebier.verso.screenshots.samples.LibraryStatesSample
 import com.maximebier.verso.screenshots.samples.PagesModeSample
@@ -64,6 +65,7 @@ object V2ScreenCatalog {
         V2ScreenFixture(ScreenFixture("Bibliotheque-Liste-Defile", afterContent = scrollListToProgress) { LibraryStatesSample() }),
         V2ScreenFixture(ScreenFixture("Bibliotheque-TrierAfficher", afterContent = openSortSheet) { LibraryStatesSample() }),
         V2ScreenFixture(ScreenFixture("Livre-Details") { DetailsV2Sample() }),
+        V2ScreenFixture(ScreenFixture("Livre-Details-SansStatistiques") { DetailsWithoutStatisticsSample() }),
         V2ScreenFixture(ScreenFixture("Parametres") { SettingsV2Sample() }),
         V2ScreenFixture(ScreenFixture("Lecture-Recherche") { SearchSample() }),
     )

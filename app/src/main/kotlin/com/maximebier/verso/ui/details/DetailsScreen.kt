@@ -257,12 +257,17 @@ fun DetailsContent(
                         authorFocused = focus.hasFocus
                     },
                 )
-                state.stats?.takeIf { it.sessionCount > 0 }?.let { stats ->
+                // « Voir le journal de lecture » : pour tout livre déjà ouvert, à la fin des statistiques ou à leur place.
+                val openJournal = { actions.onOpenJournal(state.bookId) }
+                val stats = state.stats?.takeIf { it.sessionCount > 0 }
+                if (stats != null) {
                     StatisticsSection(
                         stats = stats,
                         remainingMinutes = state.remainingMinutes,
-                        onOpenJournal = { actions.onOpenJournal(state.bookId) },
+                        onOpenJournal = openJournal.takeIf { state.hasStarted },
                     )
+                } else if (state.hasStarted) {
+                    JournalButton(onClick = openJournal)
                 }
                 // Sous « Voir le journal de lecture » ; seulement si le livre a des notes.
                 if (state.highlightCount > 0) {
@@ -313,7 +318,7 @@ private fun activeMinutes(activeMs: Long): Int = ((activeMs + 30_000) / 60_000).
 
 /** Section « Statistiques » : temps de lecture, vitesse moyenne, temps restant à votre rythme, journal. */
 @Composable
-private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpenJournal: () -> Unit) {
+private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpenJournal: (() -> Unit)?) {
     val colors = VersoTheme.colors
     Column {
         Text(
@@ -343,13 +348,19 @@ private fun StatisticsSection(stats: ReadingStats, remainingMinutes: Int, onOpen
                 )
             }
         }
-        OutlinedPillButton(
-            text = stringResource(R.string.details_open_journal),
-            onClick = onOpenJournal,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            icon = VersoIcons.History,
-        )
+        if (onOpenJournal != null) JournalButton(onClick = onOpenJournal, modifier = Modifier.padding(top = 12.dp))
     }
+}
+
+/** « Voir le journal de lecture » : ouvre le livre, le journal par-dessus. */
+@Composable
+private fun JournalButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    OutlinedPillButton(
+        text = stringResource(R.string.details_open_journal),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        icon = VersoIcons.History,
+    )
 }
 
 /** Marge intérieure du bouton « Modifier », compensée pour aligner son libellé sur le contenu. */
