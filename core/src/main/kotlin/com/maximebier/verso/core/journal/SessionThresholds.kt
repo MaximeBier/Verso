@@ -21,8 +21,8 @@ data class SessionThresholds(
     /**
      * Session gardée au journal : assez de temps actif et, pour un livre dont les mots sont comptés ([totalWords] > 0),
      * assez de mots lus sans dépasser la vitesse de survol ; sinon, une progression qui a bougé. Même règle que le
-     * nettoyage des sessions écartées en base. Le rapport mots / temps varie : une session gardée peut devenir du
-     * survol, puis redevenir gardée.
+     * nettoyage des sessions écartées en base, sauf ce dernier cas, que la base ne vérifie pas (ces sessions-là ne sont
+     * jamais écrites). Le rapport mots / temps varie : une session gardée peut devenir du survol, puis redevenir gardée.
      */
     fun keeps(record: SessionRecord, totalWords: Long): Boolean {
         if (record.activeMs < minActiveMs) return false

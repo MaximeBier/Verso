@@ -512,6 +512,27 @@ class ReaderViewModelTest {
     }
 
     @Test
+    fun journalShowsTheCurrentSessionOnceItCounts() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
+        val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
+        val store = ViewModelStore()
+        // Seuils assouplis : quelques touchers suffisent à faire une session gardée.
+        val anySession = SessionThresholds(minActiveMs = 0, minWords = 0, minProgressionMove = -1.0)
+        val viewModel = ViewModelProvider.create(store, factory(id, clock = { SESSION_TEST_TIME_MS }, sessionThresholds = anySession))[ReaderViewModel::class]
+        store.clearedAfter {
+            viewModel.uiState.first { !it.loading }
+            viewModel.onReaderReady(FakeReaderController(start))
+            runCurrent()
+            viewModel.toggleBars()
+
+            viewModel.showJournal()
+            val journal = viewModel.journal.first { state -> state != null && !state.isEmpty }!!
+            assertThat(journal.days.single().sessions.single().inProgress).isTrue()
+        }
+    }
+
+    @Test
     fun configurationChangeKeepsTheSessionInProgress() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
