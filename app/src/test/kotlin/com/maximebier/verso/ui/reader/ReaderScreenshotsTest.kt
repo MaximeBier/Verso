@@ -16,9 +16,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Captures (390 × 844 dp, xxhdpi) à comparer à docs/design/screens/1.11-lecture-barre-affichee.png,
- * 1.11-barre-affichee-sombre.png, 1.12-sommaire.png et 1.12-sommaire-sombre.png. Thème : celui du système
- * (qualificatif `+night` pour le sombre), comme les captures de la tâche 2.2.
+ * Captures Roborazzi (390 × 844 dp, xxhdpi) de la barre de lecture et du sommaire, en clair et en sombre.
+ * Thème : celui du système (qualificatif `+night` pour le sombre).
  */
 @OptIn(ExperimentalRoborazziApi::class)
 @RunWith(AndroidJUnit4::class)

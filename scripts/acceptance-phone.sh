@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Passe d’acceptation V1 et V2 sur le téléphone (tâches 7.3 et 16.2).
+# Passe d’acceptation sur le téléphone : installation, parcours dans Verso et captures d’écran.
 # Autorisé : compiler, installer l'APK, lancer Verso, toucher l'écran DANS Verso, capturer l'écran.
 # Interdit : modifier un réglage système (thème, taille du texte, animations, TalkBack).
-# Ces critères-là sont vérifiés par Robolectric/Roborazzi et par Maxime (docs/acceptance-v1.md).
+# Ce qui demande un réglage système est vérifié par Robolectric/Roborazzi et par Maxime.
 #
 # Usage : scripts/acceptance-phone.sh             APK + permissions + installation + captures
 #         scripts/acceptance-phone.sh --apk-only  APK + permissions seulement (sans téléphone)
@@ -10,7 +10,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-# Poste de développement : JAVA_HOME système mal défini, le JDK 17 est dans LOCALAPPDATA (convention de la partie 01).
+# Poste de développement : JAVA_HOME système mal défini, le JDK 17 est dans LOCALAPPDATA.
 if [ -n "${LOCALAPPDATA:-}" ] && [ -d "$LOCALAPPDATA/Programs/jdk17" ]; then
   export JAVA_HOME="$LOCALAPPDATA/Programs/jdk17"
 fi
@@ -112,14 +112,14 @@ else
   back
   if on_screen "Sommaire"; then tap_center; fi
 
-  echo "== 4. Scroll accidentel (critère 7)"
+  echo "== 4. Scroll accidentel"
   for _ in 1 2 3 4 5 6 7 8; do fling_up; sleep 0.3; done
   wait_for "Revenir" 10 || true
   shot "14-carte-revenir"
   tap_on "Revenir" || true
   shot "14b-apres-revenir"
 
-  echo "== 5. Scroll accidentel puis fermeture sans toucher la carte (critère 8)"
+  echo "== 5. Scroll accidentel puis fermeture sans toucher la carte"
   for _ in 1 2 3 4 5 6 7 8; do fling_up; sleep 0.3; done
   pause 2
   adb_ shell input keyevent KEYCODE_HOME
@@ -130,7 +130,7 @@ else
   pause 3
   shot "15-reouverture-apres-scroll-accidentel"
   echo "  Comparer 15 à 14b : même paragraphe attendu."
-  echo "== 5b. V2 : barre, feuille « Aa », recherche (critères 6, 7, 17, 18)"
+  echo "== 5b. V2 : barre, feuille « Aa », recherche"
   tap_center
   shot "20-barre-v2"
   tap_on "Réglages" || true
