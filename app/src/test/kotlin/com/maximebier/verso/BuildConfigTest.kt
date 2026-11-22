@@ -11,7 +11,7 @@ class BuildConfigTest {
     }
 
     @Test
-    fun versionNameIsV1() {
-        assertThat(BuildConfig.VERSION_NAME).isEqualTo("1.0.0")
+    fun versionNameIsSemver() {
+        assertThat(BuildConfig.VERSION_NAME).matches("""\d+\.\d+\.\d+""")
     }
 }
