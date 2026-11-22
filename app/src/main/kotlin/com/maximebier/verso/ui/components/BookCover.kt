@@ -43,10 +43,11 @@ enum class CoverSize(val widthDp: Int, val heightDp: Int, val letters: Int, val 
 
 /** Règles pures des vignettes générées (testées dans CoverArtTest). */
 object CoverArt {
-    private val articles = setOf("le", "la", "les", "un", "une", "des")
-    private val elisions = listOf("l’", "l'")
+    // « de » et « du » comptent comme des articles : « Le Comte de Monte-Cristo » donne « CM ».
+    private val articles = setOf("le", "la", "les", "un", "une", "des", "de", "du")
+    private val elisions = listOf("l’", "l'", "d’", "d'")
 
-    /** Initiales des premiers mots significatifs (articles initiaux ignorés), en capitales. */
+    /** Initiales des premiers mots significatifs (articles, « de », « du » et élisions ignorés), en capitales. */
     fun monogram(title: String, letters: Int): String {
         val words = title.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         if (words.isEmpty()) return ""

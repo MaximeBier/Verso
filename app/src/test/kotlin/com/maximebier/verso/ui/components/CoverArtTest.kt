@@ -28,6 +28,22 @@ class CoverArtTest {
     }
 
     @Test
+    fun deAndDuAreIgnoredLikeArticles() {
+        assertThat(CoverArt.monogram("Le Comte de Monte-Cristo", letters = 2)).isEqualTo("CM")
+        assertThat(CoverArt.monogram("Le Vicomte de Bragelonne", letters = 2)).isEqualTo("VB")
+        assertThat(CoverArt.monogram("Le Rouge et le Noir", letters = 2)).isEqualTo("RE")
+        assertThat(CoverArt.monogram("Le Côté de Guermantes", letters = 2)).isEqualTo("CG")
+        assertThat(CoverArt.monogram("Le Tour du monde en quatre-vingts jours", letters = 2)).isEqualTo("TM")
+        assertThat(CoverArt.monogram("Les Trois Mousquetaires", letters = 1)).isEqualTo("T")
+    }
+
+    @Test
+    fun elidedDeIsIgnored() {
+        assertThat(CoverArt.monogram("Mémoires d’outre-tombe", letters = 2)).isEqualTo("MO")
+        assertThat(CoverArt.monogram("Contes d'Andersen", letters = 2)).isEqualTo("CA")
+    }
+
+    @Test
     fun accentedInitialIsKeptAndUppercased() {
         assertThat(CoverArt.monogram("émaux et camées", letters = 2)).isEqualTo("ÉE")
     }
