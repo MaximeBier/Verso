@@ -186,10 +186,10 @@
     <string name="settings_title">Paramètres</string>
     <string name="settings_section_startup">Au démarrage</string>
     <string name="settings_reopen_last_book">Rouvrir le dernier livre</string>
-    <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
+    <string name="settings_reopen_last_book_summary">Si vous l’avez lu il y a moins de 24 heures</string>
     <!-- V2 · section Lecture -->
     <string name="settings_section_reading">Lecture</string>
-    <string name="settings_reading_help">Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.</string>
+    <string name="settings_reading_help">Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.</string>
     <string name="settings_font">Police</string>
     <string name="settings_font_literata">Literata</string>
     <string name="settings_font_literata_summary">Par défaut · avec empattements, pensée pour la lecture longue</string>
@@ -305,7 +305,7 @@
     <string name="reader_page_next">Page suivante</string>
     <string name="reader_page_previous">Page précédente</string>
     <!-- « Page 2 sur 9 » : page du chapitre affiché ; « Page 1 sur 1 » n’est pas un pluriel. -->
-    <string name="reader_page_of" tools:ignore="PluralsCandidate">Page %1$d sur %2$d</string>
+    <string name="reader_page_of" tools:ignore="PluralsCandidate">Page %1$d sur %2$d</string>
 
     <!-- V2 · recherche dans le livre -->
     <string name="reader_search">Rechercher</string>
@@ -372,7 +372,7 @@
     <!-- ===================== Texte sélectionné ===================== -->
     <string name="selection_toolbar">Texte sélectionné</string>
     <!-- « Sélection : « la campagne ainsi ressemble à un grand manteau… » » -->
-    <string name="selection_label">Sélection : « %1$s »</string>
+    <string name="selection_label">Sélection : « %1$s »</string>
     <string name="selection_translate">Traduire</string>
     <string name="selection_note">Note</string>
     <string name="selection_copy">Copier</string>
@@ -494,9 +494,9 @@
     <string name="collections_author_and_count">%1$s · %2$s</string>
     <!-- « · 2 terminés sur 5 », après « 44 % » en gras -->
     <plurals name="collections_finished_of">
-        <item quantity="one">· %1$d terminé sur %2$d</item>
-        <item quantity="many">· %1$d terminés sur %2$d</item>
-        <item quantity="other">· %1$d terminés sur %2$d</item>
+        <item quantity="one">· %1$d terminé sur %2$d</item>
+        <item quantity="many">· %1$d terminés sur %2$d</item>
+        <item quantity="other">· %1$d terminés sur %2$d</item>
     </plurals>
     <string name="collections_new">Nouvelle collection</string>
     <!-- Validé par Maxime (2026-10-02) : onglet Collections sans collection -->
@@ -522,14 +522,14 @@
     <string name="collection_remaining_less_than_minute">Moins d’une minute de lecture restante</string>
     <string name="collection_resume">Reprendre</string>
     <!-- TalkBack du bouton rond de la carte Reprendre -->
-    <string name="collection_resume_content_description">Reprendre « %1$s »</string>
+    <string name="collection_resume_content_description">Reprendre « %1$s »</string>
     <string name="collection_order_title">Dans l’ordre de lecture</string>
     <string name="collection_reorder">Réordonner</string>
     <!-- Validé par Maxime (2026-10-02) : quitte le mode Réordonner ; TalkBack des commandes de chaque ligne -->
     <string name="collection_reorder_done">Terminé</string>
-    <string name="collection_move_up">Monter « %1$s »</string>
-    <string name="collection_move_down">Descendre « %1$s »</string>
-    <string name="collection_drag">Déplacer « %1$s »</string>
+    <string name="collection_move_up">Monter « %1$s »</string>
+    <string name="collection_move_down">Descendre « %1$s »</string>
+    <string name="collection_drag">Déplacer « %1$s »</string>
     <!-- Validé par Maxime (2026-10-02) : TalkBack du ⋮ de la collection -->
     <string name="collection_options">Options de la collection</string>
     <string name="collection_menu_rename">Renommer</string>
@@ -540,7 +540,7 @@
     <string name="collection_rename_title">Renommer la collection</string>
     <string name="collection_rename_confirm">Renommer</string>
     <string name="collection_dialog_cancel">Annuler</string>
-    <string name="collection_delete_title">Supprimer « %1$s » ?</string>
+    <string name="collection_delete_title">Supprimer « %1$s » ?</string>
     <string name="collection_delete_body">Les livres restent dans votre bibliothèque.</string>
     <string name="collection_delete_confirm">Supprimer</string>
     <string name="collection_empty">Aucun livre dans cette collection. Ajoutez-en depuis le menu ⋮ d’un livre, dans la bibliothèque.</string>

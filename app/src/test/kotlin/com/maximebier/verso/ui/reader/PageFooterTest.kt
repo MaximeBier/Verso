@@ -58,7 +58,7 @@ class PageFooterTest {
         compose.onNodeWithText("Deuxième partie, chapitre I", useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         assertThat(layouts.single().multiParagraph.didExceedMaxLines).isFalse()
-        compose.onNodeWithText("Page 12 sur 240", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Page 12 sur 240", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -72,7 +72,7 @@ class PageFooterTest {
         show(chapter = "Deuxième partie, chapitre I", pageInfo = PageInfo(2, 9))
         compose.onNodeWithText("Deuxième partie, chapitre I").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.reader_page_of, 2, 9)).assertIsDisplayed()
-        compose.onNodeWithText("Page 2 sur 9").assertIsDisplayed()
+        compose.onNodeWithText("Page 2 sur 9").assertIsDisplayed()
     }
 
     @Test
@@ -88,10 +88,10 @@ class PageFooterTest {
         show(chapter = "Deuxième partie, chapitre I", pageInfo = PageInfo(1, 1), onTurn = { turns += it })
 
         // Un seul nœud fusionné : TalkBack s’y arrête et lit le chapitre puis « Page 1 sur 1 ».
-        val node = compose.onNodeWithText("Page 1 sur 1").fetchSemanticsNode()
+        val node = compose.onNodeWithText("Page 1 sur 1").fetchSemanticsNode()
         assertThat(node.config.isMergingSemanticsOfDescendants).isTrue()
         assertThat(node.config[SemanticsProperties.Text].map { it.text })
-            .containsExactly("Deuxième partie, chapitre I", "Page 1 sur 1").inOrder()
+            .containsExactly("Deuxième partie, chapitre I", "Page 1 sur 1").inOrder()
 
         val actions = node.config.getOrNull(SemanticsActions.CustomActions).orEmpty()
         assertThat(actions.map { it.label }).containsExactly(

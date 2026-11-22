@@ -31,7 +31,7 @@ class SelectionBarTest {
                 )
             }
         }
-        rule.onNodeWithText("Sélection : « la campagne ainsi ressemble à un grand manteau… »").assertExists()
+        rule.onNodeWithText("Sélection : « la campagne ainsi ressemble à un grand manteau… »").assertExists()
         listOf("Traduire", "Note", "Copier").forEach {
             rule.onNodeWithText(it).assertHasClickAction().assertHeightIsAtLeast(48.dp).performClick()
         }

@@ -60,9 +60,25 @@ class StringsTest {
     }
 
     @Test
-    fun readingHelpUsesNarrowNoBreakSpacesAroundTheGlyphInsideGuillemets() {
+    fun guillemetsAroundAnInsertedTitleUseNoBreakSpaces() {
+        val nb = "\u00A0"
         assertThat(context.getString(R.string.settings_reading_help))
-            .isEqualTo("Pour tous les livres et toute l’application. Pendant la lecture, touchez « Aa » pour changer.")
+            .isEqualTo("Pour tous les livres et toute l’application. Pendant la lecture, touchez «${nb}Aa${nb}» pour changer.")
+        assertThat(context.getString(R.string.selection_label, "Emma")).isEqualTo("Sélection\u202F: «${nb}Emma${nb}»")
+        assertThat(context.getString(R.string.collection_resume_content_description, "Emma")).isEqualTo("Reprendre «${nb}Emma${nb}»")
+        assertThat(context.getString(R.string.collection_move_up, "Emma")).isEqualTo("Monter «${nb}Emma${nb}»")
+        assertThat(context.getString(R.string.collection_move_down, "Emma")).isEqualTo("Descendre «${nb}Emma${nb}»")
+        assertThat(context.getString(R.string.collection_drag, "Emma")).isEqualTo("Déplacer «${nb}Emma${nb}»")
+        assertThat(context.getString(R.string.collection_delete_title, "Emma")).isEqualTo("Supprimer «${nb}Emma${nb}»\u202F?")
+    }
+
+    @Test
+    fun numbersStayWithTheirWords() {
+        assertThat(context.getString(R.string.reader_page_of, 2, 9)).isEqualTo("Page\u00A02 sur\u00A09")
+        assertThat(context.resources.getQuantityString(R.plurals.collections_finished_of, 2, 2, 5))
+            .isEqualTo("· 2\u00A0terminés sur\u00A05")
+        assertThat(context.getString(R.string.settings_reopen_last_book_summary))
+            .isEqualTo("Si vous l’avez lu il y a moins de 24\u00A0heures")
     }
 
     @Test
