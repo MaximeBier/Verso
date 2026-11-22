@@ -21,6 +21,7 @@ import com.maximebier.verso.screenshots.samples.CollectionSample
 import com.maximebier.verso.screenshots.samples.CollectionStartSample
 import com.maximebier.verso.screenshots.samples.CollectionsEmptySample
 import com.maximebier.verso.screenshots.samples.CollectionsTabSample
+import com.maximebier.verso.screenshots.samples.NewCollectionNoNameSample
 import com.maximebier.verso.screenshots.samples.NewCollectionSample
 
 /** Un écran V4 et les palettes où il est capturé (toutes par défaut). */
@@ -40,6 +41,7 @@ object V4ScreenCatalog {
         V4ScreenFixture(ScreenFixture("Collections-Detail-Vide") { CollectionEmptySample() }),
         V4ScreenFixture(ScreenFixture("Collections-Detail-Termine") { CollectionFinishedSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Nouvelle") { NewCollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Nouvelle-SansNom") { NewCollectionNoNameSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Ajouter", afterContent = openCollectionsSheet) { AddToCollectionSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Ajouter-SansCollection", afterContent = openCollectionsSheet) { AddToCollectionNoCollectionSample() }),
         V4ScreenFixture(ScreenFixture("Livre-Details-Collections") { DetailsWithCollectionsSample() }),

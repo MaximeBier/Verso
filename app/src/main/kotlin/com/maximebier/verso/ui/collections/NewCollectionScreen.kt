@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -76,7 +75,6 @@ fun NewCollectionDestination(preselectedBookId: Long?, onClose: () -> Unit, onCr
 fun NewCollectionContent(state: NewCollectionUiState, actions: NewCollectionActions, modifier: Modifier = Modifier) {
     val colors = VersoTheme.colors
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val createEnd = if (LocalDensity.current.fontScale >= STACKED_CARD_FONT_SCALE) 8.dp else 24.dp
     Scaffold(
         modifier = modifier,
         containerColor = colors.background,
@@ -87,9 +85,8 @@ fun NewCollectionContent(state: NewCollectionUiState, actions: NewCollectionActi
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.statusBars)
                     .heightIn(min = 64.dp)
-                    // « Créer » s’arrête à 24 dp du bord, comme le champ et la liste dessous ; en très grand texte, 8 dp
-                    // pour laisser au titre la place de ses mots entiers.
-                    .padding(start = 4.dp, end = createEnd, top = 4.dp, bottom = 4.dp),
+                    // « Créer » à 8 dp du bord : le titre garde la place de tenir sur une ligne à la taille normale.
+                    .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

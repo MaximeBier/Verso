@@ -65,6 +65,19 @@ internal fun CollectionsEmptySample() {
     )
 }
 
+/** Nom pas encore saisi : « Créer » inactif. */
+@Composable
+internal fun NewCollectionNoNameSample() {
+    NewCollectionContent(state = NewCollectionUiState(loading = false, books = newCollectionBooks), actions = NewCollectionActions())
+}
+
+private val newCollectionBooks = listOf(
+    SelectableBook(CollectionData.book(1, "Les Trois Mousquetaires", "Alexandre Dumas"), selected = false),
+    SelectableBook(CollectionData.book(2, "Vingt Ans après", "Alexandre Dumas"), selected = false),
+    SelectableBook(CollectionData.book(3, "Le Vicomte de Bragelonne", "Alexandre Dumas"), selected = false),
+    SelectableBook(CollectionData.book(4, "Le Comte de Monte-Cristo", "Alexandre Dumas"), selected = false),
+)
+
 @Composable
 internal fun NewCollectionSample() {
     val dumas = "Alexandre Dumas"
