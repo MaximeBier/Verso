@@ -26,8 +26,8 @@ android {
         applicationId = "com.maximebier.verso"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Traduction (V3) : clé DeepL lue dans local.properties (jamais versionné). Sans clé, « Traduire » est masqué.
