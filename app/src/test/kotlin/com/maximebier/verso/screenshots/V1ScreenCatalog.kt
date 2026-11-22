@@ -90,6 +90,11 @@ internal val scrollListToProgress: ComposeContentTestRule.() -> Unit = {
     onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToIndex(4)
 }
 
+/** Fait défiler la grille jusqu’aux livres, sous la carte « Reprendre », l’en-tête et les filtres. */
+private val scrollGridToBooks: ComposeContentTestRule.() -> Unit = {
+    onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToIndex(3)
+}
+
 /** La snackbar reste affichée : horloge manuelle, avancée le temps de son apparition. */
 private val freezeClock: ComposeContentTestRule.() -> Unit = { mainClock.autoAdvance = false }
 private val showSnackbar: ComposeContentTestRule.() -> Unit = { mainClock.advanceTimeBy(1_000) }
@@ -103,6 +108,7 @@ object V1ScreenCatalog {
         ScreenFixture("Bibliotheque-Vide") { LibraryEmptySample() },
         ScreenFixture("Bibliotheque-MenuLivre", afterContent = openBookMenu) { LibraryBookMenuSample() },
         ScreenFixture("Bibliotheque-Grille") { LibraryGridSample() },
+        ScreenFixture("Bibliotheque-Grille-Defile", afterContent = scrollGridToBooks) { LibraryGridSample() },
         ScreenFixture("Import-Reussi", beforeContent = freezeClock, afterContent = showSnackbar) { ImportSuccessSample() },
         ScreenFixture("Import-Doublon") { ImportDuplicateSample() },
         ScreenFixture("Import-Refuse") { ImportRejectedSample() },

@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.maximebier.verso.ui.theme.VersoShapes
 import com.maximebier.verso.ui.theme.VersoTheme
@@ -107,6 +106,9 @@ fun BookCover(title: String, coverPath: String?, seed: String, size: CoverSize, 
     }
 }
 
+private const val GRID_COVER_AUTHOR_DP = 14f
+private const val GRID_COVER_AUTHOR_LINE_DP = 19.6f
+
 /** Couverture de la grille (pleine largeur, 2:3) ; vignette générée : titre + filet + auteur. */
 @Composable
 fun GridBookCover(title: String, author: String, coverPath: String?, seed: String, modifier: Modifier = Modifier) {
@@ -135,11 +137,16 @@ fun GridBookCover(title: String, author: String, coverPath: String?, seed: Strin
                 verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                val titleSp = if (title.length <= 10) 28 else 22
+                // Vignette de taille fixe en dp : son texte, comme une image, ne suit pas la taille de texte d’Android
+                // (le titre est écrit sous la couverture).
+                val density = LocalDensity.current
+                val titleDp = if (title.length <= 10) 28 else 22
+                val titleSize = with(density) { titleDp.dp.toSp() }
+                val titleLine = with(density) { (titleDp * 1.2f).dp.toSp() }
                 Text(
                     text = title,
                     color = colors.onCover,
-                    style = VersoTheme.typography.body.copy(fontSize = titleSp.sp, lineHeight = (titleSp * 1.2f).sp, fontWeight = FontWeight(600)),
+                    style = VersoTheme.typography.body.copy(fontSize = titleSize, lineHeight = titleLine, fontWeight = FontWeight(600)),
                     textAlign = TextAlign.Center,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
@@ -149,7 +156,11 @@ fun GridBookCover(title: String, author: String, coverPath: String?, seed: Strin
                     Text(
                         text = author,
                         color = colors.onCover,
-                        style = VersoTheme.typography.caption.copy(fontWeight = FontWeight(500)),
+                        style = VersoTheme.typography.caption.copy(
+                            fontSize = with(density) { GRID_COVER_AUTHOR_DP.dp.toSp() },
+                            lineHeight = with(density) { GRID_COVER_AUTHOR_LINE_DP.dp.toSp() },
+                            fontWeight = FontWeight(500),
+                        ),
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

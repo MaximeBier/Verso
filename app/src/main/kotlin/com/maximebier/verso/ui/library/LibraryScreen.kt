@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -44,6 +45,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -313,18 +315,25 @@ private fun LibraryList(state: LibraryUiState, actions: LibraryActions, onOpenSo
 
 /** Marge extérieure des cellules de la grille. */
 private val GRID_EDGE = 20.dp
+private val GRID_ROW_GAP = 20.dp
+
+/** À partir de ce texte d’Android, un livre par rangée : en deux colonnes, les titres se coupaient au milieu des mots. */
+const val GRID_SINGLE_COLUMN_FONT_SCALE = 1.3f
+private val GRID_SINGLE_COVER_WIDTH = 168.dp
+private val GRID_SINGLE_ROW_GAP = 28.dp
 
 @Composable
 private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions, onOpenSortSheet: () -> Unit) {
     val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val single = LocalDensity.current.fontScale >= GRID_SINGLE_COLUMN_FONT_SCALE
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (single) 1 else 2),
         modifier = Modifier.fillMaxSize(),
         // Pas de marge latérale sur la grille : carte, en-tête et filtres gardent exactement les marges de la liste,
         // seules les cellules de livre prennent la leur.
         contentPadding = PaddingValues(bottom = bottom + 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(GRID_ROW_GAP),
     ) {
         state.resume?.let { resume ->
             item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
@@ -343,9 +352,15 @@ private fun LibraryGrid(state: LibraryUiState, actions: LibraryActions, onOpenSo
             }
         }
         itemsIndexed(state.listedBooks, key = { _, book -> book.id }) { index, book ->
-            // Marge extérieure de 20 dp, 16 dp entre les deux colonnes.
-            val edge = if (index % 2 == 0) Modifier.padding(start = GRID_EDGE) else Modifier.padding(end = GRID_EDGE)
-            BookGridCell(book, actions, edge)
+            if (single) {
+                // Un livre par rangée : couverture de 168 dp, titre et auteur sur toute la largeur, 28 dp entre deux livres.
+                val gap = if (index == 0) Modifier else Modifier.padding(top = GRID_SINGLE_ROW_GAP - GRID_ROW_GAP)
+                BookGridCell(book, actions, gap.padding(horizontal = GRID_EDGE), coverWidth = GRID_SINGLE_COVER_WIDTH)
+            } else {
+                // Marge extérieure de 20 dp, 16 dp entre les deux colonnes.
+                val edge = if (index % 2 == 0) Modifier.padding(start = GRID_EDGE) else Modifier.padding(end = GRID_EDGE)
+                BookGridCell(book, actions, edge)
+            }
         }
     }
 }
@@ -472,14 +487,20 @@ private fun BookRow(book: LibraryBook, actions: LibraryActions) {
 }
 
 @Composable
-private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: Modifier) {
+private fun BookGridCell(book: LibraryBook, actions: LibraryActions, modifier: Modifier, coverWidth: Dp? = null) {
     val colors = VersoTheme.colors
     Column(modifier) {
         Column(
             modifier = Modifier.clickable(role = Role.Button) { actions.onOpenBook(book.id) },
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            GridBookCover(title = book.title, author = book.author, coverPath = book.coverPath, seed = book.colorSeed)
+            GridBookCover(
+                title = book.title,
+                author = book.author,
+                coverPath = book.coverPath,
+                seed = book.colorSeed,
+                modifier = if (coverWidth != null) Modifier.width(coverWidth) else Modifier,
+            )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(book.title, style = VersoTheme.typography.bookTitle, color = colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (book.author.isNotEmpty()) {
