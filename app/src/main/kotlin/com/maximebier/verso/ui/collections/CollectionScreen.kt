@@ -306,12 +306,15 @@ private fun ProgressSection(summary: CollectionSummary, modifier: Modifier) {
     }
 }
 
-/** Carte « Reprendre » : toute la carte, comme le bouton rond, ouvre le livre à sa position. */
+/** Carte « Reprendre » (« Commencer » pour un livre jamais ouvert) : toute la carte, comme le bouton rond, ouvre le livre à sa position. */
 @Composable
 private fun ResumeBookCard(book: LibraryBook, onOpen: (Long) -> Unit, modifier: Modifier) {
     val colors = VersoTheme.colors
     val typography = VersoTheme.typography
-    val description = stringResource(R.string.collection_resume_content_description, book.title)
+    val description = stringResource(
+        if (book.hasStarted) R.string.collection_resume_content_description else R.string.collection_start_content_description,
+        book.title,
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -324,7 +327,11 @@ private fun ResumeBookCard(book: LibraryBook, onOpen: (Long) -> Unit, modifier: 
     ) {
         BookCover(title = book.title, coverPath = book.coverPath, seed = book.colorSeed, size = CoverSize.CARD)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(R.string.collection_resume), style = typography.captionBold, color = colors.accent)
+            Text(
+                stringResource(if (book.hasStarted) R.string.collection_resume else R.string.collection_start),
+                style = typography.captionBold,
+                color = colors.accent,
+            )
             Text(book.title, style = typography.bookTitleStrong, color = colors.text)
             Text(stringResource(R.string.common_percent_read, book.percent), style = typography.caption, color = colors.textSecondary)
         }

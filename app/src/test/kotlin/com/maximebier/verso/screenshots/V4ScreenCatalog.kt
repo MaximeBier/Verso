@@ -18,6 +18,7 @@ import com.maximebier.verso.screenshots.samples.DetailsWithCollectionsSample
 import com.maximebier.verso.screenshots.samples.CollectionFinishedSample
 import com.maximebier.verso.screenshots.samples.CollectionReorderSample
 import com.maximebier.verso.screenshots.samples.CollectionSample
+import com.maximebier.verso.screenshots.samples.CollectionStartSample
 import com.maximebier.verso.screenshots.samples.CollectionsEmptySample
 import com.maximebier.verso.screenshots.samples.CollectionsTabSample
 import com.maximebier.verso.screenshots.samples.NewCollectionSample
@@ -33,6 +34,7 @@ object V4ScreenCatalog {
         V4ScreenFixture(ScreenFixture("Collections-Liste") { CollectionsTabSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Liste-Vide") { CollectionsEmptySample() }),
         V4ScreenFixture(ScreenFixture("Collections-Detail") { CollectionSample() }),
+        V4ScreenFixture(ScreenFixture("Collections-Detail-Commencer") { CollectionStartSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Detail-Reordonner") { CollectionReorderSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Detail-Reordonner-Fin", afterContent = scrollToLastBook) { CollectionReorderSample() }),
         V4ScreenFixture(ScreenFixture("Collections-Detail-Vide") { CollectionEmptySample() }),

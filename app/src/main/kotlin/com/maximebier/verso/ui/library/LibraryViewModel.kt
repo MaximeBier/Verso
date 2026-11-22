@@ -54,6 +54,8 @@ data class LibraryBook(
     val status: BookStatus,
     val progression: Double,
     val percent: Int,
+    /** Déjà ouvert : une position de lecture est enregistrée (« Reprendre » plutôt que « Commencer »). */
+    val hasStarted: Boolean = true,
 )
 
 data class ResumeInfo(val book: LibraryBook, val chapter: String?, val excerpt: String?, val remainingMinutes: Int)
@@ -314,6 +316,7 @@ internal fun BookEntity.toLibraryBook() = LibraryBook(
     status = status(),
     progression = progression,
     percent = percentOf(progression),
+    hasStarted = readingLocatorJson != null,
 )
 
 /**

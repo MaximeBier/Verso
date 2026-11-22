@@ -523,6 +523,8 @@
     <string name="collection_resume">Reprendre</string>
     <!-- TalkBack du bouton rond de la carte Reprendre -->
     <string name="collection_resume_content_description">Reprendre « %1$s »</string>
+    <string name="collection_start">Commencer</string>
+    <string name="collection_start_content_description">Commencer « %1$s »</string>
     <string name="collection_order_title">Dans l’ordre de lecture</string>
     <string name="collection_reorder">Réordonner</string>
     <!-- Validé par Maxime (2026-10-02) : quitte le mode Réordonner ; TalkBack des commandes de chaque ligne -->

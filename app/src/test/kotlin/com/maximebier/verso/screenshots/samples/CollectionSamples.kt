@@ -105,6 +105,16 @@ internal fun CollectionSample() {
     CollectionContent(zolaState, CollectionActions())
 }
 
+/** Le livre à lire en premier n’a jamais été ouvert : « Commencer ». */
+@Composable
+internal fun CollectionStartSample() {
+    val books = zolaBooks.map {
+        if (it.id == 3L) it.copy(status = BookStatus.TO_READ, progression = 0.0, percent = 0, hasStarted = false) else it
+    }
+    val summary = zolaSummary.copy(fraction = 0.36, percent = 36, inProgress = 1, toRead = 2, remainingMinutes = 31 * 60)
+    CollectionContent(CollectionUiState(loading = false, detail = CollectionDetail(1, "Les Rougon-Macquart", books, summary)), CollectionActions())
+}
+
 @Composable
 internal fun CollectionReorderSample() {
     CollectionContent(zolaState.copy(reordering = true), CollectionActions())

@@ -86,6 +86,25 @@ class CollectionScreenTest {
     }
 
     @Test
+    fun resumeCardSaysStartForABookNeverOpened() {
+        val opened = mutableListOf<Long>()
+        val neverOpened = books.map { if (it.id == 3L) it.copy(status = BookStatus.TO_READ, progression = 0.0, percent = 0, hasStarted = false) else it }
+        show(zola.copy(detail = zola.detail!!.copy(books = neverOpened)), CollectionActions(onOpenReader = { opened += it }))
+        compose.onNodeWithText(text(R.string.collection_start)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.collection_resume)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(text(R.string.collection_start_content_description, "L’Assommoir")).performClick()
+        assertThat(opened).containsExactly(3L)
+    }
+
+    @Test
+    fun resumeCardSaysResumeForAnOpenedBookBackToRead() {
+        val reset = books.map { if (it.id == 3L) it.copy(status = BookStatus.TO_READ, progression = 0.0, percent = 0) else it }
+        show(zola.copy(detail = zola.detail!!.copy(books = reset)))
+        compose.onNodeWithText(text(R.string.collection_resume)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.collection_start)).assertDoesNotExist()
+    }
+
+    @Test
     fun allFinishedHidesResumeAndRemainingTime() {
         val done = summary.copy(finished = 5, inProgress = 0, toRead = 0, resumeIndex = null, remainingMinutes = 0, percent = 100, remainingKnown = false)
         show(zola.copy(detail = zola.detail!!.copy(summary = done)))
