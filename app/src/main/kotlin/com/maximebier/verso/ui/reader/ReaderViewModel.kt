@@ -11,6 +11,7 @@ import com.maximebier.verso.R
 import com.maximebier.verso.VersoApplication
 import com.maximebier.verso.core.journal.NonReadingParts
 import com.maximebier.verso.core.journal.SessionRecord
+import com.maximebier.verso.core.journal.SessionThresholds
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.notes.TextQuotes
 import com.maximebier.verso.core.position.ReadingThresholds
@@ -170,6 +171,8 @@ class ReaderViewModel(
         { location, percent -> listOfNotNull(location, "$percent %").joinToString(" · ") },
     /** Textes de la liste des notes et de l’export. */
     private val notesTexts: NotesTexts = plainNotesTexts(),
+    /** Seuils d’une session gardée au journal (écriture et carte « En cours ») ; les tests peuvent les assouplir. */
+    private val sessionThresholds: SessionThresholds = SessionThresholds(),
     /** Écriture du fichier choisi par le sélecteur d’Android (export Markdown). */
     private val writeDocument: suspend (Uri, String) -> Unit = { _, _ -> },
     /** Ouvert depuis « Notes » de la fiche : saut vers cette note au chargement. */
@@ -252,7 +255,11 @@ class ReaderViewModel(
                 flowOf(null)
             } else {
                 combine(sessions.observeSessions(bookId), sessionCurrent) { list, current ->
-                    journalUiState(list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), locationTexts, ::positionOfLocatorJson)
+                    journalUiState(
+                        list, current, _uiState.value.toc, clock(), ZoneId.systemDefault(), locationTexts,
+                        currentKept = { sessionThresholds.keeps(it, _uiState.value.totalWords) },
+                        positionOf = ::positionOfLocatorJson,
+                    )
                 }
             }
         }
@@ -373,7 +380,9 @@ class ReaderViewModel(
             bookId = bookId,
             totalWords = totalWords,
             upsert = sessions::upsert,
+            delete = sessions::delete,
             clock = clock,
+            thresholds = sessionThresholds,
             isNonReading = nonReadingCheck(nonReadingHrefs),
         )
         sessionCoordinator = coordinator

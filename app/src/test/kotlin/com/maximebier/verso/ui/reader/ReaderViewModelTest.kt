@@ -11,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.maximebier.verso.R
+import com.maximebier.verso.core.journal.SessionThresholds
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.core.settings.LineSpacing
@@ -428,30 +429,31 @@ class ReaderViewModelTest {
     }
 
     @Test
-    fun journalShowsTheCurrentSessionAndResumeHereIsAJump() = runTest {
+    fun journalHidesASessionOpenedJustNowAndResumeHereIsAJump() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val start = testLocator(chapter = 2, progression = 0.5, total = 0.30)
         val id = books.insert(testBook(readingLocatorJson = Locators.toJson(start), progression = 0.30))
         val store = ViewModelStore()
-        val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
-        viewModel.uiState.first { !it.loading }
-        viewModel.onReaderReady(FakeReaderController(start))
-        runCurrent()
+        store.clearedAfter {
+            val viewModel = ViewModelProvider.create(store, factory(id))[ReaderViewModel::class]
+            viewModel.uiState.first { !it.loading }
+            viewModel.onReaderReady(FakeReaderController(start))
+            runCurrent()
 
-        viewModel.toggleBars()   // un toucher : la session en cours existe désormais
-        viewModel.showJournal()
-        val journal = viewModel.journal.first { state -> state != null && !state.isEmpty }!!
-        assertThat(journal.days.single().sessions.single().inProgress).isTrue()
+            viewModel.toggleBars()   // un toucher : la session en cours existe, mais ne passe pas encore les seuils
+            viewModel.showJournal()
+            val journal = viewModel.journal.first { state -> state != null }!!
+            assertThat(journal.isEmpty).isTrue()
 
-        val earlier = testLocator(chapter = 1, progression = 0.1, total = 0.05)
-        viewModel.resumeFromJournal(BookPosition(Locators.toJson(earlier), 0.05))
-        runCurrent()
+            val earlier = testLocator(chapter = 1, progression = 0.1, total = 0.05)
+            viewModel.resumeFromJournal(BookPosition(Locators.toJson(earlier), 0.05))
+            runCurrent()
 
-        val state = viewModel.uiState.value
-        assertThat(state.journalVisible).isFalse()
-        assertThat(state.returnCard).isNotNull()                         // saut explicite loin de la lecture
-        assertThat(state.readingProgression).isWithin(1e-9).of(0.30)     // la lecture n'a pas bougé
-        store.clear()
+            val state = viewModel.uiState.value
+            assertThat(state.journalVisible).isFalse()
+            assertThat(state.returnCard).isNotNull()                         // saut explicite loin de la lecture
+            assertThat(state.readingProgression).isWithin(1e-9).of(0.30)     // la lecture n'a pas bougé
+        }
     }
 
     private suspend fun highlightAt(bookId: Long, locator: org.readium.r2.shared.publication.Locator): Long =
@@ -518,7 +520,9 @@ class ReaderViewModelTest {
         // Horloge figée : pendant les attentes réelles (Room), runTest avance le temps virtuel au rythme du Tick du lecteur
         // (plusieurs minutes observées), et le Tick réel du SessionCoordinator (Dispatchers.Default) y lirait une inactivité
         // de plus de 5 min, qui ferme la session. Ce test porte sur le changement de configuration, pas sur le temps.
-        val viewModel = ViewModelProvider.create(store, factory(id, clock = { SESSION_TEST_TIME_MS }))[ReaderViewModel::class]
+        // Seuils assouplis : la session de quelques touchers compte, pour vérifier qu’elle reste une seule session.
+        val anySession = SessionThresholds(minActiveMs = 0, minWords = 0, minProgressionMove = -1.0)
+        val viewModel = ViewModelProvider.create(store, factory(id, clock = { SESSION_TEST_TIME_MS }, sessionThresholds = anySession))[ReaderViewModel::class]
         // Clear en finally : un échec ne laisse pas tourner le Tick du coordinateur (runTest ne finirait pas).
         try {
             viewModel.uiState.first { !it.loading }
@@ -542,8 +546,8 @@ class ReaderViewModelTest {
             store.clear()
         }
         viewModel.awaitSessionWrites()
-        // Des touchers sans lecture : la session n'est pas gardée au journal.
-        assertThat(db.sessionDao().observeForBook(id).first()).isEmpty()
+        // Le changement de configuration n’a pas coupé la session en deux.
+        assertThat(db.sessionDao().observeForBook(id).first()).hasSize(1)
     }
 
     @Test
@@ -1122,6 +1126,7 @@ class ReaderViewModelTest {
         openJournal: Boolean = false,
         searchIn: (Publication) -> (String) -> Flow<List<SearchHit>> = { publication -> BookSearch(publication)::search },
         highlightId: Long? = null,
+        sessionThresholds: SessionThresholds = SessionThresholds(),
     ): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             ReaderViewModel(
@@ -1137,6 +1142,7 @@ class ReaderViewModelTest {
                 searchIn = searchIn,
                 highlightRepository = HighlightRepository(db.highlightDao()) { 0L },
                 openHighlightOnLoad = highlightId,
+                sessionThresholds = sessionThresholds,
             ).also { viewModels += it }
         }
     }

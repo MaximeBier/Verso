@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
@@ -41,6 +40,8 @@ class SessionCoordinator(
     bookId: Long,
     private val totalWords: Long,
     private val upsert: suspend (SessionEntity) -> Long,
+    /** Retire la ligne d’une session déjà écrite qui ne passe plus les seuils (survol). */
+    private val delete: suspend (Long) -> Unit,
     private val clock: () -> Long,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val thresholds: SessionThresholds = SessionThresholds(),
@@ -185,15 +186,15 @@ class SessionCoordinator(
     }
 
     private suspend fun persist(record: SessionRecord) {
-        // Session sans lecture, de moins de 30 s de temps actif ou de moins de 150 mots lus : pas encore (ou jamais)
-        // écrite. Temps actif et mots lus ne font que croître : une session écrite reste
-        // écrite ; une session qui finit en survol est retirée au prochain nettoyage (deleteDiscarded).
-        // Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
+        // Une session n’est écrite que si elle passe les seuils d’une session gardée. Le rapport mots / temps varie :
+        // une session déjà écrite qui passe en survol est retirée de la base, et réécrite (même id) si elle repasse les
+        // seuils. Une écriture ratée (disque plein, base corrompue) ne doit jamais faire tomber la lecture : journalisée
         // ([onWriteFailed]), la session reste en mémoire et la prochaine écriture la retente.
         val id = try {
-            if (record.isEmpty && !movedWithoutWords(record)) return
-            if (record.activeMs < thresholds.minActiveMs) return
-            if (totalWords > 0 && record.wordsRead < thresholds.minWords) return
+            if (!thresholds.keeps(record, totalWords)) {
+                if (record.id != 0L) delete(record.id)
+                return
+            }
             upsert(record.toEntity())
         } catch (e: CancellationException) {
             throw e
@@ -207,14 +208,8 @@ class SessionCoordinator(
         }
     }
 
-    /** Livre sans aucun mot compté (images, texte non reconnu) : la lecture se juge sur la progression. */
-    private fun movedWithoutWords(record: SessionRecord): Boolean =
-        totalWords == 0L && abs(record.end.totalProgression - record.start.totalProgression) > MIN_PROGRESSION_MOVE
-
     companion object {
         const val TICK_INTERVAL_MS: Long = 1_000
-        /** Écart de progression au-delà duquel une session d’un livre sans mots compte comme lecture. */
-        const val MIN_PROGRESSION_MOVE = 0.001
         private const val TAG = "SessionCoordinator"
     }
 }

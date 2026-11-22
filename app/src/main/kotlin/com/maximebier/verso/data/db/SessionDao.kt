@@ -33,6 +33,9 @@ interface SessionDao {
     )
     suspend fun deleteDiscarded(minActiveMs: Long, minWords: Long, maxWordsPerMinute: Int)
 
+    @Query("DELETE FROM sessions WHERE id = :id")
+    suspend fun delete(id: Long)
+
     @Query("SELECT COUNT(*) FROM sessions WHERE bookId = :bookId")
     suspend fun countForBook(bookId: Long): Int
 }

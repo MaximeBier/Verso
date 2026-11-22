@@ -35,6 +35,8 @@ class SessionRepository(private val dao: SessionDao) {
         return if (session.id != 0L) session.id else rowId
     }
 
+    suspend fun delete(id: Long) = dao.delete(id)
+
     suspend fun clearAll() = dao.clearAll()
 
     /**

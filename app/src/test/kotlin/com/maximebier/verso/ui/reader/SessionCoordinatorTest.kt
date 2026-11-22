@@ -1,6 +1,7 @@
 package com.maximebier.verso.ui.reader
 
 import com.google.common.truth.Truth.assertThat
+import com.maximebier.verso.core.journal.SessionThresholds
 import com.maximebier.verso.core.model.BookPosition
 import com.maximebier.verso.core.position.TrackerEffect
 import com.maximebier.verso.data.db.SessionEntity
@@ -27,6 +28,9 @@ class SessionCoordinatorTest {
             rows[id] = session.copy(id = id)
             return id
         }
+        suspend fun delete(id: Long) {
+            rows.remove(id)
+        }
     }
 
     private val store = FakeSessionStore()
@@ -44,12 +48,14 @@ class SessionCoordinatorTest {
         onTrackerEffect(moved(from, to))
     }
 
-    private fun TestScope.coordinator(clock: () -> Long) = SessionCoordinator(
+    private fun TestScope.coordinator(thresholds: SessionThresholds = SessionThresholds(), clock: () -> Long) = SessionCoordinator(
         bookId = BOOK_ID,
         totalWords = TOTAL_WORDS,
         upsert = store::upsert,
+        delete = store::delete,
         clock = clock,
         dispatcher = StandardTestDispatcher(testScheduler),
+        thresholds = thresholds,
     )
 
     @Test
@@ -72,6 +78,7 @@ class SessionCoordinatorTest {
             bookId = BOOK_ID,
             totalWords = 0,
             upsert = store::upsert,
+            delete = store::delete,
             clock = { now },
             dispatcher = StandardTestDispatcher(testScheduler),
         )
@@ -111,6 +118,37 @@ class SessionCoordinatorTest {
     }
 
     @Test
+    fun skimmingSessionIsNeverWritten() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 40_000; c.readingMove(0.10, 0.13)             // 3 000 mots en 40 s : survol
+        c.close(); advanceUntilIdle()
+
+        assertThat(store.rows).isEmpty()
+    }
+
+    @Test
+    fun writtenSessionTurningIntoSkimmingIsRemovedThenWrittenAgain() = runTest {
+        var now = 0L
+        val c = coordinator { now }
+
+        c.onOpened(position(0.10))
+        now = 60_000; c.readingMove(0.10, 0.102)            // 200 mots en 1 min : gardée
+        runCurrent()
+        assertThat(store.rows.keys).containsExactly(1L)
+        now = 70_000; c.readingMove(0.102, 0.12)            // 2 000 mots en 70 s : survol, la ligne est retirée
+        runCurrent()
+        assertThat(store.rows).isEmpty()
+        now = 130_000; c.onInteraction()                    // 2 000 mots en 130 s : de nouveau gardée, même id
+        runCurrent()
+        assertThat(store.rows.keys).containsExactly(1L)
+        assertThat(store.rows.getValue(1L).wordsRead).isEqualTo(2_000)
+        c.close(); advanceUntilIdle()
+    }
+
+    @Test
     fun timeSpentInAPanelIsNotActive() = runTest {
         var now = 0L
         val c = coordinator { now }
@@ -133,6 +171,7 @@ class SessionCoordinatorTest {
             bookId = BOOK_ID,
             totalWords = TOTAL_WORDS,
             upsert = store::upsert,
+            delete = store::delete,
             clock = { now },
             dispatcher = StandardTestDispatcher(testScheduler),
             isNonReading = { it.totalProgression >= 0.9 },  // notes de fin, index…
@@ -153,7 +192,7 @@ class SessionCoordinatorTest {
     @Test
     fun sessionIsWrittenOnceItReachesThirtySecondsOfActiveTime() = runTest {
         var now = 0L
-        val c = coordinator { now }
+        val c = coordinator(WITHOUT_SKIMMING) { now }
 
         c.onOpened(position(0.10))
         now = 20_000; c.readingMove(0.10, 0.20)
@@ -222,7 +261,7 @@ class SessionCoordinatorTest {
 
     @Test
     fun interactionAfterFiveMinutesOfSilenceStartsANewSession() = runTest {
-        val c = coordinator { testScheduler.currentTime }
+        val c = coordinator(WITHOUT_SKIMMING) { testScheduler.currentTime }
         c.start()                                       // Tick chaque seconde
 
         c.onOpened(position(0.20))
@@ -268,7 +307,7 @@ class SessionCoordinatorTest {
     @Test
     fun wordsCountOnlyForwardReadingMoves() = runTest {
         var now = 0L
-        val c = coordinator { now }
+        val c = coordinator(WITHOUT_SKIMMING) { now }
 
         c.onOpened(position(0.10))
         now = 10_000; c.onInteraction()                         // saut (sommaire, carte) : interaction, aucun mot
@@ -283,7 +322,7 @@ class SessionCoordinatorTest {
     @Test
     fun saveReadingAloneMovesTheEndWithoutCountingWordsAndScrollToIsIgnored() = runTest {
         var now = 0L
-        val c = coordinator { now }
+        val c = coordinator(WITHOUT_SKIMMING) { now }
 
         c.onOpened(position(0.10))
         now = 20_000; c.readingMove(0.10, 0.12)                               // un peu de lecture : session gardée
@@ -302,7 +341,7 @@ class SessionCoordinatorTest {
     @Test
     fun effectsWhileBackgroundedOpenNoSessionButMoveTheNextStart() = runTest {
         var now = 0L
-        val c = coordinator { now }
+        val c = coordinator(WITHOUT_SKIMMING) { now }
 
         c.onOpened(position(0.10))
         now = 40_000; c.readingMove(0.10, 0.12)
@@ -344,8 +383,10 @@ class SessionCoordinatorTest {
             bookId = BOOK_ID,
             totalWords = TOTAL_WORDS,
             upsert = { session -> if (failing) throw IOException("disque plein") else store.upsert(session) },
+            delete = store::delete,
             clock = { now },
             dispatcher = StandardTestDispatcher(testScheduler),
+            thresholds = WITHOUT_SKIMMING,
             onWriteFailed = { failures += it },
         )
 
@@ -365,5 +406,8 @@ class SessionCoordinatorTest {
     private companion object {
         const val BOOK_ID = 7L
         const val TOTAL_WORDS = 100_000L
+
+        /** Pour les tests qui avancent vite dans le livre sans juger la vitesse : aucun survol. */
+        val WITHOUT_SKIMMING = SessionThresholds(maxWordsPerMinute = Int.MAX_VALUE)
     }
 }

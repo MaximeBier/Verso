@@ -71,6 +71,18 @@ class JournalMappingTest {
     )
 
     @Test
+    fun currentSessionBelowTheThresholdsIsNotShown() {
+        val state = journalUiState(
+            listOf(yesterday, staleCurrentRow), current, toc, now, zone, french,
+            currentKept = { false },
+            positionOf = { ResourcePosition(it, null) },
+        )
+
+        assertThat(state.days.flatMap { day -> day.sessions.map { it.inProgress } }).containsExactly(false)
+        assertThat(state.days.map { it.group }).containsExactly(DayGroup.Yesterday)
+    }
+
+    @Test
     fun groupsByDayMostRecentFirstWithYearOnlyForOtherYears() {
         val state = map(listOf(lastYear, mondayMorning, mondayNoon, yesterday, staleCurrentRow), current)
 

@@ -81,7 +81,8 @@ data class JournalUiState(val days: List<JournalDay> = emptyList()) {
 
 /**
  * Construit l'état du journal : sessions enregistrées (plus récentes d'abord ou non, l'ordre est refait ici)
- * + session en cours du SessionTracker, qui remplace sa ligne éventuellement périmée en base.
+ * + session en cours du SessionTracker, qui remplace sa ligne éventuellement périmée en base ; elle n’apparaît
+ * « En cours » que si [currentKept] la juge déjà gardée (sinon ni elle ni sa ligne périmée ne s’affichent).
  * [positionOf] extrait d'un locator JSON le fichier (sans fragment) et la progression dans ce fichier ;
  * en production : [positionOfLocatorJson].
  */
@@ -92,11 +93,12 @@ fun journalUiState(
     now: Long,
     zone: ZoneId,
     texts: LocationTexts,
+    currentKept: (SessionRecord) -> Boolean = { true },
     positionOf: (String) -> ResourcePosition?,
 ): JournalUiState {
     val currentId = current?.id?.takeIf { it != 0L }
     val rows = buildList {
-        if (current != null) {
+        if (current != null && currentKept(current)) {
             add(JournalRow(current.id, current.startedAt, current.endedAt, current.activeMs, current.start, current.end, inProgress = true))
         }
         sessions.filter { it.id != currentId }.forEach { entity ->

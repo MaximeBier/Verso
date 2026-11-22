@@ -1,6 +1,7 @@
 package com.maximebier.verso.core.journal
 
 import com.maximebier.verso.core.stats.StatsThresholds
+import kotlin.math.abs
 
 /** Seuils du journal de lecture. */
 data class SessionThresholds(
@@ -14,4 +15,18 @@ data class SessionThresholds(
     val minWords: Long = 150,
     /** Au-delà, c’est du survol : la session n’est pas gardée au journal ni comptée dans la vitesse. */
     val maxWordsPerMinute: Int = StatsThresholds.MAX_WORDS_PER_MINUTE,
-)
+    /** Livre sans mots comptés : écart de progression au-delà duquel la session compte comme lecture. */
+    val minProgressionMove: Double = 0.001,
+) {
+    /**
+     * Session gardée au journal : assez de temps actif et, pour un livre dont les mots sont comptés ([totalWords] > 0),
+     * assez de mots lus sans dépasser la vitesse de survol ; sinon, une progression qui a bougé. Même règle que le
+     * nettoyage des sessions écartées en base. Le rapport mots / temps varie : une session gardée peut devenir du
+     * survol, puis redevenir gardée.
+     */
+    fun keeps(record: SessionRecord, totalWords: Long): Boolean {
+        if (record.activeMs < minActiveMs) return false
+        if (totalWords == 0L) return abs(record.end.totalProgression - record.start.totalProgression) > minProgressionMove
+        return record.wordsRead >= minWords && record.wordsRead * 60_000 <= maxWordsPerMinute.toLong() * record.activeMs
+    }
+}
