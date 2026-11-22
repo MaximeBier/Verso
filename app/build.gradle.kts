@@ -129,7 +129,7 @@ dependencies {
 }
 
 /**
- * Génère com.maximebier.verso.ui.theme.VersoPalette.kt depuis docs/design/tokens.json :
+ * Génère com.maximebier.verso.ui.theme.VersoPalette.kt depuis app/tokens.json :
  * data class VersoColors (un champ par jeton, dans l'ordre du thème clair), les quatre thèmes et la palette des vignettes.
  * Échoue si un thème n'a pas exactement les mêmes jetons que le thème clair ou si une couleur est mal formée.
  */
@@ -180,7 +180,7 @@ abstract class GenerateDesignTokensTask : DefaultTask() {
         }
 
         val code = buildString {
-            appendLine("// Fichier généré par la tâche Gradle generateDesignTokens depuis docs/design/tokens.json. Ne pas modifier à la main.")
+            appendLine("// Fichier généré par la tâche Gradle generateDesignTokens depuis app/tokens.json. Ne pas modifier à la main.")
             appendLine("package com.maximebier.verso.ui.theme")
             appendLine()
             appendLine("import androidx.compose.runtime.Immutable")
@@ -211,8 +211,8 @@ abstract class GenerateDesignTokensTask : DefaultTask() {
 
 val generateDesignTokens = tasks.register<GenerateDesignTokensTask>("generateDesignTokens") {
     group = "verso"
-    description = "Génère VersoPalette.kt depuis docs/design/tokens.json."
-    tokensFile.set(layout.projectDirectory.file("../docs/design/tokens.json"))
+    description = "Génère VersoPalette.kt depuis app/tokens.json."
+    tokensFile.set(layout.projectDirectory.file("tokens.json"))
     outputDir.set(layout.buildDirectory.dir("generated/tokens"))
 }
 
