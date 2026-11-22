@@ -194,11 +194,11 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
         Column(
             modifier = Modifier
                 .windowInsetsPadding(readerSideInsets())
-                // 16 dp en haut et en bas, 20 dp sur les côtés.
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                // 16 dp en haut et en bas.
+                .padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = BarSideMargin), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = stringResource(R.string.common_percent_read, state.readingPercent),
                     style = VersoTheme.typography.bodyStrong,
@@ -213,15 +213,23 @@ private fun ReaderBottomBar(state: ReaderBarsState, tools: List<ReaderTool>, mod
                     modifier = Modifier.weight(1f).alignByBaseline(),
                 )
             }
-            // Barre du livre en cours : 6 dp, accent ; elle occupe toute la largeur.
-            VersoProgressBar(fraction = state.progression, current = true)
-            ReaderToolbar(tools)
+            // Barre du livre en cours : 6 dp, accent ; elle occupe toute la largeur entre les marges.
+            VersoProgressBar(fraction = state.progression, current = true, modifier = Modifier.padding(horizontal = BarSideMargin))
+            ReaderToolbar(tools, Modifier.padding(horizontal = ToolbarSideMargin))
         }
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBarsIgnoringVisibility))
     }
 }
 
-private val ToolGap = 4.dp
+/** Marges latérales du texte et de la progression de la barre du bas. */
+private val BarSideMargin = 20.dp
+
+/**
+ * Les outils débordent de 12 dp sous ces marges, sans espace entre eux : à 390 dp de large, chaque cellule a 93 dp,
+ * assez pour « Rechercher » sur une ligne dans les quatre polices à la taille normale.
+ */
+private val ToolbarSideMargin = BarSideMargin - 12.dp
+private val ToolGap = 0.dp
 private val ToolCellPadding = 4.dp
 private val ToolMinHeight = 64.dp
 private val ToolIconSize = 22.dp
